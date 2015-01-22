@@ -18,41 +18,71 @@
 // -o - выходной файл (qflash.bin)
 // -i - запуск hello
 // -x - вывод сектора+obb (без -x только сектор)
+// -s <файл> - чтение разделов, описанных в файле partition.mbn
 //
 //
 
-#define nand_cmd 0x1b400000
-#define nand_addr0 0x1b400004
-#define nand_addr1 0x1b400008
-#define nand_cs    0x1b40000c
-#define nand_exec  0x1b400010
-#define nand_status 0x1b400014
-#define nand_cfg1  0x1b400024
-#define sector_buf 0x1b400100
-
-// число страниц в 1 блоке
-#define ppb 64
 
 // ожидание завершения операции контроллером
 inline nandwait() { while ((mempeek(nand_status)&0xf) != 0); }
+
+//*************************************88
+//* Установка адресных регистров 
+//*************************************
+void setaddr(int block, int page) {
+
+int adr;  
+  
+adr=block*ppb+page;
+mempoke(nand_addr0,adr<<16);
+mempoke(nand_addr1,(adr>>16)&0xff);
+}
+
+//*************************************
+//* Чтение блока данных
+//*************************************
+void read_block(int block,int blocksize,FILE* out) {
+
+unsigned char iobuf[4096];  
+int page,sec;
+ // цикл по страницам
+for(page=0;page<ppb;page++)  {
+
+  setaddr(block,page);
+  // по секторам  
+  for(sec=0;sec<4;sec++) {
+   mempoke(nand_exec,0x1); 
+//   nandwait();
+   if (!memread(iobuf,sector_buf, blocksize)) { // выгребаем порцию данных
+     printf("\n memread вернул ошибку, завершаем чтение.\n");
+     exit(0);
+   }  
+   fwrite(iobuf,1,blocksize,out);
+  }
+ } 
+} 
 
 
 //@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 void main(int argc, char* argv[]) {
   
 unsigned char iobuf[2048];
+unsigned char partname[17]={0}; // имя раздела
 unsigned char filename[300]="qflash.bin";
-int i,sec,bcnt,iolen,page,block;
+int i,sec,bcnt,iolen,page,block,res;
 unsigned char* sptr;
-unsigned int start=0,len=1,helloflag=0,opt,adr;
+unsigned int start=0,len=1,helloflag=0,opt;
 unsigned int blocksize=512;
 FILE* out;
+FILE* part=0;
 
+int attr; // арибуты
+int npar; // число разедлов в таблице
 
 char hellocmd[]="\x01QCOM fast download protocol host\x03###";
 char devname[]="/dev/ttyUSB0";
 
-while ((opt = getopt(argc, argv, "p:a:l:o:ix")) != -1) {
+while ((opt = getopt(argc, argv, "p:a:l:o:ixs:")) != -1) {
   switch (opt) {
    case 'p':
     strcpy(devname,optarg);
@@ -77,6 +107,14 @@ while ((opt = getopt(argc, argv, "p:a:l:o:ix")) != -1) {
    case 'x':
      blocksize+=64;
      break;
+     
+   case 's':
+     part=fopen(optarg,"r");
+     if (part == 0) {
+       printf("\nОшибка открытия файла таблицы разделов\n");
+       return;
+     }
+     break;
   }
 }  
 
@@ -90,8 +128,6 @@ if (!open_port(devname))  {
    return; 
 }
 
-out=fopen(filename,"w");
-
 if (helloflag) {
   printf("\n Отсылка hello...");
   iolen=send_cmd(hellocmd,strlen(hellocmd),iobuf);
@@ -104,42 +140,61 @@ if (helloflag) {
   iobuf[0x2d+i]=0;
   printf("\n Flash: %s",iobuf+0x2d);
 }
-printf("\n Чтение области %08x - %08x\n",start,start+len);
 
-
+out=fopen(filename,"w");
 
 mempoke(nand_cfg1,0x6745d); // ECC off
-mempoke(nand_cs,4);
+mempoke(nand_cs,4); // data mover
 
 mempoke(nand_cmd,1); // Сброс всех операций контроллера
 mempoke(nand_exec,0x1);
 nandwait();
 // устанавливаем код команды
 mempoke(nand_cmd,0x34); // чтение data+ecc+spare
+
+//###################################################333
+// Режим чтения по таблице разделов
+//###################################################333
+if (part != 0) {
+ res=fread(iobuf,1,8,part);
+ if((res != 8) || (strncmp(iobuf,"\xAA\x73\xEE\x55\xDB\xBD\x5E\xE3",8) != 0)) {
+   printf("\nФайл не является таблицей разделов\n");
+   return;
+ }
+ fseek(part,4,SEEK_CUR); // пропускаем таблицу разделов
+ res=fread(&npar,1,4,part); // Число разделов
+ printf("\n Число разделов: %i",npar);
+ printf("\n  адрес    размер   атрибуты ------ Имя------\n");     
+ for(i=0;i<npar;i++) {
+    res=fread(partname,1,16,part); // имя
+    res=fread(&start,1,4,part); // адрес
+    res=fread(&len,1,4,part);  // размер
+    res=fread(&attr,1,4,part);  // атрибуты
+    sprintf(iobuf,"%02i-%s.bin",i,partname); // фрмируем имя файла
+    out=fopen(iobuf,"w");  // открываем выхдной файл
+    printf("\r%08x  %08x  %08x  %s\n",start,len,attr,partname);
+    for(block=start;block<(start+len);block++) {
+       printf("\r * %08x",block); fflush(stdout);
+       read_block(block,blocksize,out);
+    }
+    fclose(out);
+ }
+ return; // все разделы прочитаны
+    
+}
+//###################################################333
+// Режим чтения сырого флеша
+//###################################################333
+printf("\n Чтение области %08x - %08x\n",start,start+len);
+
+
+
 printf("\n");
 // главыный цикл
 // по блокам
 for (block=start;block<(start+len);block++) {
- // по страницам
- for(page=0;page<ppb;page++)  {
-
   printf("\r %08x",block); fflush(stdout);
-  adr=block*ppb+page;
-  mempoke(nand_addr0,adr<<16);
-  mempoke(nand_addr1,(adr>>16)&0xff);
-  // по секторам  
-  for(sec=0;sec<4;sec++) {
-
-   mempoke(nand_exec,0x1); 
-//   nandwait();
-
-   if (!memread(iobuf,sector_buf, blocksize)) { // выгребаем порцию данных
-     printf("\n memread вернул ошибку, завершаем чтение.\n");
-     return;
-   }  
-   fwrite(iobuf,1,blocksize,out);
-  }
- } 
+  read_block(block,blocksize,out);
 } 
 printf("\n"); 
 } 
