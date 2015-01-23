@@ -84,6 +84,7 @@ void process_command(char* cmdline) {
 int adr,len=128,data;
 char* sptr;
 char membuf[4096];
+int block,page,sect;
 
 switch (cmdline[0]) {
   
@@ -93,7 +94,7 @@ switch (cmdline[0]) {
 c nn nn nn nn.... - формирование и запуск командного пакета из перечисленных байтов\n\
 d adr [len]       - прсмотр дампа адресного пространства системы\n\
 m adr word ...    - записать слова по указанному адресу\n\
-r adr0 adr        - чтение блока флешки в секторный буфер \n\
+r block page sect - чтение блока флешки в секторный буфер \n\
 s                 - прсмотр дампа сектороного буфера NAND-контроллера\n\
 n                 - просмотр содежримого регистров NAND-контроллера\n\
 x                 - выход из программы\n\
@@ -132,13 +133,21 @@ i                 - запуск процедуры HELLO\n");
    break;
 
   case 'r':
-   sptr=strtok(cmdline+1," "); // адрес0
-   if (sptr == 0) {printf("\n Не указан адрес 0"); return;}
-   sscanf(sptr,"%x",&adr);
-   sptr=strtok(0," ");        // адрес1
-   if (sptr == 0) {printf("\n Не указан адрес 1"); return;}
-   sscanf(sptr,"%x",&data);
-   flash_read(adr,data);
+   sptr=strtok(cmdline+1," "); // блок
+   if (sptr == 0) {printf("\n Не указан # блока"); return;}
+   sscanf(sptr,"%x",&block);
+
+   sptr=strtok(0," ");        // страница
+   if (sptr == 0) {printf("\n Не указан # страницы"); return;}
+   sscanf(sptr,"%x",&page);
+   if (page>63)  {printf("\n Слишком большой # страницы"); return;}
+   
+   sptr=strtok(0," ");        // сектор
+   if (sptr == 0) {printf("\n Не указан # сектора"); return;}
+   sscanf(sptr,"%x",&sect);
+   if (sect>3)  {printf("\n Слишком большой # сектора"); return;}
+   
+   flash_read(block,page,sect);
 //   break;
    
    
