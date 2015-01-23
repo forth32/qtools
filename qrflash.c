@@ -38,8 +38,12 @@ for(page=0;page<ppb;page++)  {
   for(sec=0;sec<4;sec++) {
    mempoke(nand_exec,0x1); 
 //   nandwait();
+ retry:  
    if (!memread(iobuf,sector_buf, blocksize)) { // выгребаем порцию данных
-     printf("\n memread вернул ошибку, завершаем чтение.\n");
+     printf("\n memread вернул ошибку чтения секторного буфера.");
+     printf("\n block = %08x  page=%08x  sector=%08x",block,page,sec);
+     printf("\n Повторить операцию? (y,n):");
+     if ((getchar() == 'y')||(getchar() == 'Y')) goto retry;
      exit(0);
    }  
    fwrite(iobuf,1,blocksize,out);
@@ -173,9 +177,6 @@ if (part != 0) {
 // Режим чтения сырого флеша
 //###################################################333
 printf("\n Чтение области %08x - %08x\n",start,start+len);
-
-
-
 printf("\n");
 // главыный цикл
 // по блокам

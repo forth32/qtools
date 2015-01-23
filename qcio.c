@@ -99,6 +99,7 @@ int i,iolen,escflag,bcnt,incount;
 unsigned short datalen;
 unsigned char c;
 unsigned char cmdbuf[4096];
+unsigned int res;
 
 bcnt=blen;
 memcpy(cmdbuf,incmdbuf,blen);
@@ -132,15 +133,20 @@ if (write(siofd,iobuf,iolen) == 0) return 0;
 tcdrain(siofd);  // ждем окончания вывода блока
 
 incount=0;
-if ((read(siofd,&c,1) != 1) || (c != 0x7e)) return 0; // модем не ответил или ответил неправильно
+if ((read(siofd,&c,1) != 1) || (c != 0x7e)) {
+  printf("\n Нет ответа от модема");
+  return 0; // модем не ответил или ответил неправильно
+}
 iobuf[incount++]=0x7e;
 
 // чтение массива данных единым блоком при обработке команды 03
 if (cmdbuf[0] == 3) {
  datalen=*((unsigned short*)(cmdbuf+5)); // заказанная длина поля данных
- if (read(siofd,cmdbuf+1,datalen+7) != (datalen+7)) {
-   printf("\nСлишком короткий ответ от модема\n");
-   exit(0);
+ res=read(siofd,cmdbuf+1,datalen+7);
+ if (res != (datalen+7)) {
+   printf("\nСлишком короткий ответ от модема: %i байт\n",res+1);
+   dump(cmdbuf,res+1,0);
+   return 0;
  }  
  incount=incount+datalen+7;
 }
