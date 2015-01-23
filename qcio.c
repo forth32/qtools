@@ -8,8 +8,13 @@
 #include <termios.h>
 #include <unistd.h>
 
+#include "qcio.h"
+
 struct termios sioparm;
 int siofd; // fd для работы с Последовательным портом
+
+inline nandwait() { while ((mempeek(nand_status)&0xf) != 0); }
+
 
 //***********************
 //* Дамп области памяти *
@@ -250,26 +255,43 @@ if (strncmp(iobuf+2,"OK",2) == 0) return 1;
 return 0;
 }
 
+
+//*************************************88
+//* Установка адресных регистров 
+//*************************************
+void setaddr(int block, int page) {
+
+int adr;  
+  
+adr=block*ppb+page;
+mempoke(nand_addr0,adr<<16);
+mempoke(nand_addr1,(adr>>16)&0xff);
+}
+
 //*********************************************
 //* Чтение блока флешки по указанному адресу 
 //*********************************************
 
-int flash_read(int adr0, int adr1) {
+int flash_read(int block, int page, int sect) {
   
 unsigned char iobuf[300];
-unsigned char cmdbuf[]={9,0,0,0,0,0,0,0,0,0};
 int iolen;
+int i;
 
-// reset flash
-mempoke(0x1b400024,0x6745d); // ECC off
-mempoke(0x1b400000,0xd);
-mempoke(0x1b400010,0x1);
+mempoke(nand_cfg1,0x6745d); // ECC off
+mempoke(nand_cs,4); // data mover
 
-while ((mempeek(0x1b400014)&0xf) != 0); // ждем окончания выполнения команды
+mempoke(nand_cmd,1); // Сброс всех операций контроллера
+mempoke(nand_exec,0x1);
+nandwait();
+// адрес
+setaddr(block,page);
+// устанавливаем код команды
+mempoke(nand_cmd,0x34); // чтение data+ecc+spare
+for(i=0;i<(sect+1);i++) {
+  mempoke(nand_exec,0x1);
+  nandwait();
+}  
 
-*((unsigned int*)&cmdbuf[2])=adr0;  //вписываем адрес
-*((unsigned int*)&cmdbuf[6])=adr1;  //вписываем данные
-iolen=send_cmd(cmdbuf,10,iobuf);
-while ((mempeek(0x1b400014)&0xf) != 0); // ждем окончания выполнения команды
-return iolen;
+return 1;
 }

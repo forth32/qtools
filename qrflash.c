@@ -23,21 +23,6 @@
 //
 
 
-// ожидание завершения операции контроллером
-inline nandwait() { while ((mempeek(nand_status)&0xf) != 0); }
-
-//*************************************88
-//* Установка адресных регистров 
-//*************************************
-void setaddr(int block, int page) {
-
-int adr;  
-  
-adr=block*ppb+page;
-mempoke(nand_addr0,adr<<16);
-mempoke(nand_addr1,(adr>>16)&0xff);
-}
-
 //*************************************
 //* Чтение блока данных
 //*************************************
@@ -69,7 +54,8 @@ void main(int argc, char* argv[]) {
 unsigned char iobuf[2048];
 unsigned char partname[17]={0}; // имя раздела
 unsigned char filename[300]="qflash.bin";
-int i,sec,bcnt,iolen,page,block,res;
+unsigned int i,sec,bcnt,iolen,page,block;
+int res;
 unsigned char* sptr;
 unsigned int start=0,len=1,helloflag=0,opt;
 unsigned int blocksize=512;
@@ -170,6 +156,7 @@ if (part != 0) {
     res=fread(&start,1,4,part); // адрес
     res=fread(&len,1,4,part);  // размер
     res=fread(&attr,1,4,part);  // атрибуты
+    if (((start+len) >maxblock)||(len == 0xffffffff)) len=maxblock-start; // если длина - FFFF, или выходит за пределы флешки
     sprintf(iobuf,"%02i-%s.bin",i,partname); // фрмируем имя файла
     out=fopen(iobuf,"w");  // открываем выхдной файл
     printf("\r%08x  %08x  %08x  %s\n",start,len,attr,partname);
