@@ -38,32 +38,6 @@ for (i=0;i<len;i+=16) {
 }
 }
 
-//***********************
-//* Дамп области памяти *
-//***********************
-
-void errdump(char buffer[],int len,long base) {
-unsigned int i,j;
-char ch;
-
-for (i=0;i<len;i+=16) {
-  fprintf(stderr,"%06lx: ",(long)(base+i));
-  for (j=0;j<16;j++){
-   if ((i+j) < len) fprintf(stderr,"%02x ",buffer[i+j]&0xff);
-   else fprintf(stderr,"   ");
-  }
-  fprintf(stderr," *");
-  for (j=0;j<16;j++) {
-   if ((i+j) < len) {
-    ch=buffer[i+j];
-    if ((ch < 0x20)|(ch > 0x80)) ch='.';
-    fputc(ch,stderr);
-   }
-   else fputc(' ',stderr);
-  }
-  fprintf(stderr,"*\n");
-}
-}
 
 //*************************************************
 //*  Вычисление CRC-16 
@@ -117,6 +91,7 @@ return (~crc)&0xffff;
 int send_cmd(unsigned char* incmdbuf, int blen, unsigned char* iobuf) {
   
 int i,iolen,escflag,bcnt,incount;
+unsigned short datalen;
 unsigned char c;
 unsigned char cmdbuf[4096];
 
@@ -124,7 +99,8 @@ bcnt=blen;
 memcpy(cmdbuf,incmdbuf,blen);
 *((unsigned short*)(cmdbuf+bcnt))=crc16(cmdbuf,bcnt);
 bcnt+=2;
- 
+
+// Пребразование данных с экранированием ESC-последовательностей
 iolen=0;
 for(i=0;i<bcnt;i++) {
    switch (cmdbuf[i]) {
@@ -142,20 +118,39 @@ for(i=0;i<bcnt;i++) {
        iobuf[iolen++]=cmdbuf[i];
    }
  }
-iobuf[iolen++]=0x7e;
+iobuf[iolen++]=0x7e; // завершающий байт
 iobuf[iolen]=0;
  
-tcflush(siofd,TCIOFLUSH);  // сбрасываем недчитанный буфер ввода
-//fprintf(stderr,"\n -- send: %i --",iolen);
-//errdump(iobuf,iolen,0);
+// отсылка команды в модем
+tcflush(siofd,TCIOFLUSH);  // сбрасываем недочитанный буфер ввода
 if (write(siofd,iobuf,iolen) == 0) return 0;  
 tcdrain(siofd);  // ждем окончания вывода блока
 
-iolen=0;
-escflag=0;
 incount=0;
-while (read(siofd,&c,1) == 1) {
-  incount++;
+if ((read(siofd,&c,1) != 1) || (c != 0x7e)) return 0; // модем не ответил или ответил неправильно
+iobuf[incount++]=0x7e;
+
+// чтение массива данных единым блоком при обработке команды 03
+if (cmdbuf[0] == 3) {
+ datalen=*((unsigned short*)(cmdbuf+5)); // заказанная длина поля данных
+ if (read(siofd,cmdbuf+1,datalen+7) != (datalen+7)) {
+   printf("\nСлишком короткий ответ от модема\n");
+   exit(0);
+ }  
+ incount=incount+datalen+7;
+}
+
+// принимаем оставшийся хвост буфера
+while (read(siofd,&c,1) == 1)  {
+ cmdbuf[incount++]=c;
+ if (c == 0x7e) break;
+}
+
+// Преобразование принятого буфера для удаления ESC-знаков
+escflag=0;
+iolen=0;
+for (i=0;i<incount;i++) { 
+  c=cmdbuf[i];
   if ((c == 0x7e)&&(iolen != 0)) {
     iobuf[iolen++]=0x7e;
     break;
@@ -170,10 +165,8 @@ while (read(siofd,&c,1) == 1) {
   }  
   iobuf[iolen++]=c;
 }  
-//fprintf(stderr,"\n --- received: %i-----\n",incount);
-//errdump(iobuf,(iolen<16)?iolen:16,0);
 return iolen;
- 
+
 }
 
 
