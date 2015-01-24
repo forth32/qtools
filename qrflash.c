@@ -26,7 +26,7 @@
 //*************************************
 //* Чтение блока данных
 //*************************************
-void read_block(int block,int blocksize,FILE* out) {
+void read_block(int block,int sectorsize,FILE* out) {
 
 unsigned char iobuf[4096];  
 int page,sec;
@@ -39,14 +39,15 @@ for(page=0;page<ppb;page++)  {
    mempoke(nand_exec,0x1); 
 //   nandwait();
  retry:  
-   if (!memread(iobuf,sector_buf, blocksize)) { // выгребаем порцию данных
+   if (!memread(iobuf,sector_buf, sectorsize)) { // выгребаем порцию данных
      printf("\n memread вернул ошибку чтения секторного буфера.");
      printf("\n block = %08x  page=%08x  sector=%08x",block,page,sec);
      printf("\n Повторить операцию? (y,n):");
      if ((getchar() == 'y')||(getchar() == 'Y')) goto retry;
+     memset(iobuf,0,sectorsize);
      exit(0);
    }  
-   fwrite(iobuf,1,blocksize,out);
+   fwrite(iobuf,1,sectorsize,out);
   }
  } 
 } 
@@ -62,7 +63,7 @@ unsigned int i,sec,bcnt,iolen,page,block;
 int res;
 unsigned char* sptr;
 unsigned int start=0,len=1,helloflag=0,opt;
-unsigned int blocksize=512;
+unsigned int sectorsize=512;
 FILE* out;
 FILE* part=0;
 
@@ -95,7 +96,7 @@ while ((opt = getopt(argc, argv, "p:a:l:o:ixs:")) != -1) {
      break;
      
    case 'x':
-     blocksize+=64;
+     sectorsize+=64;
      break;
      
    case 's':
@@ -166,10 +167,11 @@ if (part != 0) {
     printf("\r%08x  %08x  %08x  %s\n",start,len,attr,partname);
     for(block=start;block<(start+len);block++) {
        printf("\r * %08x",block); fflush(stdout);
-       read_block(block,blocksize,out);
+       read_block(block,sectorsize,out);
     }
     fclose(out);
  }
+ printf("\n"); 
  return; // все разделы прочитаны
     
 }
@@ -182,7 +184,7 @@ printf("\n");
 // по блокам
 for (block=start;block<(start+len);block++) {
   printf("\r %08x",block); fflush(stdout);
-  read_block(block,blocksize,out);
+  read_block(block,sectorsize,out);
 } 
 printf("\n"); 
 } 
