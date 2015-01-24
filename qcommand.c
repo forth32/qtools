@@ -210,8 +210,16 @@ int i,iolen;
 char devname[50]="/dev/ttyUSB0";
 int opt,helloflag=0;
 
-while ((opt = getopt(argc, argv, "p:ic:")) != -1) {
+while ((opt = getopt(argc, argv, "p:ic:h")) != -1) {
   switch (opt) {
+   case 'h': 
+     printf("\nИнтерактивная оболочка для ввода команд в загрузчик\n\n\
+Допустимы следующие ключи:\n\n\
+-p <tty>      - указывает имя устройства последовательного порта для общения с загрузчиком\n\
+-i            - запускает процедуру HELLO для инициализации загрузчика\n\
+-c \"nn nn ...\"- запускает командный пакет из указанных байтов и завершает работу\n");
+    return;
+     
    case 'p':
     strcpy(devname,optarg);
     break;

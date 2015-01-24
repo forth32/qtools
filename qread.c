@@ -27,8 +27,18 @@ FILE* out;
 char hellocmd[]="\x01QCOM fast download protocol host\x03###";
 char devname[]="/dev/ttyUSB0";
 
-while ((opt = getopt(argc, argv, "p:a:l:o:i")) != -1) {
+while ((opt = getopt(argc, argv, "p:a:l:o:ih")) != -1) {
   switch (opt) {
+   case 'h': 
+     printf("\n Утилита предназначена для чтения адресного пространства модема\n\n\
+Допустимы следующие ключи:\n\n\
+-p <tty>  - указывает имя устройства последовательного порта для общения с загрузчиком\n\
+-o <file> - имя выходного файла (по умолчанию qmem.bin)\n\n\
+-i        - запускает процедуру HELLO для инициализации загрузчика\n\
+-a <adr>  - начальный адрес\n\
+-l <num>  - размер читаемого участка\n");
+    return;
+     
    case 'p':
     strcpy(devname,optarg);
     break;
