@@ -37,7 +37,7 @@ for(page=0;page<ppb;page++)  {
   // по секторам  
   for(sec=0;sec<4;sec++) {
    mempoke(nand_exec,0x1); 
-//   nandwait();
+   nandwait();
  retry:  
    if (!memread(iobuf,sector_buf, sectorsize)) { // выгребаем порцию данных
      printf("\n memread вернул ошибку чтения секторного буфера.");
@@ -51,6 +51,34 @@ for(page=0;page<ppb;page++)  {
   }
  } 
 } 
+
+//*************************************
+//* чтение таблицы разделв из flash
+//*************************************
+int load_ptable(char* ptable) {
+  
+memset(ptable,0,512); // обнуляем таблицу
+flash_read(2, 1, 0);  // блок 2 страница 1 - здесь лежит таблица разделов  
+return memread(ptable,sector_buf, 512);
+}
+
+//*****************************
+//* чтение сырого флеша
+//*****************************
+void read_raw(int start,int len,int sectorsize,FILE* out) {
+  
+int block;  
+
+printf("\n Чтение области %08x - %08x\n",start,start+len);
+printf("\n");
+// главыный цикл
+// по блокам
+for (block=start;block<(start+len);block++) {
+  printf("\r %08x",block); fflush(stdout);
+  read_block(block,sectorsize,out);
+} 
+printf("\n"); 
+}
 
 
 //@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
@@ -66,15 +94,35 @@ unsigned int start=0,len=1,helloflag=0,opt;
 unsigned int sectorsize=512;
 FILE* out;
 FILE* part=0;
+int partflag=0;  // 0 - сырой флеш, 1 - таблица разделов из файла, 2 - таблица разделов из флеша
+int eccflag=1;  // 1 - отключить ECC,  0 - включить
 
 int attr; // арибуты
 int npar; // число разедлов в таблице
 
 char hellocmd[]="\x01QCOM fast download protocol host\x03###";
 char devname[]="/dev/ttyUSB0";
+unsigned char ptable[520]; // таблица разделов
 
-while ((opt = getopt(argc, argv, "p:a:l:o:ixs:")) != -1) {
+
+while ((opt = getopt(argc, argv, "hp:a:l:o:ixs:e")) != -1) {
   switch (opt) {
+   case 'h': 
+    printf("\n  Утилита предназначена для чтения образа флеш через модифицированный загрузчик\n\
+Допустимы следующие ключи:\n\n\
+-p <tty>  - указывает имя устройства последовательного порта для общения с загрузчиком\n\
+-e        - включает коррекцию ECC при чтении (по умолчанию выключаена)\n\
+-i        - запускает процедуру HELLO для инициализации загрузчика\n\
+-x        - читает полный сектор - данные+obb. Без ключа читает только данные.\n\n\
+Для режима неформатированного чтения:\n\
+-a <blk>  - начальный номер читаемого блока (по умолчанию 0)\n\
+-l <num>  - число читаемых блоков\n\
+-o <file> - имя выходного файла (по умолчанию qflash.bin)\n\n\
+Для режима чтения разделов\n\
+-s <file> - взять карту разделов из указанного файла\n\
+-s @      - взять карту разделов из флеша (блок 2 страница 1 сектор 0)\n\n");
+    return;
+    
    case 'p':
     strcpy(devname,optarg);
     break;
@@ -100,11 +148,18 @@ while ((opt = getopt(argc, argv, "p:a:l:o:ixs:")) != -1) {
      break;
      
    case 's':
-     part=fopen(optarg,"r");
-     if (part == 0) {
-       printf("\nОшибка открытия файла таблицы разделов\n");
-       return;
-     }
+     if (optarg[0] == '@')  partflag=2; // загружаем таблицу разделов из флеша
+     else {
+       // загружаем таблицу разделов из файла
+       partflag=1;
+       part=fopen(optarg,"r");
+       if (part == 0) {
+         printf("\nОшибка открытия файла таблицы разделов\n");
+         return;
+       } 
+       fread(ptable,512,1,part); // читаем таблицу разделов из файла
+       fclose(part);
+     } 
      break;
   }
 }  
@@ -132,9 +187,9 @@ if (helloflag) {
   printf("\n Flash: %s",iobuf+0x2d);
 }
 
-out=fopen(filename,"w");
+if (partflag == 2) load_ptable(ptable); // загружаем таблицу разделов
 
-mempoke(nand_cfg1,0x6745d); // ECC off
+mempoke(nand_cfg1,0x6745c|eccflag); // ECC on/off
 mempoke(nand_cs,4); // data mover
 
 mempoke(nand_cmd,1); // Сброс всех операций контроллера
@@ -143,48 +198,42 @@ nandwait();
 // устанавливаем код команды
 mempoke(nand_cmd,0x34); // чтение data+ecc+spare
 
-//###################################################333
+//###################################################
+// Режим чтения сырого флеша
+//###################################################
+if (partflag == 0) { 
+  out=fopen(filename,"w");
+  read_raw(start,len,sectorsize,out);
+  return;
+}  
+
+
+//###################################################
 // Режим чтения по таблице разделов
-//###################################################333
-if (part != 0) {
- res=fread(iobuf,1,8,part);
- if((res != 8) || (strncmp(iobuf,"\xAA\x73\xEE\x55\xDB\xBD\x5E\xE3",8) != 0)) {
-   printf("\nФайл не является таблицей разделов\n");
+//###################################################
+
+if (strncmp(ptable,"\xAA\x73\xEE\x55\xDB\xBD\x5E\xE3",8) != 0) {
+   printf("\nТаблица разделов повреждена\n");
    return;
- }
- fseek(part,4,SEEK_CUR); // пропускаем таблицу разделов
- res=fread(&npar,1,4,part); // Число разделов
- printf("\n Число разделов: %i",npar);
- printf("\n  адрес    размер   атрибуты ------ Имя------\n");     
- for(i=0;i<npar;i++) {
-    res=fread(partname,1,16,part); // имя
-    res=fread(&start,1,4,part); // адрес
-    res=fread(&len,1,4,part);  // размер
-    res=fread(&attr,1,4,part);  // атрибуты
+}
+npar=*((unsigned int*)&ptable[12]);
+printf("\n Число разделов: %i",npar);
+printf("\n  адрес    размер   атрибуты ------ Имя------\n");     
+for(i=0;i<npar;i++) {
+    strncpy(partname,ptable+16+28*i,16);       // имя
+    start=*((unsigned int*)&ptable[32+28*i]);   // адрес
+    len=*((unsigned int*)&ptable[36+28*i]);     // размер
+    attr=*((unsigned int*)&ptable[40+28*i]);    // атрибуты
     if (((start+len) >maxblock)||(len == 0xffffffff)) len=maxblock-start; // если длина - FFFF, или выходит за пределы флешки
-    sprintf(iobuf,"%02i-%s.bin",i,partname); // фрмируем имя файла
-    out=fopen(iobuf,"w");  // открываем выхдной файл
+    sprintf(iobuf,"%02i-%s.bin",i,partname); // формируем имя файла
+    out=fopen(iobuf,"w");  // открываем выходной файл
     printf("\r%08x  %08x  %08x  %s\n",start,len,attr,partname);
     for(block=start;block<(start+len);block++) {
        printf("\r * %08x",block); fflush(stdout);
        read_block(block,sectorsize,out);
     }
     fclose(out);
- }
- printf("\n"); 
- return; // все разделы прочитаны
-    
 }
-//###################################################333
-// Режим чтения сырого флеша
-//###################################################333
-printf("\n Чтение области %08x - %08x\n",start,start+len);
-printf("\n");
-// главыный цикл
-// по блокам
-for (block=start;block<(start+len);block++) {
-  printf("\r %08x",block); fflush(stdout);
-  read_block(block,sectorsize,out);
-} 
 printf("\n"); 
+    
 } 
