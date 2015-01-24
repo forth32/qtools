@@ -133,11 +133,15 @@ if (write(siofd,iobuf,iolen) == 0) return 0;
 tcdrain(siofd);  // ждем окончания вывода блока
 
 incount=0;
-if ((read(siofd,&c,1) != 1) || (c != 0x7e)) {
+if (read(siofd,&c,1) != 1) {
   printf("\n Нет ответа от модема");
   return 0; // модем не ответил или ответил неправильно
 }
-iobuf[incount++]=0x7e;
+//if (c != 0x7e) {
+//  printf("\n Первый байт ответа - не 7e");
+//  return 0; // модем не ответил или ответил неправильно
+//}
+iobuf[incount++]=c;
 
 // чтение массива данных единым блоком при обработке команды 03
 if (cmdbuf[0] == 3) {
