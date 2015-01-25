@@ -212,7 +212,7 @@ return 1;
 //***********************************8
 
 int memread(char* membuf,int adr, int len) {
-char iobuf[600];
+char iobuf[1600];
 char cmdbuf[]={3,0,0,0,0,0,2};
 int i,iolen;
 int blklen=512;
