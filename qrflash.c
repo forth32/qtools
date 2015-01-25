@@ -221,7 +221,7 @@ if (!open_port(devname))  {
 }
 
 if ((truncflag == 1)&&(sectorsize>512)) {
-  printf("\nКлючи -t и -x несовместимы");
+  printf("\nКлючи -t и -x несовместимы\n");
   return;
 }  
 if (helloflag) hello();
