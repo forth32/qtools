@@ -108,7 +108,8 @@ bcnt+=2;
 
 // Пребразование данных с экранированием ESC-последовательностей
 iolen=0;
-for(i=0;i<bcnt;i++) {
+iobuf[iolen++]=cmdbuf[0];  // первый байт копируем без модификаций
+for(i=1;i<bcnt;i++) {
    switch (cmdbuf[i]) {
      case 0x7e:
        iobuf[iolen++]=0x7d;
@@ -304,4 +305,25 @@ for(i=0;i<(sect+1);i++) {
 }  
 
 return 1;
+}
+
+//**********************************************8
+//* Процедура активации загрузчика hello
+//**********************************************8
+void hello() {
+
+int i;  
+char rbuf[1024];
+char hellocmd[]="\x01QCOM fast download protocol host\x03### ";
+
+printf("Отсылка hello...");
+i=send_cmd(hellocmd,strlen(hellocmd),rbuf);
+if (rbuf[1] != 2) {
+   printf(" hello возвратил ошибку!\n");
+   dump(rbuf,i,0);
+   return;
+}  
+i=rbuf[0x2c];
+rbuf[0x2d+i]=0;
+printf("ok\nFlash: %s\n",rbuf+0x2d);
 }

@@ -4,7 +4,7 @@ CFLAGS   = -O2 -g
 
 .PHONY: all clean
 
-all:    qcommand qread qrflash
+all:    qcommand qread qrflash qdload
 
 clean: 
 	rm *.o
@@ -18,3 +18,8 @@ qread: qread.o qcio.o
 
 qrflash: qrflash.o qcio.o
 	@gcc $^ -o $@ $(LIBS)
+
+qdload: qdload.o qcio.o
+	@gcc $^ -o $@ $(LIBS)
+	
+	

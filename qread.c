@@ -24,7 +24,6 @@ unsigned int adr=0,len=0x200,endadr,blklen=512,helloflag=0,opt;
 FILE* out;
 
 
-char hellocmd[]="\x01QCOM fast download protocol host\x03###";
 char devname[]="/dev/ttyUSB0";
 
 while ((opt = getopt(argc, argv, "p:a:l:o:ih")) != -1) {
@@ -73,18 +72,8 @@ if (!open_port(devname))  {
 
 out=fopen(filename,"w");
 
-if (helloflag) {
-  printf("\n Отсылка hello...");
-  iolen=send_cmd(hellocmd,strlen(hellocmd),iobuf);
-  if (iobuf[1] != 2) {
-    printf("\nhello возвратил ошибку!\n");
-    dump(iobuf,iolen,0);
-    return;
-  }  
-  i=iobuf[0x2c];
-  iobuf[0x2d+i]=0;
-  printf("\n Flash: %s",iobuf+0x2d);
-}
+if (helloflag) hello();
+
 endadr=adr+len;
 printf("\n Чтение области %08x - %08x\n",adr,endadr);
 cmdbuf[0]=3; // команда чтения

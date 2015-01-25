@@ -132,7 +132,6 @@ int truncflag=0;  //  1 - отрезать все FF от конца разде�
 int attr; // арибуты
 int npar; // число разедлов в таблице
 
-char hellocmd[]="\x01QCOM fast download protocol host\x03###";
 char devname[]="/dev/ttyUSB0";
 unsigned char ptable[1100]; // таблица разделов
 
@@ -221,18 +220,11 @@ if (!open_port(devname))  {
    return; 
 }
 
-if (helloflag) {
-  printf("\n Отсылка hello...");
-  iolen=send_cmd(hellocmd,strlen(hellocmd),iobuf);
-  if (iobuf[1] != 2) {
-    printf("\nhello возвратил ошибку!\n");
-    dump(iobuf,iolen,0);
-    return;
-  }  
-  i=iobuf[0x2c];
-  iobuf[0x2d+i]=0;
-  printf("\n Flash: %s",iobuf+0x2d);
-}
+if ((truncflag == 1)&&(sectorsize>512)) {
+  printf("\nКлючи -t и -x несовместимы");
+  return;
+}  
+if (helloflag) hello();
 
 if (partflag == 2) load_ptable(ptable); // загружаем таблицу разделов
 
@@ -286,6 +278,7 @@ for(i=0;i<npar;i++) {
       // Все разделы или один конкретный  
       if ((partnumber == -1) || (partnumber==i)) {
         sprintf(filename,"%02i-%s.bin",i,partname); // формируем имя файла
+	if (filename[4] == ':') filename[4]='-';    // заменяем : на -
         out=fopen(filename,"w");  // открываем выходной файл
         for(block=start;block<(start+len);block++) {
           printf("\r * %08x",block); fflush(stdout);

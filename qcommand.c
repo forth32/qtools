@@ -41,27 +41,6 @@ printf("\n");
 }
 
 
-//**********************************************8
-//* Процедура активации загрузчика hello
-//**********************************************8
-void hello() {
-
-int i;  
-char rbuf[1024];
-char hellocmd[]="\x01QCOM fast download protocol host\x03### ";
-
-printf("Отсылка hello...");
-i=send_cmd(hellocmd,strlen(hellocmd),rbuf);
-if (rbuf[1] != 2) {
-   printf(" hello возвратил ошибку!\n");
-   dump(rbuf,i,0);
-   return;
-}  
-i=rbuf[0x2c];
-rbuf[0x2d+i]=0;
-printf("ok\nFlash: %s\n",rbuf+0x2d);
-}
-
 
 //*********************************************8
 //  Передача загрузчика в модем
