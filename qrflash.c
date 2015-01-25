@@ -18,7 +18,7 @@
 //*************************************
 void read_block(int block,int sectorsize,FILE* out,FILE* log) {
 
-unsigned char iobuf[4096];  
+unsigned char iobuf[14096];  
 int page,sec;
  // цикл по страницам
 for(page=0;page<ppb;page++)  {

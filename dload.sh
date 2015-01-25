@@ -34,4 +34,4 @@ while [ ! -c $PORT ]
 # Заливаем загрузчик
 echo download mode entered
 sleep 2
-./qdload -p $PORT -i NPRGpatched2.bin
+./qdload -p $PORT -i NPRGpatched.bin

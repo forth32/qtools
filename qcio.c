@@ -98,7 +98,7 @@ int send_cmd(unsigned char* incmdbuf, int blen, unsigned char* iobuf) {
 int i,iolen,escflag,bcnt,incount;
 unsigned short datalen;
 unsigned char c;
-unsigned char cmdbuf[4096];
+unsigned char cmdbuf[14096];
 unsigned int res;
 
 bcnt=blen;
@@ -212,7 +212,7 @@ return 1;
 //***********************************8
 
 int memread(char* membuf,int adr, int len) {
-char iobuf[1600];
+char iobuf[11600];
 char cmdbuf[]={3,0,0,0,0,0,2};
 int i,iolen;
 int blklen=512;
