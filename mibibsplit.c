@@ -6,6 +6,7 @@ FILE* in;
 FILE* out;
 unsigned char buf[0x40000];
 int i;
+int npar;
 
 if (argc != 2) {
   printf("\n Не указано имя файла MIBIB\n");
@@ -24,18 +25,15 @@ for(i=0x3ffff;i>0;i--) {
   if (buf[i] != 0xff) break;
 }
 out=fopen("sbl1.mbn","w");
-fwrite(buf,i,1,out);
+fwrite(buf,i+1,1,out);
 fclose (out);
   
 // читаем таблицу разделов
 fseek(in,0x1000,SEEK_CUR);
 fread(buf,2048,1,in);
-// ищем хвост
-for(i=0x7ff;i>0;i--) {
-  if (buf[i] != 0xff) break;
-}
-i=(i+16)&0xfffffff0; // округляем хвост по границе 16 байт
+npar=*((unsigned int*)&buf[12]);
+
 out=fopen("partition.mbn","w");
-fwrite(buf,i,1,out);
+fwrite(buf,16+28*npar,1,out);
 fclose (out);
 }
