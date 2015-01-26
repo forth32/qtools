@@ -263,8 +263,10 @@ int iolen;
 iolen=send_cmd(cmdbuf,10,iobuf);
 
 if (iobuf[2] != 06) {
-  printf("\n Загрузчик не поддерживает команду 03:\n");
-  dump(iobuf,iolen,0);
+  printf("\n Загрузчик не поддерживает команду 05:\n");
+  printf("\n cmdbuf: "); dump(cmdbuf,10,0);
+  printf("\n ответ : "); dump(iobuf,iolen,0);
+  printf("\n");
   return 0;
 }  
 return 1;
