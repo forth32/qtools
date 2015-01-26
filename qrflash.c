@@ -178,7 +178,7 @@ while ((opt = getopt(argc, argv, "hp:a:l:o:ixs:ef:mt")) != -1) {
      break;
      
    case 'x':
-     sectorsize+=64;
+     sectorsize+=16;
      break;
      
    case 's':
