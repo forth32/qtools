@@ -6,6 +6,11 @@
 #
 PORT=$1
 if [ -z "$PORT" ]; then PORT=/dev/ttyUSB0; fi
+
+LDR=$2
+if [ -z "$LDR" ]; then LDR=loaders/NPRG9x15p.bin; fi
+
+
 echo Diagnostic port: $PORT
 
 # Ждем появления порта в системе
@@ -34,4 +39,4 @@ while [ ! -c $PORT ]
 # Заливаем загрузчик
 echo download mode entered
 sleep 2
-./qdload -p $PORT -i NPRGpatched.bin
+./qdload -p $PORT -i $LDR
