@@ -22,3 +22,5 @@ int flash_read(int block, int page, int sect);
 void setaddr(int block, int page);
 void nanwait();
 void hello();
+
+extern int siofd;
