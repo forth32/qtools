@@ -130,7 +130,7 @@ iobuf[iolen]=0;
  
 // отсылка команды в модем
 tcflush(siofd,TCIOFLUSH);  // сбрасываем недочитанный буфер ввода
-//write(siofd,"\x7e",1);
+write(siofd,"\x7e",1);
 if (write(siofd,iobuf,iolen) == 0) return 0;  
 tcdrain(siofd);  // ждем окончания вывода блока
 
