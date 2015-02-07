@@ -9,6 +9,10 @@
 #include <unistd.h>
 #include "qcio.h"
 
+// флаг посылки префикса 7E
+int prefixflag=1;
+
+
 //@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 //* Интерактивная оболочка для ввода команд в загрузчик
 //@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
@@ -34,7 +38,7 @@ do {
   cmdbuf[bcnt++]=i;
   sptr=strtok(0," ");
 } while (sptr != 0);
-iolen=send_cmd(cmdbuf,bcnt,iobuf);
+iolen=send_cmd_base(cmdbuf,bcnt,iobuf,prefixflag);
 printf("\n ---- ответ --- \n");
 dump(iobuf,iolen,0);
 printf("\n");
@@ -189,13 +193,14 @@ int i,iolen;
 char devname[50]="/dev/ttyUSB0";
 int opt,helloflag=0;
 
-while ((opt = getopt(argc, argv, "p:ic:h")) != -1) {
+while ((opt = getopt(argc, argv, "p:ic:he")) != -1) {
   switch (opt) {
    case 'h': 
      printf("\nИнтерактивная оболочка для ввода команд в загрузчик\n\n\
 Допустимы следующие ключи:\n\n\
 -p <tty>      - указывает имя устройства последовательного порта для общения с загрузчиком\n\
 -i            - запускает процедуру HELLO для инициализации загрузчика\n\
+-e            - запрещает передачу префикса 7E перед командой\n\
 -c \"nn nn ...\"- запускает командный пакет из указанных байтов и завершает работу\n");
     return;
      
@@ -205,6 +210,10 @@ while ((opt = getopt(argc, argv, "p:ic:h")) != -1) {
     
    case 'i':
      helloflag=1;
+     break;
+     
+   case 'e':
+     prefixflag=0;
      break;
      
    case 'c':

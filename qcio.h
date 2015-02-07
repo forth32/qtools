@@ -14,6 +14,7 @@
 
 void dump(char buffer[],int len,long base);
 int send_cmd(unsigned char* incmdbuf, int blen, unsigned char* iobuf);
+int send_cmd_base(unsigned char* incmdbuf, int blen, unsigned char* iobuf, int prefixflag);
 int open_port(char* devname);
 int memread(char* membuf,int adr, int len);
 int mempeek(int adr);

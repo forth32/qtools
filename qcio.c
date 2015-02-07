@@ -92,8 +92,11 @@ return (~crc)&0xffff;
 
 //***************************************************
 //*  Отсылка команды в порт и получение результата  *
+//*
+//* prefixflag=0 - не посылать префикс 7E
+//*            1 - посылать
 //***************************************************
-int send_cmd(unsigned char* incmdbuf, int blen, unsigned char* iobuf) {
+int send_cmd_base(unsigned char* incmdbuf, int blen, unsigned char* iobuf, int prefixflag) {
   
 int i,iolen,escflag,bcnt,incount;
 unsigned short datalen;
@@ -130,7 +133,7 @@ iobuf[iolen]=0;
  
 // отсылка команды в модем
 tcflush(siofd,TCIOFLUSH);  // сбрасываем недочитанный буфер ввода
-write(siofd,"\x7e",1);
+if (prefixflag) write(siofd,"\x7e",1);  // отсылаем префикс если надо
 if (write(siofd,iobuf,iolen) == 0) return 0;  
 tcdrain(siofd);  // ждем окончания вывода блока
 
@@ -186,6 +189,15 @@ return iolen;
 
 }
 
+
+
+
+//***************************************************
+//*    Отсылка команды с префиксом
+//***************************************************
+int send_cmd(unsigned char* incmdbuf, int blen, unsigned char* iobuf) {
+   send_cmd_base(incmdbuf, blen, iobuf,1);
+}
 
 //*************************************
 // Настройка Последовательного порта
