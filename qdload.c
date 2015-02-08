@@ -60,13 +60,13 @@ if (!open_port(devname))  {
 }
 
 printf("\n Загрузка файла %s\n Адрес загрузки: %08x",argv[optind],start);
-iolen=send_cmd(cmd1,1,iobuf);
+iolen=send_cmd_base(cmd1,1,iobuf,1);
 if (iolen != 5) {
    printf("\n Модем не находится в режиме загрузки\n");
 //   dump(iobuf,iolen,0);
    return;
 }   
-iolen=send_cmd(cmd2,1,iobuf);
+iolen=send_cmd_base(cmd2,1,iobuf,1);
 fstat(fileno(in),&fstatus);
 printf("\n Размер файла: %i\n",fstatus.st_size);
 partsize=dlblock;
@@ -85,7 +85,7 @@ for(i=0;i<fstatus.st_size;i+=dlblock) {
    // вписываем размер блока 
    cmddl[5]=(partsize>>8)&0xff;
    cmddl[6]=(partsize)&0xff;
- iolen=send_cmd(cmddl,partsize+7,iobuf);
+ iolen=send_cmd_base(cmddl,partsize+7,iobuf,1);
  printf("\r Загружено: %i",i+partsize);
 // dump(iobuf,iolen,0);
 } 
@@ -95,7 +95,7 @@ cmdstart[1]=(start>>24)&0xff;
 cmdstart[2]=(start>>16)&0xff;
 cmdstart[3]=(start>>8)&0xff;
 cmdstart[4]=(start)&0xff;
-iolen=send_cmd(cmdstart,5,iobuf);
+iolen=send_cmd_base(cmdstart,5,iobuf,1);
 usleep(200000);   // ждем инициализации загрузчика
 if (helloflag) hello();
 printf("\n");
