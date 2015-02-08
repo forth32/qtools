@@ -134,7 +134,7 @@ iobuf[iolen]=0;
 // отсылка команды в модем
 tcflush(siofd,TCIOFLUSH);  // сбрасываем недочитанный буфер ввода
 if (prefixflag) write(siofd,"\x7e",1);  // отсылаем префикс если надо
-if (write(siofd,iobuf,iolen) == 0) return 0;  
+if (write(siofd,iobuf,iolen) == 0) {   printf("\n Ошибка записи команды");return 0;  }
 tcdrain(siofd);  // ждем окончания вывода блока
 
 incount=0;
@@ -196,7 +196,7 @@ return iolen;
 //*    Отсылка команды с префиксом
 //***************************************************
 int send_cmd(unsigned char* incmdbuf, int blen, unsigned char* iobuf) {
-   send_cmd_base(incmdbuf, blen, iobuf,1);
+   return send_cmd_base(incmdbuf, blen, iobuf,0);
 }
 
 //*************************************
@@ -240,6 +240,7 @@ for(i=0;i<len;i+=512)  {
  iolen=send_cmd(cmdbuf,7,iobuf);
  if (iolen <blklen) {
    printf("\n Ошибка в процессе обработки команды, iolen=%i\n",iolen);
+   memcpy(membuf+i,iobuf+6,blklen);
    return 0;
  }  
  memcpy(membuf+i,iobuf+6,blklen);
