@@ -23,5 +23,6 @@ int flash_read(int block, int page, int sect);
 void setaddr(int block, int page);
 void nanwait();
 void hello();
-
+void load_ptable(char* ptable);
 extern int siofd;
+void port_timeout(int timeout);

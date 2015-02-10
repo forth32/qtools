@@ -16,7 +16,7 @@
 //*************************************
 //* Чтение блока данных
 //*************************************
-void read_block(int block,int sectorsize,FILE* out,FILE* log) {
+void read_block(int block,int sectorsize,FILE* out) {
 
 unsigned char iobuf[14096];  
 int page,sec;
@@ -32,7 +32,6 @@ for(page=0;page<ppb;page++)  {
    if (!memread(iobuf,sector_buf, sectorsize)) { // выгребаем порцию данных
      printf("\n memread вернул ошибку чтения секторного буфера.");
      printf("\n block = %08x  page=%08x  sector=%08x",block,page,sec);
-     fprintf(log,"\n block = %08x  page=%08x  sector=%08x",block,page,sec);
      printf("\n Повторить операцию? (y,n):");
      if ((getchar() == 'y')||(getchar() == 'Y')) goto retry;
      memset(iobuf,0,sectorsize);
@@ -45,7 +44,7 @@ for(page=0;page<ppb;page++)  {
 //****************************************************************
 //* Чтение блока данных с восстановлением китайского изврата
 //****************************************************************
-read_block_resequence(int block, FILE* out,FILE* log) {
+read_block_resequence(int block, FILE* out) {
 unsigned char iobuf[4096];  
 int page,sec;
  // цикл по страницам
@@ -60,7 +59,6 @@ for(page=0;page<ppb;page++)  {
    if (!memread(iobuf,sector_buf,576)) { // выгребаем порцию данных
      printf("\n memread вернул ошибку чтения секторного буфера.");
      printf("\n block = %08x  page=%08x  sector=%08x",block,page,sec);
-     fprintf(log,"\n block = %08x  page=%08x  sector=%08x",block,page,sec);
      printf("\n Повторить операцию? (y,n):");
      if ((getchar() == 'y')||(getchar() == 'Y')) goto retry;
      memset(iobuf,0,512);
@@ -77,22 +75,11 @@ for(page=0;page<ppb;page++)  {
   
 
 
-//*************************************
-//* чтение таблицы разделв из flash
-//*************************************
-void load_ptable(char* ptable) {
-  
-memset(ptable,0,512); // обнуляем таблицу
-flash_read(2, 1, 0);  // блок 2 страница 1 - здесь лежит таблица разделов  
-memread(ptable,sector_buf, 512);
-flash_read(2, 1, 1);  // продолжение таблицы разделов
-memread(ptable+512,sector_buf, 512);
-}
 
 //*****************************
 //* чтение сырого флеша
 //*****************************
-void read_raw(int start,int len,int sectorsize,FILE* out, FILE* log) {
+void read_raw(int start,int len,int sectorsize,FILE* out) {
   
 int block;  
 
@@ -102,7 +89,7 @@ printf("\n");
 // по блокам
 for (block=start;block<(start+len);block++) {
   printf("\r %08x",block); fflush(stdout);
-  read_block(block,sectorsize,out,log);
+  read_block(block,sectorsize,out);
 } 
 printf("\n"); 
 }
@@ -122,7 +109,6 @@ unsigned int start=0,len=1,helloflag=0,opt;
 unsigned int sectorsize=512;
 FILE* out;
 FILE* part=0;
-FILE* log;
 int partflag=0;  // 0 - сырой флеш, 1 - таблица разделов из файла, 2 - таблица разделов из флеша
 int eccflag=1;  // 1 - отключить ECC,  0 - включить
 int partnumber=-1; // номер раздела для чтения, -1 - все разделы
@@ -237,15 +223,13 @@ nandwait();
 // устанавливаем код команды
 mempoke(nand_cmd,0x34); // чтение data+ecc+spare
 
-log=fopen("qrflash_error.log","w");
-fprintf(log,"Список ошибкок чтения qrflash:");
 
 //###################################################
 // Режим чтения сырого флеша
 //###################################################
 if (partflag == 0) { 
   out=fopen(filename,"w");
-  read_raw(start,len,sectorsize,out,log);
+  read_raw(start,len,sectorsize,out);
   return;
 }  
 
@@ -284,10 +268,10 @@ for(i=0;i<npar;i++) {
           printf("\r * %08x",block); fflush(stdout);
           if ((attr != 0x1ff)||(sectorsize>512)) 
 	     // сырое чтение или чтение неизварщенных разделов
-	     read_block(block,sectorsize,out,log);
+	     read_block(block,sectorsize,out);
 	  else 
 	     // чтение извращенных разделов
-	     read_block_resequence(block,out,log);
+	     read_block_resequence(block,out);
         }
      // Обрезка всех FF хвоста
       fclose(out);

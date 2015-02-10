@@ -210,7 +210,7 @@ siofd = open(devname, O_RDWR | O_NOCTTY |O_SYNC);
 if (siofd == -1) return 0;
 
 bzero(&sioparm, sizeof(sioparm)); // готовим блок атрибутов termios
-sioparm.c_cflag = B115200 | CS8 | CLOCAL | CREAD | PARENB | PARODD;
+sioparm.c_cflag = B115200 | CS8 | CLOCAL | CREAD ;
 sioparm.c_iflag = 0;  // INPCK;
 sioparm.c_oflag = 0;
 sioparm.c_lflag = 0;
@@ -219,6 +219,25 @@ sioparm.c_cc[VMIN]=0;
 tcsetattr(siofd, TCSANOW, &sioparm);
 return 1;
 }
+
+//*************************************
+// Настройка Последовательного порта
+//*************************************
+
+void port_timeout(int timeout) {
+
+
+bzero(&sioparm, sizeof(sioparm)); // готовим блок атрибутов termios
+sioparm.c_cflag = B115200 | CS8 | CLOCAL | CREAD ;
+sioparm.c_iflag = 0;  // INPCK;
+sioparm.c_oflag = 0;
+sioparm.c_lflag = 0;
+sioparm.c_cc[VTIME]=timeout; // timeout  
+sioparm.c_cc[VMIN]=0;  
+tcsetattr(siofd, TCSANOW, &sioparm);
+}
+
+
 
 //***********************************8
 //* Чтение области памяти
@@ -346,4 +365,16 @@ if (rbuf[1] != 2) {
 i=rbuf[0x2c];
 rbuf[0x2d+i]=0;
 printf("ok\nFlash: %s\n",rbuf+0x2d);
+}
+
+//*************************************
+//* чтение таблицы разделв из flash
+//*************************************
+void load_ptable(char* ptable) {
+  
+memset(ptable,0,512); // обнуляем таблицу
+flash_read(2, 1, 0);  // блок 2 страница 1 - здесь лежит таблица разделов  
+memread(ptable,sector_buf, 512);
+flash_read(2, 1, 1);  // продолжение таблицы разделов
+memread(ptable+512,sector_buf, 512);
 }
