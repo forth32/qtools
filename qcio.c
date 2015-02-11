@@ -101,7 +101,7 @@ int send_cmd_base(unsigned char* incmdbuf, int blen, unsigned char* iobuf, int p
 int i,iolen,escflag,bcnt,incount;
 unsigned short datalen;
 unsigned char c;
-unsigned char cmdbuf[14096];
+unsigned char cmdbuf[14096],outcmdbuf[14096];
 unsigned int res;
 
 bcnt=blen;
@@ -111,30 +111,30 @@ bcnt+=2;
 
 // Пребразование данных с экранированием ESC-последовательностей
 iolen=0;
-iobuf[iolen++]=cmdbuf[0];  // первый байт копируем без модификаций
+outcmdbuf[iolen++]=cmdbuf[0];  // первый байт копируем без модификаций
 for(i=1;i<bcnt;i++) {
    switch (cmdbuf[i]) {
      case 0x7e:
-       iobuf[iolen++]=0x7d;
-       iobuf[iolen++]=0x5e;
+       outcmdbuf[iolen++]=0x7d;
+       outcmdbuf[iolen++]=0x5e;
        break;
       
      case 0x7d:
-       iobuf[iolen++]=0x7d;
-       iobuf[iolen++]=0x5d;
+       outcmdbuf[iolen++]=0x7d;
+       outcmdbuf[iolen++]=0x5d;
        break;
       
      default:
-       iobuf[iolen++]=cmdbuf[i];
+       outcmdbuf[iolen++]=cmdbuf[i];
    }
  }
-iobuf[iolen++]=0x7e; // завершающий байт
-iobuf[iolen]=0;
+outcmdbuf[iolen++]=0x7e; // завершающий байт
+outcmdbuf[iolen]=0;
  
 // отсылка команды в модем
 tcflush(siofd,TCIOFLUSH);  // сбрасываем недочитанный буфер ввода
 if (prefixflag) write(siofd,"\x7e",1);  // отсылаем префикс если надо
-if (write(siofd,iobuf,iolen) == 0) {   printf("\n Ошибка записи команды");return 0;  }
+if (write(siofd,outcmdbuf,iolen) == 0) {   printf("\n Ошибка записи команды");return 0;  }
 tcdrain(siofd);  // ждем окончания вывода блока
 
 incount=0;
@@ -142,10 +142,10 @@ if (read(siofd,&c,1) != 1) {
   printf("\n Нет ответа от модема");
   return 0; // модем не ответил или ответил неправильно
 }
-//if (c != 0x7e) {
-//  printf("\n Первый байт ответа - не 7e");
+if (c != 0x7e) {
+  printf("\n Первый байт ответа - не 7e: %02x",c);
 //  return 0; // модем не ответил или ответил неправильно
-//}
+}
 iobuf[incount++]=c;
 
 // чтение массива данных единым блоком при обработке команды 03

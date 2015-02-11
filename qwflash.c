@@ -24,7 +24,9 @@ unsigned char cmdbuf[]={0x17,1};
 int iolen;
 
 iolen=send_cmd(cmdbuf,2,iobuf);
-if (iobuf[0] == 0x18) return 1;
+printf("\n--secure--\n");
+dump(iobuf,iolen,0);
+if (iobuf[1] == 0x18) return 1;
 return 0; // была ошибка
 
 }  
@@ -38,6 +40,9 @@ unsigned char cmdbuf[]={0x15};
 int iolen;
 
 iolen=send_cmd(cmdbuf,1,iobuf);
+printf("\n--close--\n");
+dump(iobuf,iolen,0);
+
 }  
 
 //*******************************************
@@ -50,10 +55,14 @@ unsigned char iobuf[600];
 unsigned char cmdbuf[8192]={0x19,0};
 int iolen;
   
-memcpy(cmdbuf+2,ptraw,len+2);
-iolen=send_cmd(cmdbuf,1,iobuf);
+printf("\n--ptable--\n");
+memcpy(cmdbuf+2,ptraw,len);
+//dump(cmdbuf,iolen,0);
 
-if (iobuf[0] == 0x1a) return 1;
+iolen=send_cmd(cmdbuf,len+2,iobuf);
+dump(iobuf,iolen,0);
+
+if (iobuf[1] == 0x1a) return 1;
 return 0; // была ошибка
 }
 
@@ -68,8 +77,10 @@ int iolen;
   
 strcpy(cmdbuf+2,name);
 iolen=send_cmd(cmdbuf,strlen(cmdbuf)+1,iobuf);
+printf("\n--head--\n");
+dump(iobuf,iolen,0);
 
-if (iobuf[0] == 0x1c) return 1;
+if (iobuf[1] == 0x1c) return 1;
 return 0; // была ошибка
 }
 
@@ -79,7 +90,7 @@ return 0; // была ошибка
 void main(int argc, char* argv[]) {
   
 unsigned char iobuf[2048];
-unsigned char scmd[2048]={0x7,0,0,0};
+unsigned char scmd[3068]={0x7,0,0,0};
 int res;
 char ptabraw[1024];
 FILE* part;
@@ -200,14 +211,15 @@ if (listmode) {
   }
   return;
 }  
-
+printf("\n secure mode...");
 if (secure_mode()) {
   printf("\n Ошибка входа в режим Secure mode\n");
   return;
-}  
-
+}
+qclose();
+printf("\nотсылаем таблицу разделов");
 // отсылаем таблицу разделов
-if (send_ptable(ptabraw,16+28*npart)) { 
+if (!send_ptable(ptabraw,16+28*npart)) { 
   printf("\n Ошибка отсылки таблицы разделов\n");
   return;
 }  
@@ -223,17 +235,19 @@ for(i=0;i<npart;i++) {
   }
   // цикл записи кусков раздела по 1К за команду
   printf("\n");
-  for(adr=0;;adr+=1024) {  
+  for(adr=0;;adr+=2048) {  
     // адрес
+    scmd[0]=7;
     scmd[1]=(adr>>16)&0xff;
     scmd[2]=(adr>>8)&0xff;
     scmd[3]=(adr)&0xff;
-    len=fread(scmd+4,1,1024,part);
+    len=fread(scmd+4,1,2048,part);
     if (feof(part)) break; // конец раздела и конец файла
-    printf("\r Запись раздела %i (%s): адрес:%06x",i,ptable[i].name,adr);
+    printf("\r Запись раздела %i (%s): адрес:%06x",i,ptable[i].name,adr); fflush(stdout);
+//    dump(scmd,len+4,0);    
     iolen=send_cmd(scmd,len+4,iobuf);
-    if (iobuf[1] != 8) {
-      printf("\n Ошибка записи раздела %i (%s): адрес:%06x",i,ptable[i].name,adr);
+    if ((iolen == 0) || (iobuf[1] != 8)) {
+      printf("\n Ошибка записи раздела %i (%s): адрес:%06x\n",i,ptable[i].name,adr);
       return;
     }
   }
