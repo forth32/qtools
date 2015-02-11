@@ -4,9 +4,15 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#ifndef WIN32
 #include <readline/readline.h>
 #include <readline/history.h>
 #include <unistd.h>
+#else
+#include <windows.h>
+#include "wingetopt.h"
+#include "printf.h"
+#endif
 #include "qcio.h"
 
 // флаг посылки префикса 7E
@@ -187,10 +193,18 @@ i                 - запуск процедуры HELLO\n");
 
 void main(int argc,char* argv[]) {
   
-unsigned char* line;
-unsigned char scmdline[200]={0};
+#ifndef WIN32
+char* line;
+#else
+char line[200];
+#endif
+char scmdline[200]={0};
 int i,iolen;
+#ifndef WIN32
 char devname[50]="/dev/ttyUSB0";
+#else
+char devname[50]="";
+#endif
 int opt,helloflag=0;
 
 while ((opt = getopt(argc, argv, "p:ic:he")) != -1) {
@@ -198,10 +212,10 @@ while ((opt = getopt(argc, argv, "p:ic:he")) != -1) {
    case 'h': 
      printf("\nИнтерактивная оболочка для ввода команд в загрузчик\n\n\
 Допустимы следующие ключи:\n\n\
--p <tty>      - указывает имя устройства последовательного порта для общения с загрузчиком\n\
--i            - запускает процедуру HELLO для инициализации загрузчика\n\
--e            - запрещает передачу префикса 7E перед командой\n\
--c \"команда\"- запускает указанную команду и завершает работу\n");
+-p <tty>       - указывает имя устройства последовательного порта для общения с загрузчиком\n\
+-i             - запускает процедуру HELLO для инициализации загрузчика\n\
+-e             - запрещает передачу префикса 7E перед командой\n\
+-c \"<команда>\" - запускает указанную команду и завершает работу\n");
     return;
      
    case 'p':
@@ -222,8 +236,20 @@ while ((opt = getopt(argc, argv, "p:ic:he")) != -1) {
   }
 }  
 
+#ifdef WIN32
+if (*devname == '\0')
+{
+   printf("\n - Последовательный порт не задан\n"); 
+   return; 
+}
+#endif
+
 if (!open_port(devname))  {
+#ifndef WIN32
    printf("\n - Последовательный порт %s не открывается\n", devname); 
+#else
+   printf("\n - Последовательный порт COM%s не открывается\n", devname); 
+#endif
    return; 
 }
 if (helloflag) hello();
@@ -234,17 +260,26 @@ if (strlen(scmdline) != 0) {
   process_command(scmdline);
   return;
 }
-
+ 
 // Основной цикл обработки команд
 for(;;)  {
- line=readline(">"); 
+#ifndef WIN32
+ line=readline(">");
+#else
+ printf(">");
+ gets(line);
+#endif
  if (line == 0) {
     printf("\n");
     return;
  }   
  if (strlen(line) <1) continue; // слишком короткая команда
+#ifndef WIN32
  add_history(line); // в буфер ее для истории
+#endif
  process_command(line);
+#ifndef WIN32
  free(line);
+#endif
 } 
 }
