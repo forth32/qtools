@@ -24,8 +24,8 @@ unsigned char cmdbuf[]={0x17,1};
 int iolen;
 
 iolen=send_cmd(cmdbuf,2,iobuf);
-printf("\n--secure--\n");
-dump(iobuf,iolen,0);
+//printf("\n--secure--\n");
+//dump(iobuf,iolen,0);
 if (iobuf[1] == 0x18) return 1;
 return 0; // была ошибка
 
@@ -40,8 +40,8 @@ unsigned char cmdbuf[]={0x15};
 int iolen;
 
 iolen=send_cmd(cmdbuf,1,iobuf);
-printf("\n--close--\n");
-dump(iobuf,iolen,0);
+//printf("\n--close--\n");
+//dump(iobuf,iolen,0);
 
 }  
 
@@ -57,9 +57,10 @@ int iolen;
   
 printf("\n--ptable--\n");
 memcpy(cmdbuf+2,ptraw,len);
-//dump(cmdbuf,iolen,0);
+dump(cmdbuf,len+2,0);
 
 iolen=send_cmd(cmdbuf,len+2,iobuf);
+printf("\n res ptable \n");
 dump(iobuf,iolen,0);
 
 if (iobuf[1] == 0x1a) return 1;
@@ -212,7 +213,7 @@ if (listmode) {
   return;
 }  
 printf("\n secure mode...");
-if (secure_mode()) {
+if (!secure_mode()) {
   printf("\n Ошибка входа в режим Secure mode\n");
   return;
 }
@@ -244,7 +245,7 @@ for(i=0;i<npart;i++) {
     len=fread(scmd+4,1,2048,part);
     if (feof(part)) break; // конец раздела и конец файла
     printf("\r Запись раздела %i (%s): адрес:%06x",i,ptable[i].name,adr); fflush(stdout);
-//    dump(scmd,len+4,0);    
+    dump(scmd,len+4,0);    
     iolen=send_cmd(scmd,len+4,iobuf);
     if ((iolen == 0) || (iobuf[1] != 8)) {
       printf("\n Ошибка записи раздела %i (%s): адрес:%06x\n",i,ptable[i].name,adr);
