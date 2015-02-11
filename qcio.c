@@ -15,6 +15,8 @@
 
 #include "qcio.h"
 
+unsigned int nand_cmd=0x1b400000;
+
 #ifndef WIN32
 struct termios sioparm;
 #else

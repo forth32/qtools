@@ -24,7 +24,7 @@ unsigned char cmddl[2048]={0xf};
 unsigned char cmdstart[2048]={0x5,0,0,0,0};
 
 
-while ((opt = getopt(argc, argv, "p:a:hi")) != -1) {
+while ((opt = getopt(argc, argv, "p:a:hi8")) != -1) {
   switch (opt) {
    case 'h': 
      printf("\n Утилита предназначена для загрузки программ-прошивальщика (E)NPRG в память модема\n\n\
@@ -38,6 +38,10 @@ while ((opt = getopt(argc, argv, "p:a:hi")) != -1) {
     strcpy(devname,optarg);
     break;
 
+   case '8':
+    nand_cmd=0xA0A00000;
+    break;
+    
    case 'i':
     helloflag=1;
     break;

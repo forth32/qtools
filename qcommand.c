@@ -141,12 +141,12 @@ i                 - запуск процедуры HELLO\n");
    
    
   case 's': 
-   memread(membuf,0x1b400100,0x23c);
+   memread(membuf,sector_buf,0x23c);
    dump(membuf,0x23c,0); 
    break;
 
   case 'n': 
-   memread(membuf,0x1b400000,0x100);
+   memread(membuf,nand_cmd,0x100);
    printf("\n* 000 NAND_FLASH_CMD         = %08x",*((unsigned int*)&membuf[0]));
    printf("\n* 004 NAND_ADDR0             = %08x",*((unsigned int*)&membuf[4]));
    printf("\n* 008 NAND_ADDR1             = %08x",*((unsigned int*)&membuf[8]));
@@ -207,7 +207,7 @@ char devname[50]="";
 #endif
 int opt,helloflag=0;
 
-while ((opt = getopt(argc, argv, "p:ic:he")) != -1) {
+while ((opt = getopt(argc, argv, "p:ic:he8")) != -1) {
   switch (opt) {
    case 'h': 
      printf("\nИнтерактивная оболочка для ввода команд в загрузчик\n\n\
@@ -220,6 +220,10 @@ while ((opt = getopt(argc, argv, "p:ic:he")) != -1) {
      
    case 'p':
     strcpy(devname,optarg);
+    break;
+     
+   case '8':
+    nand_cmd=0xA0A00000;
     break;
     
    case 'i':

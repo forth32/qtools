@@ -122,7 +122,7 @@ char devname[]="/dev/ttyUSB0";
 unsigned char ptable[1100]; // таблица разделов
 
 
-while ((opt = getopt(argc, argv, "hp:a:l:o:ixs:ef:mt")) != -1) {
+while ((opt = getopt(argc, argv, "hp:a:l:o:ixs:ef:mt8")) != -1) {
   switch (opt) {
    case 'h': 
     printf("\n  Утилита предназначена для чтения образа флеш через модифицированный загрузчик\n\
@@ -142,6 +142,10 @@ while ((opt = getopt(argc, argv, "hp:a:l:o:ixs:ef:mt")) != -1) {
 -t        - отрезать все FF за последним значимым байтом раздела\n\
 -m        - вывести на экран полную карту разделов\n");
     return;
+    
+   case '8':
+    nand_cmd=0xA0A00000;
+    break;
     
    case 'p':
     strcpy(devname,optarg);

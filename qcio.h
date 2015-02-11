@@ -1,12 +1,12 @@
 
-#define nand_cmd 0x1b400000
-#define nand_addr0 0x1b400004
-#define nand_addr1 0x1b400008
-#define nand_cs    0x1b40000c
-#define nand_exec  0x1b400010
-#define nand_status 0x1b400014
-#define nand_cfg1  0x1b400024
-#define sector_buf 0x1b400100
+extern unsigned int nand_cmd;    // 0x1b400000
+#define nand_addr0 nand_cmd+4
+#define nand_addr1 nand_cmd+8
+#define nand_cs    nand_cmd+0xc
+#define nand_exec  nand_cmd+0x10
+#define nand_status nand_cmd+0x14
+#define nand_cfg1  nand_cmd+0x24
+#define sector_buf nand_cmd+0x100
 
 
 #define ppb 64             // число страниц в 1 блоке

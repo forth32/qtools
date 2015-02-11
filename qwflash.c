@@ -109,7 +109,7 @@ unsigned int adr,len;
 // очищаем массив имен файлов
 for(i=0;i<50;i++)  wname[i][0]=0;
 
-while ((opt = getopt(argc, argv, "hp:s:w:imr")) != -1) {
+while ((opt = getopt(argc, argv, "hp:s:w:imr8")) != -1) {
   switch (opt) {
    case 'h': 
     printf("\n  Утилита предназначена для чтения образа флеш через модифицированный загрузчик\n\
@@ -121,6 +121,10 @@ while ((opt = getopt(argc, argv, "hp:s:w:imr")) != -1) {
 -w #:file - записать раздел с номером # из файла file\n\
 -m        - вывести на экран полную карту разделов\n");
     return;
+    
+   case '8':
+    nand_cmd=0xA0A00000;
+    break;
     
    case 'p':
     strcpy(devname,optarg);
