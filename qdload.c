@@ -1,8 +1,14 @@
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <unistd.h>
 #include <stdio.h>
 #include <string.h>
+#ifndef WIN32
+#include <unistd.h>
+#else
+#include <windows.h>
+#include "wingetopt.h"
+#include "printf.h"
+#endif
 #include "qcio.h"
 
 // Размер блока загрузки
@@ -12,7 +18,11 @@ void main(int argc, char* argv[]) {
 
 int opt;
 unsigned int start=0x41700000;
+#ifndef WIN32
 char devname[50]="/dev/ttyUSB0";
+#else
+char devname[50]="";
+#endif
 FILE* in;
 struct stat fstatus;
 unsigned int i,partsize,iolen,adr,helloflag=0;
@@ -41,7 +51,7 @@ while ((opt = getopt(argc, argv, "p:a:hi8")) != -1) {
    case '8':
     nand_cmd=0xA0A00000;
     break;
-    
+
    case 'i':
     helloflag=1;
     break;
@@ -52,14 +62,26 @@ while ((opt = getopt(argc, argv, "p:a:hi8")) != -1) {
   }     
 }
 
-in=fopen(argv[optind],"r");
+#ifdef WIN32
+if (*devname == '\0')
+{
+   printf("\n - Последовательный порт не задан\n"); 
+   return; 
+}
+#endif
+
+in=fopen(argv[optind],"rb");
 if (in == 0) {
   printf("\nОшибка открытия входного файла\n");
   return;
 }
 
 if (!open_port(devname))  {
+#ifndef WIN32
    printf("\n - Последовательный порт %s не открывается\n", devname); 
+#else
+   printf("\n - Последовательный порт COM%s не открывается\n", devname); 
+#endif
    return; 
 }
 
@@ -100,7 +122,11 @@ cmdstart[2]=(start>>16)&0xff;
 cmdstart[3]=(start>>8)&0xff;
 cmdstart[4]=(start)&0xff;
 iolen=send_cmd_base(cmdstart,5,iobuf,1);
+#ifndef WIN32
 usleep(200000);   // ждем инициализации загрузчика
+#else
+Sleep(200);   // ждем инициализации загрузчика
+#endif
 if (helloflag) hello();
 printf("\n");
 
