@@ -21,7 +21,7 @@ int mempeek(int adr);
 int mempoke(int adr, int data);
 int flash_read(int block, int page, int sect);
 void setaddr(int block, int page);
-void nanwait();
+void nandwait();
 void hello();
 void load_ptable(char* ptable);
 extern int siofd;
