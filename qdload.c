@@ -127,6 +127,7 @@ usleep(200000);   // ждем инициализации загрузчика
 #else
 Sleep(200);   // ждем инициализации загрузчика
 #endif
+printf("ok\n");
 if (helloflag) hello();
 printf("\n");
 

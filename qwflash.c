@@ -186,13 +186,12 @@ if (helloflag) hello();
 // Загрузка и разбор таблицы разделов
 
 if (!ptflag) load_ptable(ptabraw);  // Загрузка таблицы из модема
-
+/*
 if (strncmp(ptabraw,"\xAA\x73\xEE\x55\xDB\xBD\x5E\xE3",8) != 0) {
    printf("\nТаблица разделов повреждена\n");
-   dump(ptabraw,1024,0);
    return;
 }
-
+*/
 npart=*((unsigned int*)&ptabraw[12]);
 for(i=0;i<npart;i++) {
     strncpy(ptable[i].name,ptabraw+16+28*i,16);       // имя
@@ -204,7 +203,7 @@ for(i=0;i<npart;i++) {
     ptable[i].start=*((unsigned int*)&ptabraw[32+28*i]);   // адрес
     ptable[i].len=*((unsigned int*)&ptabraw[36+28*i]);     // размер
     ptable[i].attr=*((unsigned int*)&ptabraw[40+28*i]);    // атрибуты
-    if (((ptable[i].start+ptable[i].len) >maxblock)||(ptable[i].len == 0xffffffff)) ptable[i].len=maxblock-ptable[i].start; // если длина - FFFF, или выходит за пределы флешки
+    if (ptable[i].len == 0xffffffff) ptable[i].len=maxblock-ptable[i].start; // если длина - FFFF, или выходит за пределы флешки
 }
 
 
@@ -240,16 +239,19 @@ for(i=0;i<npart;i++) {
   }
   // цикл записи кусков раздела по 1К за команду
   printf("\n");
-  for(adr=0;;adr+=2048) {  
+
+#define wbsize 1024  
+  
+  for(adr=0;;adr+=wbsize) {  
     // адрес
     scmd[0]=7;
     scmd[1]=(adr>>16)&0xff;
     scmd[2]=(adr>>8)&0xff;
     scmd[3]=(adr)&0xff;
-    len=fread(scmd+4,1,2048,part);
+    len=fread(scmd+4,1,wbsize,part);
     if (feof(part)) break; // конец раздела и конец файла
     printf("\r Запись раздела %i (%s): адрес:%06x",i,ptable[i].name,adr); fflush(stdout);
-    dump(scmd,len+4,0);    
+//    dump(scmd,len+4,0);    
     iolen=send_cmd(scmd,len+4,iobuf);
     if ((iolen == 0) || (iobuf[1] != 8)) {
       printf("\n Ошибка записи раздела %i (%s): адрес:%06x\n",i,ptable[i].name,adr);

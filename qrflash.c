@@ -114,6 +114,7 @@ int eccflag=1;  // 1 - отключить ECC,  0 - включить
 int partnumber=-1; // номер раздела для чтения, -1 - все разделы
 int listmode=0;    // 1- вывод карты разделов
 int truncflag=0;  //  1 - отрезать все FF от конца раздела
+int chipset9x15=1; // 0 - MSM8200, 1 - MDM9x00
 
 int attr; // арибуты
 int npar; // число разедлов в таблице
@@ -145,6 +146,7 @@ while ((opt = getopt(argc, argv, "hp:a:l:o:ixs:ef:mt8")) != -1) {
     
    case '8':
     nand_cmd=0xA0A00000;
+    chipset9x15=0;
     break;
     
    case 'p':
@@ -241,31 +243,45 @@ if (partflag == 0) {
 //###################################################
 // Режим чтения по таблице разделов
 //###################################################
-
+/*
 if (strncmp(ptable,"\xAA\x73\xEE\x55\xDB\xBD\x5E\xE3",8) != 0) {
    printf("\nТаблица разделов повреждена\n");
    return;
 }
+*/
 npar=*((unsigned int*)&ptable[12]);
-//printf("\n Число разделов: %i",npar);
+printf("\n Число разделов: %i",npar);
 if ((partnumber != -1) && (partnumber>=npar)) {
   printf("\nНедопустимый номер раздела: %i, всего разделов %i\n",partnumber,npar);
   return;
 }  
 printf("\n #  адрес    размер   атрибуты ------ Имя------\n");     
 for(i=0;i<npar;i++) {
-    strncpy(partname,ptable+16+28*i,16);       // имя
-    start=*((unsigned int*)&ptable[32+28*i]);   // адрес
-    len=*((unsigned int*)&ptable[36+28*i]);     // размер
-    attr=*((unsigned int*)&ptable[40+28*i]);    // атрибуты
-    if (((start+len) >maxblock)||(len == 0xffffffff)) len=maxblock-start; // если длина - FFFF, или выходит за пределы флешки
+    if (chipset9x15) {
+      // 9x15
+      strncpy(partname,ptable+16+28*i,16);       // имя
+      start=*((unsigned int*)&ptable[32+28*i]);   // адрес
+      len=*((unsigned int*)&ptable[36+28*i]);     // размер
+      attr=*((unsigned int*)&ptable[40+28*i]);    // атрибуты
+      if (((start+len) >maxblock)||(len == 0xffffffff)) len=maxblock-start; // если длина - FFFF, или выходит за пределы флешки
+    }
+    else {
+      // 8200
+      strncpy(partname,ptable+16+28*i,16);       // имя
+      start=*((unsigned int*)&ptable[32+28*i]);   // адрес
+      len=*((unsigned int*)&ptable[36+28*i]);     // размер
+      attr=*((unsigned int*)&ptable[40+28*i]);    // атрибуты
+    if (len == 0xffffffff) len=maxblock-start; // если длина - FFFF, или выходит за пределы флешки
+    }
   // Выводим описание раздела - для всех разделов или для конкретного заказанного
     if ((partnumber == -1) || (partnumber==i))  printf("\r%02i %08x  %08x  %08x  %s\n",i,start,len,attr,partname);
   // Читаем раздел - если не указан просто вывод карты. 
     if (listmode == 0) 
       // Все разделы или один конкретный  
       if ((partnumber == -1) || (partnumber==i)) {
-        sprintf(filename,"%02i-%s.bin",i,partname); // формируем имя файла
+	// формируем имя файла
+        if (sectorsize == 512) sprintf(filename,"%02i-%s.bin",i,partname); 
+	else                   sprintf(filename,"%02i-%s.obb",i,partname);  
 	if (filename[4] == ':') filename[4]='-';    // заменяем : на -
         out=fopen(filename,"w");  // открываем выходной файл
         for(block=start;block<(start+len);block++) {
