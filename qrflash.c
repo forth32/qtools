@@ -4,7 +4,14 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#ifndef WIN32
 #include <unistd.h>
+#else
+#include <windows.h>
+#include <io.h>
+#include "wingetopt.h"
+#include "printf.h"
+#endif
 #include "qcio.h"
 
 //@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
@@ -119,7 +126,11 @@ int chipset9x15=1; // 0 - MSM8200, 1 - MDM9x00
 int attr; // арибуты
 int npar; // число разедлов в таблице
 
-char devname[]="/dev/ttyUSB0";
+#ifndef WIN32
+char devname[50]="/dev/ttyUSB0";
+#else
+char devname[50]="";
+#endif
 unsigned char ptable[1100]; // таблица разделов
 
 
@@ -179,7 +190,7 @@ while ((opt = getopt(argc, argv, "hp:a:l:o:ixs:ef:mt8")) != -1) {
      else {
        // загружаем таблицу разделов из файла
        partflag=1;
-       part=fopen(optarg,"r");
+       part=fopen(optarg,"rb");
        if (part == 0) {
          printf("\nОшибка открытия файла таблицы разделов\n");
          return;
@@ -203,13 +214,25 @@ while ((opt = getopt(argc, argv, "hp:a:l:o:ixs:ef:mt8")) != -1) {
   }
 }  
 
+#ifdef WIN32
+if (*devname == '\0')
+{
+   printf("\n - Последовательный порт не задан\n"); 
+   return; 
+}
+#endif
+
 if (len == 0) {
   printf("\n Неправильная длина");
   return;
 }  
 
 if (!open_port(devname))  {
+#ifndef WIN32
    printf("\n - Последовательный порт %s не открывается\n", devname); 
+#else
+   printf("\n - Последовательный порт COM%s не открывается\n", devname); 
+#endif
    return; 
 }
 
@@ -235,7 +258,7 @@ mempoke(nand_cmd,0x34); // чтение data+ecc+spare
 // Режим чтения сырого флеша
 //###################################################
 if (partflag == 0) { 
-  out=fopen(filename,"w");
+  out=fopen(filename,"wb");
   read_raw(start,len,sectorsize,out);
   return;
 }  
@@ -280,11 +303,11 @@ for(i=0;i<npar;i++) {
     if (listmode == 0) 
       // Все разделы или один конкретный  
       if ((partnumber == -1) || (partnumber==i)) {
-	// формируем имя файла
+        // формируем имя файла
         if (sectorsize == 512) sprintf(filename,"%02i-%s.bin",i,partname); 
-	else                   sprintf(filename,"%02i-%s.obb",i,partname);  
-	if (filename[4] == ':') filename[4]='-';    // заменяем : на -
-        out=fopen(filename,"w");  // открываем выходной файл
+        else                   sprintf(filename,"%02i-%s.obb",i,partname);  
+        if (filename[4] == ':') filename[4]='-';    // заменяем : на -
+        out=fopen(filename,"wb");  // открываем выходной файл
         for(block=start;block<(start+len);block++) {
           printf("\r * %08x",block); fflush(stdout);
           if ((attr != 0x1ff)||(sectorsize>512)) 
@@ -297,7 +320,7 @@ for(i=0;i<npar;i++) {
      // Обрезка всех FF хвоста
       fclose(out);
       if (truncflag) {
-       out=fopen(filename,"r+");  // переоткрываем выходной файл
+       out=fopen(filename,"r+b");  // переоткрываем выходной файл
        fseek(out,0,SEEK_SET);  // перематываем файл на начало
        lastpos=0;
        for(filepos=0;;filepos++) {
@@ -305,7 +328,11 @@ for(i=0;i<npar;i++) {
 	if (feof(out)) break;
 	if (c != 0xff) lastpos=filepos;  // нашли значимый байт
        }
+#ifndef WIN32
        ftruncate(fileno(out),lastpos+1);   // обрезаем файл
+#else
+       _chsize(fileno(out),lastpos+1);   // обрезаем файл
+#endif
        fclose(out);
       }	
     }	
