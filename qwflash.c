@@ -58,15 +58,14 @@ unsigned char iobuf[600];
 unsigned char cmdbuf[8192]={0x19,0};
 int iolen;
   
-printf("\n--ptable--\n");
 memcpy(cmdbuf+2,ptraw,len);
 //dump(cmdbuf,len+2,0);
 
 iolen=send_cmd(cmdbuf,len+2,iobuf);
-printf("\n res ptable \n");
-dump(iobuf,iolen,0);
 
 if (iobuf[1] == 0x1a) return 1;
+printf("\n--ptable--\n");
+dump(iobuf,iolen,0);
 return 0; // была ошибка
 }
 
@@ -81,10 +80,9 @@ int iolen;
   
 strcpy(cmdbuf+2,name);
 iolen=send_cmd(cmdbuf,strlen(cmdbuf)+1,iobuf);
+if (iobuf[1] == 0x1c) return 1;
 printf("\n--head--\n");
 dump(iobuf,iolen,0);
-
-if (iobuf[1] == 0x1c) return 1;
 return 0; // была ошибка
 }
 
@@ -242,7 +240,10 @@ for(i=0;i<npart;i++) {
     return;
   }
   // отсылаем заголовок
-  send_head(ptable[i].name);
+  if (!send_head(ptable[i].name)) {
+    printf("\n Модем отверг загловок раздела\n");
+    return;
+  }  
   // цикл записи кусков раздела по 1К за команду
   printf("\n");
   for(adr=0;;adr+=wbsize) {  
