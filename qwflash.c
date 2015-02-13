@@ -94,7 +94,7 @@ void main(int argc, char* argv[]) {
 unsigned char iobuf[2048];
 unsigned char scmd[3068]={0x7,0,0,0};
 int res;
-char ptabraw[1024];
+char ptabraw[2048];
 FILE* part;
 int helloflag=0;
 int ptflag=0;
@@ -103,7 +103,7 @@ int wcount=0;
 char wname[50][120]; // массив имен файлов для записи разделов
 char* sptr;
 char devname[]="/dev/ttyUSB0";
-unsigned int i,opt,iolen;
+unsigned int i,opt,iolen,j;
 unsigned int renameflag=0;
 unsigned int adr,len;
 
@@ -117,6 +117,7 @@ while ((opt = getopt(argc, argv, "hp:s:w:imr8")) != -1) {
 Допустимы следующие ключи:\n\n\
 -p <tty>  - указывает имя устройства последовательного порта для общения с загрузчиком\n\
 -i        - запускает процедуру HELLO для инициализации загрузчика\n\
+-8        - работа с чипсетом MSM8200 вместо MDM9x12\n\
 -s <file> - взять карту разделов из указанного файла\n\
 -r        - переименовать разделы PAD в PADnn (дбавляется номер раздела\n\
 -w #:file - записать раздел с номером # из файла file\n\
@@ -186,7 +187,14 @@ if (helloflag) hello();
 
 // Загрузка и разбор таблицы разделов
 
-if (!ptflag) load_ptable(ptabraw);  // Загрузка таблицы из модема
+//if (!ptflag) load_ptable(ptabraw);  // Загрузка таблицы из модема
+if (!ptflag) {
+ memset(ptabraw,0,1024); // обнуляем таблицу
+ flash_read(2, 2, 0);  // блок 2 страница 1 - здесь лежит таблица разделов  
+ memread(ptabraw,sector_buf, 512);
+ flash_read(2, 2, 1);  // продолжение таблицы разделов
+ memread(ptabraw+512,sector_buf, 512);
+}
 /*
 if (strncmp(ptabraw,"\xAA\x73\xEE\x55\xDB\xBD\x5E\xE3",8) != 0) {
    printf("\nТаблица разделов повреждена\n");
@@ -241,7 +249,7 @@ for(i=0;i<npart;i++) {
   }
   // отсылаем заголовок
   if (!send_head(ptable[i].name)) {
-    printf("\n Модем отверг загловок раздела\n");
+    printf("\n Модем отверг заголовок раздела\n");
     return;
   }  
   // цикл записи кусков раздела по 1К за команду
@@ -252,18 +260,20 @@ for(i=0;i<npart;i++) {
     scmd[1]=(adr>>16)&0xff;
     scmd[2]=(adr>>8)&0xff;
     scmd[3]=(adr)&0xff;
+    memset(scmd+3,0xff,wbsize);   // заполняем буфер данных FF
     len=fread(scmd+4,1,wbsize,part);
-    if (feof(part)) break; // конец раздела и конец файла
     printf("\r Запись раздела %i (%s): адрес:%06x",i,ptable[i].name,adr); fflush(stdout);
     iolen=send_cmd_base(scmd,len+4,iobuf,1);
     if ((iolen == 0) || (iobuf[1] != 8)) {
       printf("\n Ошибка записи раздела %i (%s): адрес:%06x\n",i,ptable[i].name,adr);
       return;
     }
+    if (feof(part)) break; // конец раздела и конец файла
   }
   // Раздел передан полностью
   qclose();
   printf(" ... запись завершена\n");
+  usleep(50000);
 }
 }
 

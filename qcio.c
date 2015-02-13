@@ -24,11 +24,12 @@ static HANDLE hSerial;
 #endif
 int siofd; // fd для работы с Последовательным портом
 
-#ifndef WIN32
-inline void nandwait() { while ((mempeek(nand_status)&0xf) != 0); }
-#else
-static void nandwait() { while ((mempeek(nand_status)&0xf) != 0); }
-#endif
+//****************************************************************
+//* Ожидание завершения операции, выполняемой контроллером nand  *
+//****************************************************************
+void nandwait() { 
+  while ((mempeek(nand_status)&0xf) != 0); 
+}
 
 
 //***********************
@@ -449,7 +450,7 @@ printf("ok\n Flash: %s\n",rbuf+0x2d);
 //*************************************
 void load_ptable(char* ptable) {
   
-memset(ptable,0,512); // обнуляем таблицу
+memset(ptable,0,1024); // обнуляем таблицу
 flash_read(2, 1, 0);  // блок 2 страница 1 - здесь лежит таблица разделов  
 memread(ptable,sector_buf, 512);
 flash_read(2, 1, 1);  // продолжение таблицы разделов
