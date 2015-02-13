@@ -4,6 +4,9 @@
 #include <getopt.h>
 #include "qcio.h"
 
+// Размер блока записи
+#define wbsize 1024
+  
 // хранилище таблицы разделов
 struct  {
   char name[17];
@@ -57,7 +60,7 @@ int iolen;
   
 printf("\n--ptable--\n");
 memcpy(cmdbuf+2,ptraw,len);
-dump(cmdbuf,len+2,0);
+//dump(cmdbuf,len+2,0);
 
 iolen=send_cmd(cmdbuf,len+2,iobuf);
 printf("\n res ptable \n");
@@ -221,6 +224,7 @@ if (!secure_mode()) {
   return;
 }
 qclose();
+usleep(50000);
 printf("\nотсылаем таблицу разделов");
 // отсылаем таблицу разделов
 if (!send_ptable(ptabraw,16+28*npart)) { 
@@ -237,11 +241,10 @@ for(i=0;i<npart;i++) {
     printf("\n Раздел %i: ошибка открытия файла %s\n",i,wname[i]);
     return;
   }
+  // отсылаем заголовок
+  send_head(ptable[i].name);
   // цикл записи кусков раздела по 1К за команду
   printf("\n");
-
-#define wbsize 1024  
-  
   for(adr=0;;adr+=wbsize) {  
     // адрес
     scmd[0]=7;
@@ -251,8 +254,7 @@ for(i=0;i<npart;i++) {
     len=fread(scmd+4,1,wbsize,part);
     if (feof(part)) break; // конец раздела и конец файла
     printf("\r Запись раздела %i (%s): адрес:%06x",i,ptable[i].name,adr); fflush(stdout);
-//    dump(scmd,len+4,0);    
-    iolen=send_cmd(scmd,len+4,iobuf);
+    iolen=send_cmd_base(scmd,len+4,iobuf,1);
     if ((iolen == 0) || (iobuf[1] != 8)) {
       printf("\n Ошибка записи раздела %i (%s): адрес:%06x\n",i,ptable[i].name,adr);
       return;

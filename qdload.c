@@ -116,7 +116,7 @@ for(i=0;i<fstatus.st_size;i+=dlblock) {
 // dump(iobuf,iolen,0);
 } 
 // вписываем адрес в команду запуска
-printf("\n Запуск загрузчика...\n");
+printf("\n Запуск загрузчика...");
 cmdstart[1]=(start>>24)&0xff;
 cmdstart[2]=(start>>16)&0xff;
 cmdstart[3]=(start>>8)&0xff;

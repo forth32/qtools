@@ -178,6 +178,9 @@ tcflush(siofd,TCIOFLUSH);  // сбрасываем недочитанный бу
 PurgeComm(hSerial, PURGE_RXCLEAR);
 #endif
 if (prefixflag) write(siofd,"\x7e",1);  // отсылаем префикс если надо
+
+//if (outcmdbuf[0] == 7) dump(outcmdbuf,iolen,0);
+
 if (write(siofd,outcmdbuf,iolen) == 0) {   printf("\n Ошибка записи команды");return 0;  }
 #ifndef WIN32
 tcdrain(siofd);  // ждем окончания вывода блока
@@ -197,7 +200,7 @@ if (c != 0x7e) {
 iobuf[incount++]=c;
 
 // чтение массива данных единым блоком при обработке команды 03
-if (cmdbuf[0] == 3) {
+if ((cmdbuf[0] == 3)&&(blen == 10)) {
  datalen=*((unsigned short*)(cmdbuf+5)); // заказанная длина поля данных
  res=read(siofd,cmdbuf+1,datalen+7);
  if (res != (datalen+7)) {
