@@ -204,6 +204,8 @@ if (strncmp(ptabraw,"\xAA\x73\xEE\x55\xDB\xBD\x5E\xE3",8) != 0) {
 npart=*((unsigned int*)&ptabraw[12]);
 for(i=0;i<npart;i++) {
     strncpy(ptable[i].name,ptabraw+16+28*i,16);       // имя
+    // заменяем MIBIB на SBL1
+    if (strcmp(ptable[i].name,"0:MIBIB") == 0) strcpy(ptable[i].name,"0:SBL1"); 
     // переименование разделов PAD
     if (renameflag && (strcmp(ptable[i].name,"0:PAD") == 0)) {
       sprintf(iobuf,"%02x",i);
