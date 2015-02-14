@@ -4,7 +4,13 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#ifndef WIN32
 #include <unistd.h>
+#else
+#include <windows.h>
+#include "wingetopt.h"
+#include "printf.h"
+#endif
 #include "qcio.h"
 
 //@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
@@ -24,7 +30,11 @@ unsigned int adr=0,len=0x200,endadr,blklen=512,helloflag=0,opt;
 FILE* out;
 
 
-char devname[]="/dev/ttyUSB0";
+#ifndef WIN32
+char devname[20]="/dev/ttyUSB0";
+#else
+char devname[20]="";
+#endif
 
 while ((opt = getopt(argc, argv, "p:a:l:o:ih")) != -1) {
   switch (opt) {
@@ -60,17 +70,29 @@ while ((opt = getopt(argc, argv, "p:a:l:o:ih")) != -1) {
   }
 }  
 
+#ifdef WIN32
+if (*devname == '\0')
+{
+   printf("\n - Последовательный порт не задан\n"); 
+   return; 
+}
+#endif
+
 if (len == 0) {
   printf("\n Неправильная длина");
   return;
 }  
 
 if (!open_port(devname))  {
+ #ifndef WIN32
    printf("\n - Последовательный порт %s не открывается\n", devname); 
-   return; 
+#else
+   printf("\n - Последовательный порт COM%s не открывается\n", devname); 
+#endif
+  return; 
 }
 
-out=fopen(filename,"w");
+out=fopen(filename,"wb");
 
 if (helloflag) hello();
 
