@@ -134,7 +134,7 @@ char devname[50]="";
 unsigned char ptable[1100]; // таблица разделов
 
 
-while ((opt = getopt(argc, argv, "hp:a:l:o:ixs:ef:mt8")) != -1) {
+while ((opt = getopt(argc, argv, "hp:a:l:o:ixs:ef:mt8k")) != -1) {
   switch (opt) {
    case 'h': 
     printf("\n  Утилита предназначена для чтения образа флеш через модифицированный загрузчик\n\
@@ -143,7 +143,7 @@ while ((opt = getopt(argc, argv, "hp:a:l:o:ixs:ef:mt8")) != -1) {
 -e        - включает коррекцию ECC при чтении (по умолчанию выключаена)\n\
 -i        - запускает процедуру HELLO для инициализации загрузчика\n\
 -x        - читает полный сектор - данные+obb. Без ключа читает только данные.\n\n\
--8        - работа с чипсетом MSM8200 вместо MDM9x12\n\
+-k #           - выбор чипсета: 0(MDM9x15, по умолчанию), 1(MSM8200), 2(MSM9x00)\n\
 Для режима неформатированного чтения:\n\
 -a <blk>  - начальный номер читаемого блока (по умолчанию 0)\n\
 -l <num>  - число читаемых блоков\n\
@@ -156,9 +156,24 @@ while ((opt = getopt(argc, argv, "hp:a:l:o:ixs:ef:mt8")) != -1) {
 -m        - вывести на экран полную карту разделов\n");
     return;
     
-   case '8':
-    nand_cmd=0xA0A00000;
-    chipset9x15=0;
+   case 'k':
+     switch(*optarg) {
+       case '0':
+        nand_cmd=0x1b400000;
+	break;
+
+       case '1':
+        nand_cmd=0xA0A00000;
+	break;
+
+       case '2':
+        nand_cmd=0x81200000;
+	break;
+
+       default:
+	printf("\nНедопустимый номер чипсета\n");
+	return;
+     }	
     break;
     
    case 'p':

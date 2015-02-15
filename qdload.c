@@ -41,7 +41,7 @@ while ((opt = getopt(argc, argv, "p:a:hi8")) != -1) {
 Допустимы следующие ключи:\n\n\
 -p <tty>  - указывает имя устройства последовательного порта, переведенного в download mode\n\
 -i        - запускает процедуру HELLO для инициализации загрузчика\n\
--8        - работа с чипсетом MSM8200 вместо MDM9x12\n\
+-k #           - выбор чипсета: 0(MDM9x15, по умолчанию), 1(MSM8200), 2(MSM9x00)\n\
 -a <adr>  - адрес загрузки, по умолчанию 41700000\n");
     return;
      
@@ -49,8 +49,24 @@ while ((opt = getopt(argc, argv, "p:a:hi8")) != -1) {
     strcpy(devname,optarg);
     break;
 
-   case '8':
-    nand_cmd=0xA0A00000;
+   case 'k':
+     switch(*optarg) {
+       case '0':
+        nand_cmd=0x1b400000;
+	break;
+
+       case '1':
+        nand_cmd=0xA0A00000;
+	break;
+
+       case '2':
+        nand_cmd=0x81200000;
+	break;
+
+       default:
+	printf("\nНедопустимый номер чипсета\n");
+	return;
+     }	
     break;
 
    case 'i':

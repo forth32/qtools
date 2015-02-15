@@ -440,9 +440,13 @@ if (rbuf[1] != 2) {
    dump(rbuf,i,0);
    return;
 }  
+//dump(rbuf,i,0);
 i=rbuf[0x2c];
 rbuf[0x2d+i]=0;
-printf("ok\n Flash: %s\n",rbuf+0x2d);
+printf("ok\n Flash: %s",rbuf+0x2d);
+printf("\n Версия протокола: %i",rbuf[0x22]);
+printf("\n Максимальный размер пакета: %i байта",*((unsigned int*)&rbuf[0x24]));
+printf("\n");
 }
 
 //*************************************

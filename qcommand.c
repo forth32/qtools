@@ -75,6 +75,7 @@ char* sptr;
 char membuf[4096];
 int block,page,sect;
 
+
 switch (cmdline[0]) {
   
   // help
@@ -207,7 +208,7 @@ char devname[50]="";
 #endif
 int opt,helloflag=0;
 
-while ((opt = getopt(argc, argv, "p:ic:he8")) != -1) {
+while ((opt = getopt(argc, argv, "p:ic:hek")) != -1) {
   switch (opt) {
    case 'h': 
      printf("\nИнтерактивная оболочка для ввода команд в загрузчик\n\n\
@@ -215,7 +216,7 @@ while ((opt = getopt(argc, argv, "p:ic:he8")) != -1) {
 -p <tty>       - указывает имя устройства последовательного порта для общения с загрузчиком\n\
 -i             - запускает процедуру HELLO для инициализации загрузчика\n\
 -e             - запрещает передачу префикса 7E перед командой\n\
--8             - работа с чипсетом MSM8200 вместо MDM9x12\n\
+-k #           - выбор чипсета: 0(MDM9x15, по умолчанию), 1(MSM8200), 2(MSM9x00)\n\
 -c \"<команда>\" - запускает указанную команду и завершает работу\n");
     return;
      
@@ -223,8 +224,24 @@ while ((opt = getopt(argc, argv, "p:ic:he8")) != -1) {
     strcpy(devname,optarg);
     break;
      
-   case '8':
-    nand_cmd=0xA0A00000;
+   case 'k':
+     switch(*optarg) {
+       case '0':
+        nand_cmd=0x1b400000;
+	break;
+
+       case '1':
+        nand_cmd=0xA0A00000;
+	break;
+
+       case '2':
+        nand_cmd=0x81200000;
+	break;
+
+       default:
+	printf("\nНедопустимый номер чипсета\n");
+	return;
+     }	
     break;
     
    case 'i':
