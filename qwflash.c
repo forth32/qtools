@@ -43,8 +43,8 @@ unsigned char cmdbuf[]={0x15};
 int iolen;
 
 iolen=send_cmd(cmdbuf,1,iobuf);
-//printf("\n--close--\n");
-//dump(iobuf,iolen,0);
+printf("\n--close--\n");
+dump(iobuf,iolen,0);
 
 }  
 
@@ -59,7 +59,7 @@ unsigned char cmdbuf[8192]={0x19,0};
 int iolen;
   
 memcpy(cmdbuf+2,ptraw,len);
-//dump(cmdbuf,len+2,0);
+dump(cmdbuf,len+2,0);
 
 iolen=send_cmd(cmdbuf,len+2,iobuf);
 
@@ -249,13 +249,12 @@ if (!secure_mode()) {
 }
 qclose();
 usleep(50000);
-printf("\nотсылаем таблицу разделов");
+printf("\n Отсылаем таблицу разделов...");
 // отсылаем таблицу разделов
 if (!send_ptable(ptabraw,16+28*npart)) { 
   printf("\n Ошибка отсылки таблицы разделов\n");
   return;
 }  
-
 // главный цикл записи - по разделам:
 port_timeout(1000);
 for(i=0;i<npart;i++) {
