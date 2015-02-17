@@ -279,7 +279,8 @@ for(i=0;i<npart;i++) {
     scmd[3]=(adr)&0xff;
     memset(scmd+3,0xff,wbsize);   // заполняем буфер данных FF
     len=fread(scmd+4,1,wbsize,part);
-    printf("\r Запись раздела %i (%s): адрес:%06x",i,ptable[i].name,adr); fflush(stdout);
+//    printf("\r Запись раздела %i (%s): адрес:%06x",i,ptable[i].name,adr); fflush(stdout);
+    printf("\n Запись раздела %i (%s): адрес:%06x lem=%08x",i,ptable[i].name,adr,len); fflush(stdout);
     iolen=send_cmd_base(scmd,len+4,iobuf,1);
     if ((iolen == 0) || (iobuf[1] != 8)) {
       printf("\n Ошибка записи раздела %i (%s): адрес:%06x\n",i,ptable[i].name,adr);
