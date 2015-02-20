@@ -6,6 +6,7 @@
 
 // Размер блока записи
 #define wbsize 1024
+//#define wbsize 1538
   
 // хранилище таблицы разделов
 struct  {
@@ -37,14 +38,16 @@ return 0; // была ошибка
 //**********************************
 //* Закрытие потока данных раздела
 //**********************************
-void qclose() {
+int qclose() {
 unsigned char iobuf[600];
 unsigned char cmdbuf[]={0x15};
 int iolen;
 
 iolen=send_cmd(cmdbuf,1,iobuf);
+if (iobuf[1] == 0x16) return 1;
 printf("\n--close--\n");
 dump(iobuf,iolen,0);
+return 0;
 
 }  
 
@@ -59,7 +62,8 @@ unsigned char cmdbuf[8192]={0x19,0};
 int iolen;
   
 memcpy(cmdbuf+2,ptraw,len);
-dump(cmdbuf,len+2,0);
+//printf("\n");
+//dump(cmdbuf,len+2,0);
 
 iolen=send_cmd(cmdbuf,len+2,iobuf);
 
@@ -75,7 +79,7 @@ return 0; // была ошибка
 int send_head(char* name) {
 
 unsigned char iobuf[600];
-unsigned char cmdbuf[32]={0x1b,0x1e};
+unsigned char cmdbuf[32]={0x1b,0x0e};
 int iolen;
   
 strcpy(cmdbuf+2,name);
@@ -91,10 +95,10 @@ return 0; // была ошибка
 //@@@@@@@@@@@@ Головная программа
 void main(int argc, char* argv[]) {
   
-unsigned char iobuf[2048];
-unsigned char scmd[3068]={0x7,0,0,0};
+unsigned char iobuf[14048];
+unsigned char scmd[13068]={0x7,0,0,0};
 int res;
-char ptabraw[2048];
+char ptabraw[4048];
 FILE* part;
 int helloflag=0;
 int ptflag=0;
@@ -274,24 +278,30 @@ for(i=0;i<npart;i++) {
   for(adr=0;;adr+=wbsize) {  
     // адрес
     scmd[0]=7;
-    scmd[1]=(adr>>16)&0xff;
+    scmd[1]=(adr)&0xff;
     scmd[2]=(adr>>8)&0xff;
-    scmd[3]=(adr)&0xff;
-    memset(scmd+3,0xff,wbsize);   // заполняем буфер данных FF
-    len=fread(scmd+4,1,wbsize,part);
-//    printf("\r Запись раздела %i (%s): адрес:%06x",i,ptable[i].name,adr); fflush(stdout);
-    printf("\n Запись раздела %i (%s): адрес:%06x lem=%08x",i,ptable[i].name,adr,len); fflush(stdout);
-    iolen=send_cmd_base(scmd,len+4,iobuf,1);
+    scmd[3]=(adr>>16)&0xff;
+    scmd[4]=(adr>>24)&0xff;
+    memset(scmd+5,0xff,wbsize+1);   // заполняем буфер данных FF
+    len=fread(scmd+5,1,wbsize,part);
+    printf("\r Запись раздела %i (%s): адрес:%06x",i,ptable[i].name,adr); fflush(stdout);
+//    dump(scmd,len+4,0);
+//    return;
+    iolen=send_cmd_base(scmd,len+5,iobuf,0);
     if ((iolen == 0) || (iobuf[1] != 8)) {
       printf("\n Ошибка записи раздела %i (%s): адрес:%06x\n",i,ptable[i].name,adr);
+      dump(iobuf,iolen,0);
       return;
     }
     if (feof(part)) break; // конец раздела и конец файла
   }
   // Раздел передан полностью
-  qclose();
+  if (!qclose()) {
+    printf("\n Ошибка закрытия потока даных\n");
+    return;
+  }  
   printf(" ... запись завершена\n");
-  usleep(50000);
+  usleep(500000);
 }
 }
 
