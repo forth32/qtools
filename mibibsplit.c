@@ -1,4 +1,8 @@
 #include <stdio.h>
+#ifdef WIN32
+#include <windows.h>
+#include "printf.h"
+#endif
 
 void main(int argc, char* argv[]) {
   
@@ -14,7 +18,7 @@ if (argc != 2) {
   printf("\n Не указано имя файла MIBIB\n");
   return;
 }
-in=fopen(argv[1],"r");
+in=fopen(argv[1],"rb");
 if (in == 0) {
   printf("\n Ошибка открытия файла MIBIB\n");
   return;
@@ -42,7 +46,7 @@ fread(buf,padr,1,in);
 for(i=padr-1;i>0;i--) {
   if (buf[i] != 0xff) break;
 }
-out=fopen("sbl1.bin","w");
+out=fopen("sbl1.bin","wb");
 fwrite(buf,i+1,1,out);
 fclose (out);
   
@@ -56,7 +60,7 @@ while(!feof(in)) {
    fseek(in,-8,SEEK_CUR); // отъезжаем на начало сигнатуры
    fread(buf,2048,1,in);
    npar=*((unsigned int*)&buf[12]); // число разделов
-   out=fopen("ptable-r.bin","w");
+   out=fopen("ptable-r.bin","wb");
    fwrite(buf,16+28*npar,1,out);
    fclose (out);
    rflag=1;  // таблица чтения у нас есть
@@ -68,7 +72,7 @@ while(!feof(in)) {
    fseek(in,-8,SEEK_CUR); // отъезжаем на начало сигнатуры
    fread(buf,2048,1,in);
    npar=*((unsigned int*)&buf[12]); // число разделов
-   out=fopen("ptable-w.bin","w");
+   out=fopen("ptable-w.bin","wb");
    fwrite(buf,16+28*npar,1,out);
    fclose (out);
    wflag=1;  // таблица чтения у нас есть
