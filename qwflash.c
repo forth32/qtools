@@ -18,6 +18,38 @@ struct  {
 
 int npart=0;    // число разделов в таблице
 
+unsigned int cfg0,cfg1; // сохранение конфигурации контроллера
+
+//*****************************************************
+//*  Восстановление конфигурации контроллера 
+//*****************************************************
+void restore_reg() {
+  
+mempoke(nand_cfg0,cfg0);  
+mempoke(nand_cfg1,cfg1);  
+}
+
+//*****************************************************
+//*  Обработка отлупов загрузчика
+//* 
+//* descr - имя процедуры, посылающей командный пакет
+//*****************************************************
+
+void show_errpacket(char* descr, char* pktbuf, int len) {
+  
+printf("\n! %s вернул ошибку: ",descr);  
+if (pktbuf[1] == 0x0e) {
+  // текстовый отлуп - печатаем его
+  pktbuf[len-3]=0;
+  puts(pktbuf+2);
+}
+else {
+  printf("\n");
+  dump(pktbuf,len,0);
+}
+}
+
+
 //***********************************8
 //* Установка secure mode
 //***********************************8
@@ -28,9 +60,8 @@ unsigned char cmdbuf[]={0x17,1};
 int iolen;
 
 iolen=send_cmd(cmdbuf,2,iobuf);
-//printf("\n--secure--\n");
-//dump(iobuf,iolen,0);
 if (iobuf[1] == 0x18) return 1;
+show_errpacket("secure_mode()",iobuf,iolen);
 return 0; // была ошибка
 
 }  
@@ -38,15 +69,15 @@ return 0; // была ошибка
 //**********************************
 //* Закрытие потока данных раздела
 //**********************************
-int qclose() {
+int qclose(int errmode) {
 unsigned char iobuf[600];
 unsigned char cmdbuf[]={0x15};
 int iolen;
 
 iolen=send_cmd(cmdbuf,1,iobuf);
+if (!errmode) return 1;
 if (iobuf[1] == 0x16) return 1;
-printf("\n--close--\n");
-dump(iobuf,iolen,0);
+show_errpacket("close()",iobuf,iolen);
 return 0;
 
 }  
@@ -68,8 +99,7 @@ memcpy(cmdbuf+2,ptraw,len);
 iolen=send_cmd(cmdbuf,len+2,iobuf);
 
 if (iobuf[1] == 0x1a) return 1;
-printf("\n--ptable--\n");
-dump(iobuf,iolen,0);
+show_errpacket("send_ptable()",iobuf,iolen);
 return 0; // была ошибка
 }
 
@@ -85,8 +115,7 @@ int iolen;
 strcpy(cmdbuf+2,name);
 iolen=send_cmd(cmdbuf,strlen(cmdbuf)+1,iobuf);
 if (iobuf[1] == 0x1c) return 1;
-printf("\n--head--\n");
-dump(iobuf,iolen,0);
+show_errpacket("send_head()",iobuf,iolen);
 return 0; // была ошибка
 }
 
@@ -111,8 +140,10 @@ unsigned int i,opt,iolen,j;
 unsigned int renameflag=0;
 unsigned int adr,len;
 
+
 // очищаем массив имен файлов
 for(i=0;i<50;i++)  wname[i][0]=0;
+
 
 while ((opt = getopt(argc, argv, "hp:s:w:imrk")) != -1) {
   switch (opt) {
@@ -175,7 +206,7 @@ while ((opt = getopt(argc, argv, "hp:s:w:imrk")) != -1) {
        return;
      }
      strcpy(wname[i],sptr+1); // копируем имя файла
-     printf("\n-- write # %i : %s",i,wname[i]);
+//     printf("\n-- write # %i : %s",i,wname[i]);
      break;
      
    case 's':
@@ -204,6 +235,10 @@ if (!open_port(devname))  {
    return; 
 }
 if (helloflag) hello();
+// сохраняем конфигурацию контроллера
+cfg0=mempeek(nand_cfg0);
+cfg1=mempeek(nand_cfg1);
+
 
 // Загрузка и разбор таблицы разделов
 
@@ -215,12 +250,12 @@ if (!ptflag) {
  flash_read(2, 2, 1);  // продолжение таблицы разделов
  memread(ptabraw+512,sector_buf, 512);
 }
-/*
-if (strncmp(ptabraw,"\xAA\x73\xEE\x55\xDB\xBD\x5E\xE3",8) != 0) {
+
+if (strncmp(ptabraw,"\x9A\x1b\x7d\xaa\xbc\x48\x7d\x1f",8) != 0) {
    printf("\nТаблица разделов повреждена\n");
    return;
 }
-*/
+
 npart=*((unsigned int*)&ptabraw[12]);
 for(i=0;i<npart;i++) {
     strncpy(ptable[i].name,ptabraw+16+28*i,16);       // имя
@@ -244,19 +279,22 @@ if (listmode) {
   for(i=0;i<npart;i++) {
     printf("\r%02i %08x  %08x  %08x  %s\n",i,ptable[i].start,ptable[i].len,ptable[i].attr,ptable[i].name);
   }
+  restore_reg();
   return;
 }  
 printf("\n secure mode...");
 if (!secure_mode()) {
   printf("\n Ошибка входа в режим Secure mode\n");
+  restore_reg();
   return;
 }
-qclose();
+qclose(0);
 usleep(50000);
 printf("\n Отсылаем таблицу разделов...");
 // отсылаем таблицу разделов
 if (!send_ptable(ptabraw,16+28*npart)) { 
   printf("\n Ошибка отсылки таблицы разделов\n");
+  restore_reg();
   return;
 }  
 // главный цикл записи - по разделам:
@@ -266,12 +304,14 @@ for(i=0;i<npart;i++) {
   part=fopen(wname[i],"r");
   if (part == 0) {
     printf("\n Раздел %i: ошибка открытия файла %s\n",i,wname[i]);
+    restore_reg();
     return;
   }
   printf("\n Запись раздела %i (%s)",i,ptable[i].name); fflush(stdout);
   // отсылаем заголовок
   if (!send_head(ptable[i].name)) {
     printf("\n! Модем отверг заголовок раздела\n");
+    restore_reg();
     return;
   }  
   // цикл записи кусков раздела по 1К за команду
@@ -289,20 +329,24 @@ for(i=0;i<npart;i++) {
 //    return;
     iolen=send_cmd_base(scmd,len+5,iobuf,0);
     if ((iolen == 0) || (iobuf[1] != 8)) {
+      show_errpacket("Пакет данных ",iobuf,iolen);
       printf("\n Ошибка записи раздела %i (%s): адрес:%06x\n",i,ptable[i].name,adr);
-      dump(iobuf,iolen,0);
+      restore_reg();
       return;
     }
     if (feof(part)) break; // конец раздела и конец файла
   }
   // Раздел передан полностью
-  if (!qclose()) {
+  if (!qclose(1)) {
     printf("\n Ошибка закрытия потока даных\n");
+    restore_reg();
     return;
   }  
-  printf(" ... запись завершена\n");
+  printf(" ... запись завершена");
   usleep(500000);
 }
+printf("\n");
+restore_reg();
 }
 
 

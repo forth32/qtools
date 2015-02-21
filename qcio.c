@@ -406,7 +406,7 @@ unsigned char iobuf[300];
 int iolen;
 int i;
 
-mempoke(nand_cfg1,0x6745d); // ECC off
+//mempoke(nand_cfg1,0x6745d); // ECC off
 mempoke(nand_cs,4); // data mover
 
 mempoke(nand_cmd,1); // Сброс всех операций контроллера

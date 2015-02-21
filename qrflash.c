@@ -324,7 +324,7 @@ for(i=0;i<npar;i++) {
         if (filename[4] == ':') filename[4]='-';    // заменяем : на -
         out=fopen(filename,"wb");  // открываем выходной файл
         for(block=start;block<(start+len);block++) {
-          printf("\r * %08x",block); fflush(stdout);
+          printf("\r * R: блок %08x (%i%%)",block-start,(block-start+1)*100/len); fflush(stdout);
           if ((attr != 0x1ff)||(sectorsize>512)) 
 	     // сырое чтение или чтение неизварщенных разделов
 	     read_block(block,sectorsize,out);

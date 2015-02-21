@@ -5,6 +5,7 @@ extern unsigned int nand_cmd;    // 0x1b400000
 #define nand_cs    nand_cmd+0xc
 #define nand_exec  nand_cmd+0x10
 #define nand_status nand_cmd+0x14
+#define nand_cfg0  nand_cmd+0x20
 #define nand_cfg1  nand_cmd+0x24
 #define sector_buf nand_cmd+0x100
 
