@@ -131,22 +131,108 @@ static int write(int siofd, unsigned char* buf, int len)
 
 #endif
 
-//***************************************************
-//*  Отсылка команды в порт и получение результата  *
+//*************************************************
+//*    отсылка буфера в модем
+//*************************************************
+unsigned int send_unframed_buf(char* outcmdbuf, unsigned int outlen, int prefixflag) {
+
+
+#ifndef WIN32
+tcflush(siofd,TCIOFLUSH);  // сбрасываем недочитанный буфер ввода
+#else
+PurgeComm(hSerial, PURGE_RXCLEAR);
+#endif
+if (prefixflag) write(siofd,"\x7e",1);  // отсылаем префикс если надо
+
+//if (outcmdbuf[0] == 7) dump(outcmdbuf,iolen,0);
+
+if (write(siofd,outcmdbuf,outlen) == 0) {   printf("\n Ошибка записи команды");return 0;  }
+#ifndef WIN32
+tcdrain(siofd);  // ждем окончания вывода блока
+#else
+FlushFileBuffers(hSerial);
+#endif
+return 1;
+}
+
+//******************************************************************************************
+//* Прием буфера с ответом из модема
 //*
-//* prefixflag=0 - не посылать префикс 7E
-//*            1 - посылать
-//***************************************************
-int send_cmd_base(unsigned char* incmdbuf, int blen, unsigned char* iobuf, int prefixflag) {
+//*  masslen - число байтов, принимаемых единым блоком без анализа признака конца 7F
+//******************************************************************************************
+
+unsigned int receive_reply(char* iobuf, int masslen) {
   
 int i,iolen,escflag,bcnt,incount;
-unsigned short datalen;
 unsigned char c;
-unsigned char cmdbuf[14096],outcmdbuf[14096];
 unsigned int res;
+unsigned char replybuf[14000];
+
+incount=0;
+if (read(siofd,&c,1) != 1) {
+  printf("\n Нет ответа от модема");
+  return 0; // модем не ответил или ответил неправильно
+}
+//if (c != 0x7e) {
+//  printf("\n Первый байт ответа - не 7e: %02x",c);
+//  return 0; // модем не ответил или ответил неправильно
+//}
+replybuf[incount++]=c;
+
+// чтение массива данных единым блоком при обработке команды 03
+if (masslen != 0) {
+ res=read(siofd,replybuf+1,masslen-1);
+ if (res != (masslen-1)) {
+   printf("\nСлишком короткий ответ от модема: %i байт, ожидалось %i байт\n",res+1,masslen);
+   dump(replybuf,res+1,0);
+   return 0;
+ }  
+ incount+=masslen; // у нас в буфере уже есть masslen байт
+}
+
+// принимаем оставшийся хвост буфера
+while (read(siofd,&c,1) == 1)  {
+ replybuf[incount++]=c;
+ if (c == 0x7e) break;
+}
+
+// Преобразование принятого буфера для удаления ESC-знаков
+escflag=0;
+iolen=0;
+for (i=0;i<incount;i++) { 
+  c=replybuf[i];
+  if ((c == 0x7e)&&(iolen != 0)) {
+    iobuf[iolen++]=0x7e;
+    break;
+  }  
+  if (c == 0x7d) {
+    escflag=1;
+    continue;
+  }
+  if (escflag == 1) { 
+    c|=0x20;
+    escflag=0;
+  }  
+  iobuf[iolen++]=c;
+}  
+return iolen;
+
+}
+
+
+//##############33
+
+//***********************************************************
+//* Преобразование командного буфера с Escape-подстановкой
+//***********************************************************
+unsigned int convert_cmdbuf(char* incmdbuf, int blen, char* outcmdbuf) {
+
+int i,iolen,escflag,bcnt,incount;
+unsigned char cmdbuf[14096];
 
 bcnt=blen;
 memcpy(cmdbuf,incmdbuf,blen);
+// Вписываем CRC в конец буфера
 *((unsigned short*)(cmdbuf+bcnt))=crc16(cmdbuf,bcnt);
 bcnt+=2;
 
@@ -171,77 +257,41 @@ for(i=1;i<bcnt;i++) {
  }
 outcmdbuf[iolen++]=0x7e; // завершающий байт
 outcmdbuf[iolen]=0;
- 
-// отсылка команды в модем
-#ifndef WIN32
-tcflush(siofd,TCIOFLUSH);  // сбрасываем недочитанный буфер ввода
-#else
-PurgeComm(hSerial, PURGE_RXCLEAR);
-#endif
-if (prefixflag) write(siofd,"\x7e",1);  // отсылаем префикс если надо
-
-//if (outcmdbuf[0] == 7) dump(outcmdbuf,iolen,0);
-
-if (write(siofd,outcmdbuf,iolen) == 0) {   printf("\n Ошибка записи команды");return 0;  }
-#ifndef WIN32
-tcdrain(siofd);  // ждем окончания вывода блока
-#else
-FlushFileBuffers(hSerial);
-#endif
-
-incount=0;
-if (read(siofd,&c,1) != 1) {
-  printf("\n Нет ответа от модема");
-  return 0; // модем не ответил или ответил неправильно
-}
-//if (c != 0x7e) {
-//  printf("\n Первый байт ответа - не 7e: %02x",c);
-//  return 0; // модем не ответил или ответил неправильно
-//}
-iobuf[incount++]=c;
-
-// чтение массива данных единым блоком при обработке команды 03
-if ((cmdbuf[0] == 3)&&(blen == 10)) {
- datalen=*((unsigned short*)(cmdbuf+5)); // заказанная длина поля данных
- res=read(siofd,cmdbuf+1,datalen+7);
- if (res != (datalen+7)) {
-   printf("\nСлишком короткий ответ от модема: %i байт\n",res+1);
-   dump(cmdbuf,res+1,0);
-   return 0;
- }  
- incount=incount+datalen+7;
-}
-
-// принимаем оставшийся хвост буфера
-while (read(siofd,&c,1) == 1)  {
- cmdbuf[incount++]=c;
- if (c == 0x7e) break;
-}
-
-// Преобразование принятого буфера для удаления ESC-знаков
-escflag=0;
-iolen=0;
-for (i=0;i<incount;i++) { 
-  c=cmdbuf[i];
-  if ((c == 0x7e)&&(iolen != 0)) {
-    iobuf[iolen++]=0x7e;
-    break;
-  }  
-  if (c == 0x7d) {
-    escflag=1;
-    continue;
-  }
-  if (escflag == 1) { 
-    c|=0x20;
-    escflag=0;
-  }  
-  iobuf[iolen++]=c;
-}  
 return iolen;
-
 }
 
 
+
+//***************************************************
+//*  Отсылка команды в порт и получение результата  *
+//*
+//* prefixflag=0 - не посылать префикс 7E
+//*            1 - посылать
+//***************************************************
+int send_cmd_base(unsigned char* incmdbuf, int blen, unsigned char* iobuf, int prefixflag) {
+  
+unsigned char outcmdbuf[14096];
+unsigned int  iolen;
+
+iolen=convert_cmdbuf(incmdbuf,blen,outcmdbuf);  
+if (!send_unframed_buf(outcmdbuf,iolen,prefixflag)) return 0; // ошибка передачи команды
+return receive_reply(iobuf,0);
+}
+
+//***************************************************************
+//*  Отсылка команды в порт и получение результата в виде 
+//*  большого буфера определенного размера
+//*
+//***************************************************
+int send_cmd_massdata(unsigned char* incmdbuf, int blen, unsigned char* iobuf, unsigned int datalen) {
+  
+unsigned char outcmdbuf[14096];
+unsigned int  iolen;
+
+iolen=convert_cmdbuf(incmdbuf,blen,outcmdbuf);  
+if (!send_unframed_buf(outcmdbuf,iolen,0)) return 0; // ошибка передачи команды
+return receive_reply(iobuf,datalen);
+}
 
 
 //***************************************************
@@ -321,6 +371,7 @@ tcsetattr(siofd, TCSANOW, &sioparm);
 //* Чтение области памяти
 //***********************************8
 
+
 int memread(char* membuf,int adr, int len) {
 char iobuf[11600];
 char cmdbuf[]={3,0,0,0,0,0,2};
@@ -334,9 +385,9 @@ for(i=0;i<len;i+=512)  {
    blklen=len-i;
    *((unsigned short*)&cmdbuf[5])=blklen;  //вписываем длину
  }  
- iolen=send_cmd(cmdbuf,7,iobuf);
- if (iolen <blklen) {
-   printf("\n Ошибка в процессе обработки команды, iolen=%i\n",iolen);
+ iolen=send_cmd_massdata(cmdbuf,7,iobuf,blklen+8);
+ if (iolen <(blklen+8)) {
+   printf("\n Ошибка в процессе обработки команды, iolen=%i   len=%i\n",iolen,blklen);
    memcpy(membuf+i,iobuf+6,blklen);
    return 0;
  }  
@@ -460,3 +511,24 @@ memread(ptable,sector_buf, 512);
 flash_read(2, 1, 1);  // продолжение таблицы разделов
 memread(ptable+512,sector_buf, 512);
 }
+
+//*****************************************************
+//*  Обработка отлупов загрузчика
+//* 
+//* descr - имя процедуры, посылающей командный пакет
+//*****************************************************
+
+void show_errpacket(char* descr, char* pktbuf, int len) {
+  
+printf("\n! %s вернул ошибку: ",descr);  
+if (pktbuf[1] == 0x0e) {
+  // текстовый отлуп - печатаем его
+  pktbuf[len-3]=0;
+  puts(pktbuf+2);
+}
+else {
+  printf("\n");
+  dump(pktbuf,len,0);
+}
+}
+

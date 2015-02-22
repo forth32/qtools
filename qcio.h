@@ -27,3 +27,8 @@ void hello();
 void load_ptable(char* ptable);
 extern int siofd;
 void port_timeout(int timeout);
+int send_cmd_massdata(unsigned char* incmdbuf, int blen, unsigned char* iobuf, unsigned int datalen);
+unsigned int send_unframed_buf(char* outcmdbuf, unsigned int outlen, int prefixflag);
+unsigned int receive_reply(char* iobuf, int masslen);
+void show_errpacket(char* descr, char* pktbuf, int len);
+

@@ -29,26 +29,6 @@ mempoke(nand_cfg0,cfg0);
 mempoke(nand_cfg1,cfg1);  
 }
 
-//*****************************************************
-//*  Обработка отлупов загрузчика
-//* 
-//* descr - имя процедуры, посылающей командный пакет
-//*****************************************************
-
-void show_errpacket(char* descr, char* pktbuf, int len) {
-  
-printf("\n! %s вернул ошибку: ",descr);  
-if (pktbuf[1] == 0x0e) {
-  // текстовый отлуп - печатаем его
-  pktbuf[len-3]=0;
-  puts(pktbuf+2);
-}
-else {
-  printf("\n");
-  dump(pktbuf,len,0);
-}
-}
-
 
 //***********************************8
 //* Установка secure mode
@@ -139,6 +119,7 @@ char devname[]="/dev/ttyUSB0";
 unsigned int i,opt,iolen,j;
 unsigned int renameflag=0;
 unsigned int adr,len;
+unsigned int fsize;
 
 
 // очищаем массив имен файлов
@@ -148,7 +129,7 @@ for(i=0;i<50;i++)  wname[i][0]=0;
 while ((opt = getopt(argc, argv, "hp:s:w:imrk")) != -1) {
   switch (opt) {
    case 'h': 
-    printf("\n  Утилита предназначена для чтения образа флеш через модифицированный загрузчик\n\
+    printf("\n  Утилита предназначена для записи разделов (по таблице) на флеш модема\n\
 Допустимы следующие ключи:\n\n\
 -p <tty>  - указывает имя устройства последовательного порта для общения с загрузчиком\n\
 -i        - запускает процедуру HELLO для инициализации загрузчика\n\
@@ -307,6 +288,12 @@ for(i=0;i<npart;i++) {
     restore_reg();
     return;
   }
+  
+  // получаем размер раздела
+  fseek(part,0,SEEK_END);
+  fsize=ftell(part);
+  rewind(part);
+
   printf("\n Запись раздела %i (%s)",i,ptable[i].name); fflush(stdout);
   // отсылаем заголовок
   if (!send_head(ptable[i].name)) {
@@ -324,7 +311,7 @@ for(i=0;i<npart;i++) {
     scmd[4]=(adr>>24)&0xff;
     memset(scmd+5,0xff,wbsize+1);   // заполняем буфер данных FF
     len=fread(scmd+5,1,wbsize,part);
-    printf("\r Запись раздела %i (%s): адрес:%06x",i,ptable[i].name,adr); fflush(stdout);
+    printf("\r Запись раздела %i (%s): байт %i из %i (%i%%) ",i,ptable[i].name,adr,fsize,(adr+1)*100/fsize); fflush(stdout);
 //    dump(scmd,len+4,0);
 //    return;
     iolen=send_cmd_base(scmd,len+5,iobuf,0);
