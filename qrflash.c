@@ -134,7 +134,7 @@ char devname[50]="";
 unsigned char ptable[1100]; // таблица разделов
 
 
-while ((opt = getopt(argc, argv, "hp:a:l:o:ixs:ef:mt8k")) != -1) {
+while ((opt = getopt(argc, argv, "hp:a:l:o:ixs:ef:mt8k:")) != -1) {
   switch (opt) {
    case 'h': 
     printf("\n  Утилита предназначена для чтения образа флеш через модифицированный загрузчик\n\

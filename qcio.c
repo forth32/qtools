@@ -520,6 +520,7 @@ memread(ptable+512,sector_buf, 512);
 
 void show_errpacket(char* descr, char* pktbuf, int len) {
   
+if (len == 0) return;
 printf("\n! %s вернул ошибку: ",descr);  
 if (pktbuf[1] == 0x0e) {
   // текстовый отлуп - печатаем его

@@ -103,22 +103,25 @@ if (in == 0) {
 }
 
 printf("\n Запись из файла %s, стартовый адрес %08x\n",argv[optind],badr);
+port_timeout(1000);
 for(adr=badr;;adr+=wbsize) {
   len=fread(scmd+12,1,wbsize,in);
   if (len == 0) break;
   *((unsigned int*)&scmd[4])=adr;
   *((unsigned int*)&scmd[8])=len;
+  scmd[len+12]=0x7e;
   printf("\r W: %08x",adr);
   if (!send_unframed_buf(scmd,len+12,0)) {
     printf("\n Ошибка при отсылке командного буфера\n");
-    restore_reg();
+//    restore_reg();
     return;
   }  
   iolen=receive_reply(iobuf,0);
-  if (iobuf[1] != 0x31) {
-    show_errpacket("unstrem_write:",iobuf,iolen);
+  if ((iobuf[1] != 0x31)||(iolen == 0)) {
+    show_errpacket("unstrem_write",iobuf,iolen);
+    dump(iobuf,iolen,0);
     printf("\n Команда unstream write завершилась с ошибкой");
-    restore_reg();
+//    restore_reg();
     return;
   }  
     

@@ -208,7 +208,7 @@ char devname[50]="";
 #endif
 int opt,helloflag=0;
 
-while ((opt = getopt(argc, argv, "p:ic:hek")) != -1) {
+while ((opt = getopt(argc, argv, "p:ic:hek:")) != -1) {
   switch (opt) {
    case 'h': 
      printf("\nИнтерактивная оболочка для ввода команд в загрузчик\n\n\
@@ -225,7 +225,7 @@ while ((opt = getopt(argc, argv, "p:ic:hek")) != -1) {
     break;
      
    case 'k':
-     switch(*optarg) {
+     switch(optarg[0]) {
        case '0':
         nand_cmd=0x1b400000;
 	break;

@@ -126,7 +126,7 @@ unsigned int fsize;
 for(i=0;i<50;i++)  wname[i][0]=0;
 
 
-while ((opt = getopt(argc, argv, "hp:s:w:imrk")) != -1) {
+while ((opt = getopt(argc, argv, "hp:s:w:imrk:")) != -1) {
   switch (opt) {
    case 'h': 
     printf("\n  Утилита предназначена для записи разделов (по таблице) на флеш модема\n\
