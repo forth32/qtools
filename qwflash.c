@@ -231,12 +231,12 @@ if (!ptflag) {
  flash_read(2, 2, 1);  // продолжение таблицы разделов
  memread(ptabraw+512,sector_buf, 512);
 }
-
+/*
 if (strncmp(ptabraw,"\x9A\x1b\x7d\xaa\xbc\x48\x7d\x1f",8) != 0) {
    printf("\nТаблица разделов повреждена\n");
    return;
 }
-
+*/
 npart=*((unsigned int*)&ptabraw[12]);
 for(i=0;i<npart;i++) {
     strncpy(ptable[i].name,ptabraw+16+28*i,16);       // имя
