@@ -5,7 +5,7 @@
 #include "qcio.h"
 
 // Размер блока записи
-#define wbsize 1024
+#define wbsize 1
 //#define wbsize 1538
 
 unsigned int cfg0,cfg1; // сохранение конфигурации контроллера
@@ -25,8 +25,10 @@ mempoke(nand_cfg1,cfg1);
 //@@@@@@@@@@@@ Головная программа
 void main(int argc, char* argv[]) {
   
-unsigned char iobuf[14048];
-unsigned char scmd[13068]={0x30,0,0,0};
+unsigned char iobuf[14048*1024];
+unsigned char scmd[20]={0x30,0,0,0};
+unsigned char databuf[2048*1024];
+unsigned char outcmd[20];
 int res;
 FILE* in;
 int helloflag=0;
@@ -105,26 +107,30 @@ if (in == 0) {
 printf("\n Запись из файла %s, стартовый адрес %08x\n",argv[optind],badr);
 port_timeout(1000);
 for(adr=badr;;adr+=wbsize) {
-  len=fread(scmd+12,1,wbsize,in);
+  len=fread(databuf,1,2112*64*wbsize,in);
   if (len == 0) break;
   *((unsigned int*)&scmd[4])=adr;
   *((unsigned int*)&scmd[8])=len;
-  scmd[len+12]=0x7e;
   printf("\r W: %08x",adr);
-  if (!send_unframed_buf(scmd,len+12,0)) {
-    printf("\n Ошибка при отсылке командного буфера\n");
-//    restore_reg();
-    return;
-  }  
+  
+  iolen=convert_cmdbuf(scmd,12,outcmd);  
+  if (!send_unframed_buf(outcmd,iolen,0)) {
+     printf("\n Ошибка записи в USB-порт\n");
+     return;
+  }   
+  if (write(siofd,databuf,wbsize*64*2112) == 0) {
+     printf("\n Ошибка записи в USB-порт\n");
+     return;
+  }   
   iolen=receive_reply(iobuf,0);
   if ((iobuf[1] != 0x31)||(iolen == 0)) {
-    show_errpacket("unstrem_write",iobuf,iolen);
+    show_errpacket("unstrem_write() ",iobuf,iolen);
     dump(iobuf,iolen,0);
     printf("\n Команда unstream write завершилась с ошибкой");
 //    restore_reg();
     return;
   }  
-    
+  if (feof(in)) break;  
 }
 printf("\n");
 restore_reg();

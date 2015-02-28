@@ -45,6 +45,15 @@ do {
   sptr=strtok(0," ");
 } while (sptr != 0);
 iolen=send_cmd_base(cmdbuf,bcnt,iobuf,prefixflag);
+if (iobuf[1] == 0x0e) {
+  // ошибочный ответ - даем текстовый вариант
+  iobuf[iolen-3]=0;
+  printf("\n[ERR]: %s",iobuf+2);
+  iolen=receive_reply(iobuf,0);
+  i=*((unsigned int*)&iobuf[2]);
+  printf("Код ошибки = %08x\n",i);
+  return;
+}  
 printf("\n ---- ответ --- \n");
 dump(iobuf,iolen,0);
 printf("\n");
