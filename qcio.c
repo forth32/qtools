@@ -520,15 +520,22 @@ memread(ptable+512,sector_buf, 512);
 
 void show_errpacket(char* descr, char* pktbuf, int len) {
   
+char iobuf[2048];
+int iolen,i;
+  
 if (len == 0) return;
 printf("\n! %s вернул ошибку: ",descr);  
 if (pktbuf[1] == 0x0e) {
   // текстовый отлуп - печатаем его
-  pktbuf[len-3]=0;
+  pktbuf[len-4]=0;
   puts(pktbuf+2);
+  iolen=receive_reply(iobuf,0);
+  if (iolen != 0) {
+      i=*((unsigned int*)&iobuf[2]);
+      printf("Код ошибки = %08x\n\n",i);
+  }
 }
 else {
-  printf("\n");
   dump(pktbuf,len,0);
 }
 }
