@@ -111,8 +111,7 @@ i                 - запуск процедуры HELLO\n");
    sscanf(sptr,"%x",&adr);
    sptr=strtok(0," "); // длина
    if (sptr != 0) sscanf(sptr,"%x",&len);
-   memread(membuf,adr,len);
-   dump(membuf,len,adr); 
+   if (memread(membuf,adr,len)) dump(membuf,len,adr); 
    break;
 
   case 'm':
@@ -200,6 +199,7 @@ void main(int argc,char* argv[]) {
   
 #ifndef WIN32
 char* line;
+char oldcmdline[200]="";
 #else
 char line[200];
 #endif
@@ -292,6 +292,12 @@ if (strlen(scmdline) != 0) {
 }
  
 // Основной цикл обработки команд
+#ifndef WIN32
+ // загрузка истории команд
+ read_history("qcommand.history");
+ write_history("qcommand.history");
+#endif 
+
 for(;;)  {
 #ifndef WIN32
  line=readline(">");
@@ -305,7 +311,11 @@ for(;;)  {
  }   
  if (strlen(line) <1) continue; // слишком короткая команда
 #ifndef WIN32
- add_history(line); // в буфер ее для истории
+ if (strcmp(line,oldcmdline) != 0) {
+   add_history(line); // в буфер ее для истории
+   append_history(1,"qcommand.history");
+   strcpy(oldcmdline,line);
+ }  
 #endif
  process_command(line);
 #ifndef WIN32
