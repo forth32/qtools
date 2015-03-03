@@ -170,7 +170,7 @@ unsigned char replybuf[14000];
 
 incount=0;
 if (read(siofd,&c,1) != 1) {
-  printf("\n Нет ответа от модема");
+//  printf("\n Нет ответа от модема");
   return 0; // модем не ответил или ответил неправильно
 }
 //if (c != 0x7e) {
@@ -316,7 +316,7 @@ sioparm.c_cflag = B115200 | CS8 | CLOCAL | CREAD ;
 sioparm.c_iflag = 0;  // INPCK;
 sioparm.c_oflag = 0;
 sioparm.c_lflag = 0;
-sioparm.c_cc[VTIME]=10; // timeout  
+sioparm.c_cc[VTIME]=30; // timeout  
 sioparm.c_cc[VMIN]=0;  
 tcsetattr(siofd, TCSANOW, &sioparm);
 return 1;

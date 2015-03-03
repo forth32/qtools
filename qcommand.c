@@ -46,12 +46,7 @@ do {
 } while (sptr != 0);
 iolen=send_cmd_base(cmdbuf,bcnt,iobuf,prefixflag);
 if (iobuf[1] == 0x0e) {
-  // ошибочный ответ - даем текстовый вариант
-  iobuf[iolen-3]=0;
-  printf("\n[ERR]: %s",iobuf+2);
-  iolen=receive_reply(iobuf,0);
-  i=*((unsigned int*)&iobuf[2]);
-  printf("Код ошибки = %08x\n",i);
+  show_errpacket ("[ERR] ", iobuf, iolen);
   return;
 }  
 printf("\n ---- ответ --- \n");
@@ -225,7 +220,7 @@ while ((opt = getopt(argc, argv, "p:ic:hek:")) != -1) {
 -p <tty>       - указывает имя устройства последовательного порта для общения с загрузчиком\n\
 -i             - запускает процедуру HELLO для инициализации загрузчика\n\
 -e             - запрещает передачу префикса 7E перед командой\n\
--k #           - выбор чипсета: 0(MDM9x15, по умолчанию), 1(MDM8200), 2(MSM9x00)\n\
+-k #           - выбор чипсета: 0(MDM9x15, по умолчанию), 1(MDM8200), 2(MSM9x00), 3(MDM9x25) \n\
 -c \"<команда>\" - запускает указанную команду и завершает работу\n");
     return;
      
@@ -245,6 +240,10 @@ while ((opt = getopt(argc, argv, "p:ic:hek:")) != -1) {
 
        case '2':
         nand_cmd=0x81200000;
+	break;
+
+       case '3':
+        nand_cmd=0xf9af0000;
 	break;
 
        default:
