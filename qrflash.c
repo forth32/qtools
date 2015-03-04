@@ -264,7 +264,8 @@ if (helloflag) hello();
 if (partflag == 2) load_ptable(ptable); // загружаем таблицу разделов
 
 mempoke(nand_cfg1,mempeek(nand_cfg1)&0xfffffffe|eccflag); // ECC on/off
-mempoke(nand_cs,4); // data mover
+//mempoke(nand_cs,4); // data mover
+mempoke(nand_cs,0); // data mover
 
 mempoke(nand_cmd,1); // Сброс всех операций контроллера
 mempoke(nand_exec,0x1);
