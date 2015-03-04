@@ -387,7 +387,7 @@ for(i=0;i<len;i+=512)  {
  }  
  iolen=send_cmd_massdata(cmdbuf,7,iobuf,blklen+8);
  if (iolen <(blklen+8)) {
-   printf("\n Ошибка в процессе обработки команды, iolen=%i   len=%i\n",iolen,blklen);
+   printf("\n Ошибка в процессе обработки команды 03, требуется %i байт, получено %i\n",iolen,blklen);
    memcpy(membuf+i,iobuf+6,blklen);
    return 0;
  }  
@@ -429,7 +429,7 @@ if (iobuf[2] != 06) {
   printf("\n cmdbuf: "); dump(cmdbuf,10,0);
   printf("\n ответ : "); dump(iobuf,iolen,0);
   printf("\n");
-  return 0;
+  exit(1);
 }  
 return 1;
 }
