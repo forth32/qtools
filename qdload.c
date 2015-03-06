@@ -114,7 +114,11 @@ if (iolen != 5) {
    return;
 }   
 iolen=send_cmd_base(cmd2,1,iobuf,1);
+#ifndef WIN32
 fstat(fileno(in),&fstatus);
+#else
+fstat(_fileno(in),&fstatus);
+#endif
 printf("\n Размер файла: %i\n",fstatus.st_size);
 partsize=dlblock;
 
