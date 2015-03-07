@@ -9,5 +9,5 @@ static int printf(const char* format, ...)
     va_end(args);
     MultiByteToWideChar(CP_UTF8, 0, ostr, -1, wstr, 2048);
     WideCharToMultiByte(CP_OEMCP, 0, wstr, -1, ostr, 2048, NULL, NULL);
-    return printf_s(ostr);
+    return printf_s("%s", ostr);
 }
