@@ -1,7 +1,14 @@
 #include <stdio.h>
 #include <string.h>
+#ifndef WIN32
 #include <unistd.h>
 #include <getopt.h>
+#else
+#include <windows.h>
+//#include <io.h>
+#include "wingetopt.h"
+#include "printf.h"
+#endif
 #include "qcio.h"
 
 // Размер блока записи
@@ -115,7 +122,11 @@ int listmode=0;
 int wcount=0; 
 char wname[50][120]; // массив имен файлов для записи разделов
 char* sptr;
-char devname[]="/dev/ttyUSB0";
+#ifndef WIN32
+char devname[50]="/dev/ttyUSB0";
+#else
+char devname[50]="";
+#endif
 unsigned int i,opt,iolen,j;
 unsigned int renameflag=0;
 unsigned int adr,len;
@@ -196,7 +207,7 @@ while ((opt = getopt(argc, argv, "hp:s:w:imrk:")) != -1) {
      
    case 's':
        // загружаем таблицу разделов из файла
-       part=fopen(optarg,"r");
+       part=fopen(optarg,"rb");
        if (part == 0) {
          printf("\nОшибка открытия файла таблицы разделов\n");
          return;
@@ -215,8 +226,21 @@ while ((opt = getopt(argc, argv, "hp:s:w:imrk:")) != -1) {
      return;
   }
 }  
+
+#ifdef WIN32
+if (*devname == '\0')
+{
+   printf("\n - Последовательный порт не задан\n"); 
+   return; 
+}
+#endif
+
 if (!open_port(devname))  {
+#ifndef WIN32
    printf("\n - Последовательный порт %s не открывается\n", devname); 
+#else
+   printf("\n - Последовательный порт COM%s не открывается\n", devname); 
+#endif
    return; 
 }
 if (helloflag) hello();
@@ -274,7 +298,11 @@ if (!secure_mode()) {
   return;
 }
 qclose(0);  //####################################################
-usleep(50000);
+#ifndef WIN32
+  usleep(50000);
+#else
+  Sleep(50);
+#endif
 printf("\n Отсылаем таблицу разделов...");
 // отсылаем таблицу разделов
 if (!send_ptable(ptabraw,16+28*npart)) { 
@@ -286,7 +314,7 @@ if (!send_ptable(ptabraw,16+28*npart)) {
 port_timeout(1000);
 for(i=0;i<npart;i++) {
   if (wname[i][0] == 0) continue; // этот раздел записывать не надо
-  part=fopen(wname[i],"r");
+  part=fopen(wname[i],"rb");
   if (part == 0) {
     printf("\n Раздел %i: ошибка открытия файла %s\n",i,wname[i]);
     restore_reg();
@@ -334,7 +362,11 @@ for(i=0;i<npart;i++) {
     return;
   }  
   printf(" ... запись завершена");
+#ifndef WIN32
   usleep(500000);
+#else
+  Sleep(500);
+#endif
 }
 printf("\n");
 restore_reg();

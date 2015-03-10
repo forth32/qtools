@@ -351,7 +351,7 @@ for(i=0;i<npar;i++) {
 #ifndef WIN32
        ftruncate(fileno(out),lastpos+1);   // обрезаем файл
 #else
-       _chsize(fileno(out),lastpos+1);   // обрезаем файл
+       _chsize(_fileno(out),lastpos+1);   // обрезаем файл
 #endif
        fclose(out);
       }	
