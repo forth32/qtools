@@ -540,3 +540,18 @@ else {
 }
 }
 
+//**********************************
+//* Закрытие потока данных раздела
+//**********************************
+int qclose(int errmode) {
+unsigned char iobuf[600];
+unsigned char cmdbuf[]={0x15};
+int iolen;
+
+iolen=send_cmd(cmdbuf,1,iobuf);
+if (!errmode) return 1;
+if (iobuf[1] == 0x16) return 1;
+show_errpacket("close()",iobuf,iolen);
+return 0;
+
+}  

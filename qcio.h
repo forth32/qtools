@@ -31,4 +31,5 @@ int send_cmd_massdata(unsigned char* incmdbuf, int blen, unsigned char* iobuf, u
 unsigned int send_unframed_buf(char* outcmdbuf, unsigned int outlen, int prefixflag);
 unsigned int receive_reply(char* iobuf, int masslen);
 void show_errpacket(char* descr, char* pktbuf, int len);
+int qclose(int errmode);
 
