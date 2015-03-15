@@ -27,7 +27,8 @@ unsigned char datacmd[8192]={0x11,0x00,0x01,0xf1,0x1f,0x01,0x05,0x4a,
 			     0x42,0xf8,0x23,0x00,0x01,0x33,0x8f,0x2b,
 			     0xf8,0xd3,0x70,0x47,0x00,0x00,0x00,0x01,
 			     0xaf,0xf9};
-unsigned char databuf[8192];			     
+unsigned char databuf[8192];
+unsigned char* oobuf=databuf+4096; // указатель на OOB. Пока жестко задаем 4096/160
 int res;
 FILE* in;
 int helloflag=0;
@@ -83,7 +84,7 @@ while ((opt = getopt(argc, argv, "hp:ikb:")) != -1) {
      break;
      
    case 'a':
-     sscanf(optarg,"%x",&badr);
+     sscanf(optarg,"%x",&block);
      break;
      
    case '?':
@@ -107,34 +108,28 @@ if (in == 0) {
   return;
 }
 
-printf("\n Запись из файла %s, стартовый адрес %08x\n",argv[optind],badr);
+printf("\n Запись из файла %s, стартовый блок %i\n",argv[optind],block);
 port_timeout(1000);
-for(adr=badr;;adr+=wbsize) {
-  len=fread(databuf,1,2112*64*wbsize,in);
-  if (len == 0) break;
-  *((unsigned int*)&scmd[4])=adr;
-  *((unsigned int*)&scmd[8])=len;
-  printf("\r W: %08x",adr);
-  
-  iolen=convert_cmdbuf(scmd,12,outcmd);  
-  if (!send_unframed_buf(outcmd,iolen,0)) {
-     printf("\n Ошибка записи в USB-порт\n");
-     return;
-  }   
-  if (write(siofd,databuf,wbsize*64*2112) == 0) {
-     printf("\n Ошибка записи в USB-порт\n");
-     return;
-  }   
-  iolen=receive_reply(iobuf,0);
-  if ((iobuf[1] != 0x31)||(iolen == 0)) {
-    show_errpacket("unstrem_write() ",iobuf,iolen);
-    dump(iobuf,iolen,0);
-    printf("\n Команда unstream write завершилась с ошибкой");
-//    restore_reg();
-    return;
-  }  
-  if (feof(in)) break;  
-}
+
+// цикл по блокам
+for(;;block++) {
+  // цикл по страницам
+  for(page=0;page<64;page++) {
+    len=fread(databuf,1,4096+160,in);  // образ страницы - 4096+160
+    if (len < (4096+160)) break; // неполный хвост файла игнорируем
+    printf("\r block: %04x   page:%02x",block,page);
+    setaddr(block,page);
+    // цикл по секторам
+    for(sector=0;sector<8;sector++) {
+      memcpy(datacmd+34,databuf+sector*512,512); // данные сектора
+      memcpy(datacmd+34+512,databuf+8*512+sector*20,20); // oob сектора
+      iolen=send_cmd(datacmd,34+512+20,iobuf);  // пересылаем сектор в секторный буфер
+      mempoke(nand_cmd,0x39); // запись data+oob
+      mempoke(nand_exec,0x1);
+      nandwait();
+    }
+  }
+}  
 printf("\n");
 restore_reg();
 }

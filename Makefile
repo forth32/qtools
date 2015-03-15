@@ -4,11 +4,11 @@ CFLAGS   = -O2 -g -Wno-unused-result
 
 .PHONY: all clean
 
-all:    qcommand qread qrflash qdload mibibsplit qwflash qwimage
+all:    qcommand qread qrflash qdload mibibsplit qwflash qwimage qwdirect
 
 clean: 
 	rm *.o
-	rm qcommand qread qrflash qdload mibibsplit qwflash qwimage
+	rm qcommand qread qrflash qdload mibibsplit qwflash qwimage qwdirect
 
 #.c.o:
 #	$(CC) -o $@ $(LIBS) $^ qcio.o
@@ -32,6 +32,9 @@ qwimage: qwimage.o qcio.o
 	@gcc $^ -o $@ $(LIBS)
 
 qdload: qdload.o qcio.o
+	@gcc $^ -o $@ $(LIBS)
+
+qwdirect: qwdirect.o qcio.o
 	@gcc $^ -o $@ $(LIBS)
 	
 mibibsplit: mibibsplit.o qcio.o

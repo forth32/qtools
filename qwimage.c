@@ -34,10 +34,9 @@ int iolen;
 //@@@@@@@@@@@@ Головная программа
 void main(int argc, char* argv[]) {
   
-unsigned char iobuf[14048*1024];
+unsigned char iobuf[16384];
 unsigned char scmd[2048]={0x30,0,0,0};
-unsigned char databuf[2048*1024];
-unsigned char outcmd[20];
+unsigned char databuf[16384];
 int res;
 FILE* in;
 int helloflag=0;
