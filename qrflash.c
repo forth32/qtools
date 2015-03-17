@@ -126,12 +126,20 @@ int chipset9x15=1; // 0 - MSM8200, 1 - MDM9x00
 int attr; // арибуты
 int npar; // число разедлов в таблице
 
+unsigned int pagesize,oobsize,spp;
+
+
+// параметры флешки
+oobsize=16;      // оов на 1 блок
+pagesize=2048;   // размер страницы в байтах 
+
 #ifndef WIN32
 char devname[50]="/dev/ttyUSB0";
 #else
 char devname[50]="";
 #endif
 unsigned char ptable[1100]; // таблица разделов
+
 
 
 while ((opt = getopt(argc, argv, "hp:a:l:o:ixs:ef:mt8k:")) != -1) {
@@ -172,6 +180,8 @@ while ((opt = getopt(argc, argv, "hp:a:l:o:ixs:ef:mt8k:")) != -1) {
 
        case '3':
         nand_cmd=0xf9af0000;
+        oobsize=20;           // оов на 1 блок
+        pagesize=4096;        // размер страницы в байтах 
 	break;
 
        default:
@@ -232,6 +242,8 @@ while ((opt = getopt(argc, argv, "hp:a:l:o:ixs:ef:mt8k:")) != -1) {
      break;
   }
 }  
+
+spp=pagesize/52; // число секторов на страницу
 
 #ifdef WIN32
 if (*devname == '\0')

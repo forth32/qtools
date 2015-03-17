@@ -5,17 +5,6 @@
 #include "qcio.h"
 
 
-unsigned int cfg0,cfg1; // сохранение конфигурации контроллера
-
-//*****************************************************
-//*  Восстановление конфигурации контроллера 
-//*****************************************************
-void restore_reg() {
-  
-mempoke(nand_cfg0,cfg0);  
-mempoke(nand_cfg1,cfg1);  
-}
-
 
 //*******************************************
 //@@@@@@@@@@@@ Головная программа
@@ -33,7 +22,7 @@ unsigned char databuf[8192];
 unsigned char* oobuf=databuf+4096; // указатель на OOB. Пока жестко задаем 4096/160
 int res;
 FILE* in;
-int helloflag=0;
+int mflag=0;
 char* sptr;
 char devname[]="/dev/ttyUSB0";
 unsigned int i,opt,iolen,j;
@@ -47,15 +36,15 @@ oobsize=16;      // оов на 1 блок
 pagesize=2048;   // размер страницы в байтах 
 
 
-while ((opt = getopt(argc, argv, "hp:ik:b:")) != -1) {
+while ((opt = getopt(argc, argv, "hp:k:b:m")) != -1) {
   switch (opt) {
    case 'h': 
     printf("\n  Утилита предназначена для записи сырого образа flash через регистры контроллера\n\
 Допустимы следующие ключи:\n\n\
 -p <tty>  - указывает имя устройства последовательного порта для общения с загрузчиком\n\
--i        - запускает процедуру HELLO для инициализации загрузчика\n\
 -k #      - выбор чипсета: 0(MDM9x15, по умолчанию), 1(MDM8200), 2(MSM9x00), 3(MDM9x25)\n\
 -b #      - начальный номер блока для записи \n\
+-m        - устанавливает линуксовый вариант раскладки данных на flash, запись с ООB\n\
 \n");
     return;
     
@@ -90,8 +79,8 @@ while ((opt = getopt(argc, argv, "hp:ik:b:")) != -1) {
     strcpy(devname,optarg);
     break;
     
-   case 'i':
-     helloflag=1;
+   case 'm':
+     mflag=1;
      break;
      
    case 'b':
@@ -109,12 +98,12 @@ while ((opt = getopt(argc, argv, "hp:ik:b:")) != -1) {
 *((unsigned short*)&datacmd[32])=nand_cmd>>16;
 
 spp=pagesize/52; // число секторов на страницу
+if (!mflag) oobsize=0; // для записи без OOB
 
 if (!open_port(devname))  {
    printf("\n - Последовательный порт %s не открывается\n", devname); 
    return; 
 }
-if (helloflag) hello();
 
 in=fopen(argv[optind],"rb");
 if (in == 0) {
@@ -122,7 +111,15 @@ if (in == 0) {
   return;
 }
 
-printf("\n Запись из файла %s, стартовый блок %i\n",argv[optind],block);
+// Сброс и настройка контроллера nand
+mempoke(nand_cmd,1);
+mempoke(nand_exec,1);
+nandwait();
+mempoke(nand_cmd+0x28,mempeek(nand_cmd+0x28)&0xfffffffe); //ECC on
+
+printf("\n Запись из файла %s, стартовый блок %i\n Режим записи: ",argv[optind],block);
+if (mflag) printf("данные+oob\n");
+else       printf("только данные\n");
 port_timeout(1000);
 
 // цикл по блокам
@@ -140,12 +137,31 @@ for(;;block++) {
     setaddr(block,page);
     // цикл по секторам
     for(sector=0;sector<spp;sector++) {
-      memcpy(datacmd+34,databuf+sector*512,512); // данные сектора
-      memcpy(datacmd+34+512,databuf+pagesize+sector*oobsize,oobsize); // oob сектора
-      iolen=send_cmd(datacmd,34+512+oobsize,iobuf);  // пересылаем сектор в секторный буфер
-      mempoke(nand_cmd,0x39); // запись data+oob
-      mempoke(nand_exec,0x1);
-      nandwait();
+      memset(datacmd+34,0xff,512+28); // заполнитель
+      if (mflag) {
+	// линуксовый (китайский извратный) вариант раскладки данных
+       if (sector < (spp-1)) { //первые n секторов
+         memcpy(datacmd+34,databuf+sector*516,516); // данные сектора
+         //  для первых секторов oob не копируем
+       } 
+       else { // последний сектор
+         memcpy(datacmd+34,databuf+(spp-1)*516,484); // данные последнего сектора
+         memcpy(datacmd+34+484,databuf+pagesize,16); // тэг yaffs, остальная часть OOB игнорируется
+       }        
+       iolen=send_cmd(datacmd,34+512+oobsize,iobuf);  // пересылаем сектор в секторный буфер
+       mempoke(nand_cmd,0x39); // запись data+oob
+       mempoke(nand_exec,0x1);
+       nandwait();
+      }
+      else {
+	// запись только блоков данных
+
+       memcpy(datacmd+34,databuf+sector*512,512); // данные сектора
+       iolen=send_cmd(datacmd,34+512,iobuf);  // пересылаем сектор в секторный буфер
+       mempoke(nand_cmd,0x36); // page program
+       mempoke(nand_exec,0x1);
+       nandwait();
+     } 
     }
   }
 }  
