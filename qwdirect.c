@@ -135,10 +135,7 @@ port_timeout(1000);
 // цикл по блокам
 for(;;block++) {
   // стираем блок
-  setaddr(block,0);
-  mempoke(nand_cmd,0x3a); // стирание. Бит Last page установлен
-  mempoke(nand_exec,0x1);
-  nandwait();
+  block_erase(block);
   // цикл по страницам
   for(page=0;page<64;page++) {
     len=fread(databuf,1,pagesize+(spp*oobsize),in);  // образ страницы - page+oob
