@@ -23,6 +23,7 @@ unsigned char* oobuf=databuf+4096; // указатель на OOB. Пока же
 int res;
 FILE* in;
 int mflag=0;
+int oflag=0;
 char* sptr;
 char devname[]="/dev/ttyUSB0";
 unsigned int i,opt,iolen,j;
@@ -36,7 +37,7 @@ oobsize=16;      // оов на 1 блок
 pagesize=2048;   // размер страницы в байтах 
 
 
-while ((opt = getopt(argc, argv, "hp:k:b:m")) != -1) {
+while ((opt = getopt(argc, argv, "hp:k:b:mo")) != -1) {
   switch (opt) {
    case 'h': 
     printf("\n  Утилита предназначена для записи сырого образа flash через регистры контроллера\n\
@@ -44,7 +45,8 @@ while ((opt = getopt(argc, argv, "hp:k:b:m")) != -1) {
 -p <tty>  - указывает имя устройства последовательного порта для общения с загрузчиком\n\
 -k #      - выбор чипсета: 0(MDM9x15, по умолчанию), 1(MDM8200), 2(MSM9x00), 3(MDM9x25)\n\
 -b #      - начальный номер блока для записи \n\
--m        - устанавливает линуксовый вариант раскладки данных на flash, запись с ООB\n\
+-m        - устанавливает линуксовый вариант раскладки данных на flash\n\
+-o        - запись с ООB, без ключа - входной фалй содержит только данные\n\
 \n");
     return;
     
@@ -83,6 +85,10 @@ while ((opt = getopt(argc, argv, "hp:k:b:m")) != -1) {
      mflag=1;
      break;
      
+   case 'o':
+     oflag=1;
+     break;
+     
    case 'b':
      sscanf(optarg,"%x",&block);
      break;
@@ -93,12 +99,16 @@ while ((opt = getopt(argc, argv, "hp:k:b:m")) != -1) {
   }
 }  
 
+if (oflag && (!mflag)) {
+  printf("\n Ключ -o без ключа -m недопустим\n");
+  return;
+}  
 
 // вписываем адрес контроллера в образ команды копирования
 *((unsigned short*)&datacmd[32])=nand_cmd>>16;
 
 spp=pagesize/52; // число секторов на страницу
-if (!mflag) oobsize=0; // для записи без OOB
+if (!oflag) oobsize=0; // для записи без OOB
 
 if (!open_port(devname))  {
    printf("\n - Последовательный порт %s не открывается\n", devname); 
@@ -137,7 +147,8 @@ for(;;block++) {
     setaddr(block,page);
     // цикл по секторам
     for(sector=0;sector<spp;sector++) {
-      memset(datacmd+34,0xff,512+28); // заполнитель
+      memset(datacmd+34,0xff,512+28); // заполнитель секторного буфера
+
       if (mflag) {
 	// линуксовый (китайский извратный) вариант раскладки данных
        if (sector < (spp-1)) { //первые n секторов
@@ -145,8 +156,8 @@ for(;;block++) {
          //  для первых секторов oob не копируем
        } 
        else { // последний сектор
-         memcpy(datacmd+34,databuf+(spp-1)*516,484); // данные последнего сектора
-         memcpy(datacmd+34+484,databuf+pagesize,16); // тэг yaffs, остальная часть OOB игнорируется
+         memcpy(datacmd+34,databuf+(spp-1)*516,512-4*(spp-1)); // данные последнего сектора
+         if (oflag) memcpy(datacmd+34+512-4*(spp-1),databuf+pagesize,16); // тэг yaffs, остальная часть OOB игнорируется
        }        
        iolen=send_cmd(datacmd,34+512+oobsize,iobuf);  // пересылаем сектор в секторный буфер
        mempoke(nand_cmd,0x39); // запись data+oob
