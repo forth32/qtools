@@ -32,7 +32,7 @@ for(page=0;page<ppb;page++)  {
 
   setaddr(block,page);
   // по секторам  
-  for(sec=0;sec<4;sec++) {
+  for(sec=0;sec<spp;sec++) {
    mempoke(nand_exec,0x1); 
    nandwait();
  retry:  
@@ -113,7 +113,6 @@ int res;
 unsigned char c;
 unsigned char* sptr;
 unsigned int start=0,len=1,helloflag=0,opt;
-unsigned int sectorsize=512;
 FILE* out;
 FILE* part=0;
 int partflag=0;  // 0 - сырой флеш, 1 - таблица разделов из файла, 2 - таблица разделов из флеша
@@ -126,12 +125,11 @@ int chipset9x15=1; // 0 - MSM8200, 1 - MDM9x00
 int attr; // арибуты
 int npar; // число разедлов в таблице
 
-unsigned int pagesize,oobsize,spp;
+unsigned int oobsize;
 
 
 // параметры флешки
 oobsize=16;      // оов на 1 блок
-pagesize=2048;   // размер страницы в байтах 
 
 #ifndef WIN32
 char devname[50]="/dev/ttyUSB0";
@@ -181,7 +179,6 @@ while ((opt = getopt(argc, argv, "hp:a:l:o:ixs:ef:mt8k:")) != -1) {
        case '3':
         nand_cmd=0xf9af0000;
         oobsize=20;           // оов на 1 блок
-        pagesize=4096;        // размер страницы в байтах 
 	break;
 
        default:
@@ -271,13 +268,14 @@ if ((truncflag == 1)&&(sectorsize>512)) {
   printf("\nКлючи -t и -x несовместимы\n");
   return;
 }  
+get_flash_config();
 if (helloflag) hello();
 
 if (partflag == 2) load_ptable(ptable); // загружаем таблицу разделов
 
 mempoke(nand_cfg1,mempeek(nand_cfg1)&0xfffffffe|eccflag); // ECC on/off
 //mempoke(nand_cs,4); // data mover
-mempoke(nand_cs,0); // data mover
+//mempoke(nand_cs,0); // data mover
 
 mempoke(nand_cmd,1); // Сброс всех операций контроллера
 mempoke(nand_exec,0x1);

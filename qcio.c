@@ -379,12 +379,12 @@ int memread(char* membuf,int adr, int len) {
 char iobuf[11600];
 char cmdbuf[]={3,0,0,0,0,0,2};
 int i,iolen;
-int blklen=512;
+int blklen=sectorsize;
 
 // Чтение блоками по 512 байт  
-for(i=0;i<len;i+=512)  {  
+for(i=0;i<len;i+=sectorsize)  {  
  *((unsigned int*)&cmdbuf[1])=i+adr;  //вписываем адрес
- if ((i+512) > len) {
+ if ((i+sectorsize) > len) {
    blklen=len-i;
    *((unsigned short*)&cmdbuf[5])=blklen;  //вписываем длину
  }  
@@ -451,8 +451,19 @@ mempoke(nand_addr1,(adr>>16)&0xff);  // единственный байт ста
 }
 
 
+
 //*********************************************
-//* Чтение блока флешки по указанному адресу 
+//* Сброс контроллера NAND
+//*********************************************
+void nand_reset() {
+
+mempoke(nand_cmd,1); // Сброс всех операций контроллера
+mempoke(nand_exec,0x1);
+nandwait();
+}
+
+//*********************************************
+//* Чтение сектора флешки по указанному адресу 
 //*********************************************
 
 int flash_read(int block, int page, int sect) {
@@ -462,11 +473,8 @@ int iolen;
 int i;
 
 //mempoke(nand_cfg1,0x6745d); // ECC off
-mempoke(nand_cs,0); // data mover
-
-mempoke(nand_cmd,1); // Сброс всех операций контроллера
-mempoke(nand_exec,0x1);
-nandwait();
+//mempoke(nand_cs,0); // data mover
+nand_reset();
 // адрес
 setaddr(block,page);
 // устанавливаем код команды

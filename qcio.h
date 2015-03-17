@@ -12,6 +12,7 @@ extern unsigned int sectorsize;
 #define nand_status nand_cmd+0x14
 #define nand_cfg0  nand_cmd+0x20
 #define nand_cfg1  nand_cmd+0x24
+#define nand_ecc_cfg  nand_cmd+0x28
 #define sector_buf nand_cmd+0x100
 
 
@@ -39,3 +40,4 @@ void show_errpacket(char* descr, char* pktbuf, int len);
 int qclose(int errmode);
 int block_erase(int block);
 void get_flash_config();
+void nand_reset();

@@ -122,10 +122,8 @@ if (in == 0) {
 get_flash_config(); // читаем параметры флешки
 
 // Сброс и настройка контроллера nand
-mempoke(nand_cmd,1);
-mempoke(nand_exec,1);
-nandwait();
-mempoke(nand_cmd+0x28,mempeek(nand_cmd+0x28)&0xfffffffe); //ECC on
+nand_reset();
+mempoke(nand_ecc_cfg,mempeek(nand_ecc_cfg)&0xfffffffe); //ECC on
 
 printf("\n Запись из файла %s, стартовый блок %i\n Режим записи: ",argv[optind],block);
 if (mflag) printf("данные+oob\n");
@@ -137,7 +135,7 @@ for(;;block++) {
   // стираем блок
   block_erase(block);
   // цикл по страницам
-  for(page=0;page<64;page++) {
+  for(page=0;page<ppb;page++) {
     len=fread(databuf,1,pagesize+(spp*oobsize),in);  // образ страницы - page+oob
     if (len < (pagesize+(spp*oobsize))) break; // неполный хвост файла игнорируем
     printf("\r block: %04x   page:%02x",block,page);
