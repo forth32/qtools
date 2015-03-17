@@ -32,4 +32,5 @@ unsigned int send_unframed_buf(char* outcmdbuf, unsigned int outlen, int prefixf
 unsigned int receive_reply(char* iobuf, int masslen);
 void show_errpacket(char* descr, char* pktbuf, int len);
 int qclose(int errmode);
+int block_erase(int block);
 

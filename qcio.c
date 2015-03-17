@@ -443,9 +443,10 @@ void setaddr(int block, int page) {
 int adr;  
   
 adr=block*ppb+page;
-mempoke(nand_addr0,adr<<16);
-mempoke(nand_addr1,(adr>>16)&0xff);
+mempoke(nand_addr0,adr<<16);         // младшая часть адреса. 16 бит column address равны 0
+mempoke(nand_addr1,(adr>>16)&0xff);  // единственный байт старшей части адреса
 }
+
 
 //*********************************************
 //* Чтение блока флешки по указанному адресу 
@@ -555,3 +556,20 @@ show_errpacket("close()",iobuf,iolen);
 return 0;
 
 }  
+
+//************************
+//* Стирание блока флешки  
+//************************
+
+int block_erase(int block) {
+  
+int adr;  
+  
+adr=block*ppb;
+mempoke(nand_addr0,block*ppb);         // младшая часть адреса - # страницы
+mempoke(nand_addr1,0);                 // старшая часть адреса - всегда 0
+
+mempoke(nand_cmd,0x3a); // стирание. Бит Last page установлен
+mempoke(nand_exec,0x1);
+nandwait();
+}
