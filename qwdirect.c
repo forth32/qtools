@@ -22,11 +22,13 @@ mempoke(nand_cfg1,cfg1);
 void main(int argc, char* argv[]) {
   
 unsigned char iobuf[2048];
+
+// ARM-программа для переноса данных в секторный буфер
 unsigned char datacmd[8192]={0x11,0x00,0x01,0xf1,0x1f,0x01,0x05,0x4a,
                              0x4f,0xf0,0x00,0x03,0x51,0xf8,0x23,0x00,
 			     0x42,0xf8,0x23,0x00,0x01,0x33,0x8f,0x2b,
 			     0xf8,0xd3,0x70,0x47,0x00,0x00,0x00,0x01,
-			     0xaf,0xf9};
+			     0xaf,0xf9}; // байты 32-33 - старшие байты адреса контроллера
 unsigned char databuf[8192];
 unsigned char* oobuf=databuf+4096; // указатель на OOB. Пока жестко задаем 4096/160
 int res;
@@ -37,9 +39,15 @@ char devname[]="/dev/ttyUSB0";
 unsigned int i,opt,iolen,j;
 unsigned int block=0,page,sector,len;
 unsigned int fsize;
+unsigned int pagesize,oobsize,spp;
 
 
-while ((opt = getopt(argc, argv, "hp:ikb:")) != -1) {
+// параметры флешки
+oobsize=16;      // оов на 1 блок
+pagesize=2048;   // размер страницы в байтах 
+
+
+while ((opt = getopt(argc, argv, "hp:ik:b:")) != -1) {
   switch (opt) {
    case 'h': 
     printf("\n  Утилита предназначена для записи сырого образа flash через регистры контроллера\n\
@@ -67,6 +75,9 @@ while ((opt = getopt(argc, argv, "hp:ikb:")) != -1) {
 
        case '3':
         nand_cmd=0xf9af0000;
+        oobsize=20;           // оов на 1 блок
+        pagesize=4096;        // размер страницы в байтах 
+        
 	break;
 
        default:
@@ -83,7 +94,7 @@ while ((opt = getopt(argc, argv, "hp:ikb:")) != -1) {
      helloflag=1;
      break;
      
-   case 'a':
+   case 'b':
      sscanf(optarg,"%x",&block);
      break;
      
@@ -93,14 +104,17 @@ while ((opt = getopt(argc, argv, "hp:ikb:")) != -1) {
   }
 }  
 
+
+// вписываем адрес контроллера в образ команды копирования
+*((unsigned short*)&datacmd[32])=nand_cmd>>16;
+
+spp=pagesize/52; // число секторов на страницу
+
 if (!open_port(devname))  {
    printf("\n - Последовательный порт %s не открывается\n", devname); 
    return; 
 }
 if (helloflag) hello();
-// сохраняем конфигурацию контроллера
-cfg0=mempeek(nand_cfg0);
-cfg1=mempeek(nand_cfg1);
 
 in=fopen(argv[optind],"rb");
 if (in == 0) {
@@ -113,17 +127,22 @@ port_timeout(1000);
 
 // цикл по блокам
 for(;;block++) {
+  // стираем блок
+  setaddr(block,0);
+  mempoke(nand_cmd,0x3a); // стирание. Бит Last page установлен
+  mempoke(nand_exec,0x1);
+  nandwait();
   // цикл по страницам
   for(page=0;page<64;page++) {
-    len=fread(databuf,1,4096+160,in);  // образ страницы - 4096+160
-    if (len < (4096+160)) break; // неполный хвост файла игнорируем
+    len=fread(databuf,1,pagesize+(spp*oobsize),in);  // образ страницы - page+oob
+    if (len < (pagesize+(spp*oobsize))) break; // неполный хвост файла игнорируем
     printf("\r block: %04x   page:%02x",block,page);
     setaddr(block,page);
     // цикл по секторам
-    for(sector=0;sector<8;sector++) {
+    for(sector=0;sector<spp;sector++) {
       memcpy(datacmd+34,databuf+sector*512,512); // данные сектора
-      memcpy(datacmd+34+512,databuf+8*512+sector*20,20); // oob сектора
-      iolen=send_cmd(datacmd,34+512+20,iobuf);  // пересылаем сектор в секторный буфер
+      memcpy(datacmd+34+512,databuf+pagesize+sector*oobsize,oobsize); // oob сектора
+      iolen=send_cmd(datacmd,34+512+oobsize,iobuf);  // пересылаем сектор в секторный буфер
       mempoke(nand_cmd,0x39); // запись data+oob
       mempoke(nand_exec,0x1);
       nandwait();
@@ -131,6 +150,5 @@ for(;;block++) {
   }
 }  
 printf("\n");
-restore_reg();
 }
 
