@@ -16,6 +16,9 @@
 #include "qcio.h"
 
 unsigned int nand_cmd=0x1b400000;
+unsigned int spp=4;
+unsigned int pagesize=2048;
+unsigned int sectorsize=512;
 
 #ifndef WIN32
 struct termios sioparm;
@@ -493,11 +496,14 @@ if (rbuf[1] != 2) {
    return;
 }  
 //dump(rbuf,i,0);
+get_flash_config();
 i=rbuf[0x2c];
 rbuf[0x2d+i]=0;
 printf("ok\n Flash: %s",rbuf+0x2d);
 printf("\n Версия протокола: %i",rbuf[0x22]);
 printf("\n Максимальный размер пакета: %i байта",*((unsigned int*)&rbuf[0x24]));
+printf("\n Размер сектора: %i байт",sectorsize);
+printf("\n Размер страницы: %i байт (%i секторов)",pagesize,spp);
 printf("\n");
 }
 
@@ -563,13 +569,30 @@ return 0;
 
 int block_erase(int block) {
   
-int adr;  
+int oldcfg;  
   
-adr=block*ppb;
 mempoke(nand_addr0,block*ppb);         // младшая часть адреса - # страницы
 mempoke(nand_addr1,0);                 // старшая часть адреса - всегда 0
+
+oldcfg=mempeek(nand_cfg0);
+mempoke(nand_cfg0,oldcfg&~(0x1c0));    // устанавливаем CW_PER_PAGE=0, как требует даташит
 
 mempoke(nand_cmd,0x3a); // стирание. Бит Last page установлен
 mempoke(nand_exec,0x1);
 nandwait();
+mempoke(nand_cfg0,oldcfg);   // восстанавливаем CFG0
 }
+
+//**********************************************************
+//*  Получение параметров формата флешки из контроллера
+//**********************************************************
+void get_flash_config() {
+  
+unsigned int cfg0;
+
+cfg0=mempeek(nand_cfg0);
+spp=(((cfg0>>6)&3)|((cfg0>>2)&4))+1;
+sectorsize=(cfg0>>9)&0x3ff;
+pagesize=sectorsize*spp;
+}
+

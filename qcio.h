@@ -1,5 +1,10 @@
 
 extern unsigned int nand_cmd;    // 0x1b400000
+extern unsigned int spp;
+extern unsigned int pagesize;
+extern unsigned int sectorsize;
+
+
 #define nand_addr0 nand_cmd+4
 #define nand_addr1 nand_cmd+8
 #define nand_cs    nand_cmd+0xc
@@ -33,4 +38,4 @@ unsigned int receive_reply(char* iobuf, int masslen);
 void show_errpacket(char* descr, char* pktbuf, int len);
 int qclose(int errmode);
 int block_erase(int block);
-
+void get_flash_config();

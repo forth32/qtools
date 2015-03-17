@@ -29,7 +29,7 @@ char devname[]="/dev/ttyUSB0";
 unsigned int i,opt,iolen,j;
 unsigned int block=0,page,sector,len;
 unsigned int fsize;
-unsigned int pagesize,oobsize,spp;
+unsigned int oobsize;
 
 
 // параметры флешки
@@ -107,7 +107,6 @@ if (oflag && (!mflag)) {
 // вписываем адрес контроллера в образ команды копирования
 *((unsigned short*)&datacmd[32])=nand_cmd>>16;
 
-spp=pagesize/52; // число секторов на страницу
 if (!oflag) oobsize=0; // для записи без OOB
 
 if (!open_port(devname))  {
@@ -120,6 +119,8 @@ if (in == 0) {
   printf("\nОшибка открытия входного файла\n");
   return;
 }
+
+get_flash_config(); // читаем параметры флешки
 
 // Сброс и настройка контроллера nand
 mempoke(nand_cmd,1);
@@ -144,7 +145,7 @@ for(;;block++) {
     setaddr(block,page);
     // цикл по секторам
     for(sector=0;sector<spp;sector++) {
-      memset(datacmd+34,0xff,512+28); // заполнитель секторного буфера
+      memset(datacmd+34,0xff,sectorsize+28); // заполнитель секторного буфера
 
       if (mflag) {
 	// линуксовый (китайский извратный) вариант раскладки данных
@@ -153,10 +154,10 @@ for(;;block++) {
          //  для первых секторов oob не копируем
        } 
        else { // последний сектор
-         memcpy(datacmd+34,databuf+(spp-1)*516,512-4*(spp-1)); // данные последнего сектора
-         if (oflag) memcpy(datacmd+34+512-4*(spp-1),databuf+pagesize,16); // тэг yaffs, остальная часть OOB игнорируется
+         memcpy(datacmd+34,databuf+(spp-1)*516,sectorsize-4*(spp-1)); // данные последнего сектора
+         if (oflag) memcpy(datacmd+34+sectorsize-4*(spp-1),databuf+pagesize,16); // тэг yaffs, остальная часть OOB игнорируется
        }        
-       iolen=send_cmd(datacmd,34+512+oobsize,iobuf);  // пересылаем сектор в секторный буфер
+       iolen=send_cmd(datacmd,34+sectorsize+oobsize,iobuf);  // пересылаем сектор в секторный буфер
        mempoke(nand_cmd,0x39); // запись data+oob
        mempoke(nand_exec,0x1);
        nandwait();
@@ -164,8 +165,8 @@ for(;;block++) {
       else {
 	// запись только блоков данных
 
-       memcpy(datacmd+34,databuf+sector*512,512); // данные сектора
-       iolen=send_cmd(datacmd,34+512,iobuf);  // пересылаем сектор в секторный буфер
+       memcpy(datacmd+34,databuf+sector*sectorsize,sectorsize); // данные сектора
+       iolen=send_cmd(datacmd,34+sectorsize,iobuf);  // пересылаем сектор в секторный буфер
        mempoke(nand_cmd,0x36); // page program
        mempoke(nand_exec,0x1);
        nandwait();
