@@ -67,7 +67,6 @@ while ((opt = getopt(argc, argv, "hp:k:b:mo")) != -1) {
        case '3':
         nand_cmd=0xf9af0000;
         oobsize=20;           // оов на 1 блок
-        pagesize=4096;        // размер страницы в байтах 
         
 	break;
 
