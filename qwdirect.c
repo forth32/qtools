@@ -1,7 +1,13 @@
 #include <stdio.h>
 #include <string.h>
+#ifndef WIN32
 #include <unistd.h>
 #include <getopt.h>
+#else
+#include <windows.h>
+#include "wingetopt.h"
+#include "printf.h"
+#endif
 #include "qcio.h"
 
 
@@ -25,7 +31,11 @@ FILE* in;
 int mflag=0;
 int oflag=0;
 char* sptr;
+#ifndef WIN32
 char devname[]="/dev/ttyUSB0";
+#else
+char devname[20]="";
+#endif
 unsigned int i,opt,iolen,j;
 unsigned int block=0,page,sector,len;
 unsigned int fsize;
@@ -108,8 +118,20 @@ if (oflag && (!mflag)) {
 
 if (!oflag) oobsize=0; // для записи без OOB
 
+#ifdef WIN32
+if (*devname == '\0')
+{
+   printf("\n - Последовательный порт не задан\n"); 
+   return; 
+}
+#endif
+
 if (!open_port(devname))  {
+#ifndef WIN32
    printf("\n - Последовательный порт %s не открывается\n", devname); 
+#else
+   printf("\n - Последовательный порт COM%s не открывается\n", devname); 
+#endif
    return; 
 }
 
