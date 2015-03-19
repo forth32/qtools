@@ -127,10 +127,6 @@ int npar; // число разедлов в таблице
 
 unsigned int oobsize;
 
-
-// параметры флешки
-oobsize=16;      // оов на 1 блок
-
 #ifndef WIN32
 char devname[50]="/dev/ttyUSB0";
 #else
@@ -138,7 +134,8 @@ char devname[50]="";
 #endif
 unsigned char ptable[1100]; // таблица разделов
 
-
+// параметры флешки
+oobsize=16;      // оов на 1 блок
 
 while ((opt = getopt(argc, argv, "hp:a:l:o:ixs:ef:mt8k:")) != -1) {
   switch (opt) {
