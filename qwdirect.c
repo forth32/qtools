@@ -137,8 +137,8 @@ for(;;block++) {
   // цикл по страницам
   for(page=0;page<ppb;page++) {
     len=fread(databuf,1,pagesize+(spp*oobsize),in);  // образ страницы - page+oob
-    if (len < (pagesize+(spp*oobsize))) break; // неполный хвост файла игнорируем
-    printf("\r block: %04x   page:%02x",block,page);
+    if (len < (pagesize+(spp*oobsize))) goto wdone; // неполный хвост файла игнорируем
+    printf("\r block: %04x   page:%02x",block,page); fflush(stdout);
     setaddr(block,page);
     // цикл по секторам
     for(sector=0;sector<spp;sector++) {
@@ -170,7 +170,10 @@ for(;;block++) {
      } 
     }
   }
-}  
+} 
+
+wdone:
+
 printf("\n");
 }
 
