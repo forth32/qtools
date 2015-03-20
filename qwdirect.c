@@ -26,10 +26,14 @@ unsigned char datacmd[8192]={0x11,0x00,0x01,0xf1,0x1f,0x01,0x05,0x4a,
 			     0xaf,0xf9}; // байты 32-33 - старшие байты адреса контроллера
 unsigned char databuf[8192];
 unsigned char* oobuf=databuf+4096; // указатель на OOB. Пока жестко задаем 4096/160
+unsigned char membuf[1024];
 int res;
 FILE* in;
 int mflag=0;
 int oflag=0;
+int vflag=0;
+int cflag=0;
+int eflag=1;
 char* sptr;
 #ifndef WIN32
 char devname[]="/dev/ttyUSB0";
@@ -47,7 +51,7 @@ oobsize=16;      // оов на 1 блок
 pagesize=2048;   // размер страницы в байтах 
 
 
-while ((opt = getopt(argc, argv, "hp:k:b:mo")) != -1) {
+while ((opt = getopt(argc, argv, "hp:k:b:movce")) != -1) {
   switch (opt) {
    case 'h': 
     printf("\n  Утилита предназначена для записи сырого образа flash через регистры контроллера\n\
@@ -57,6 +61,9 @@ while ((opt = getopt(argc, argv, "hp:k:b:mo")) != -1) {
 -b #      - начальный номер блока для записи \n\
 -m        - устанавливает линуксовый вариант раскладки данных на flash\n\
 -o        - запись с ООB, без ключа - входной фалй содержит только данные\n\
+-e        - включить ЕСС при записи\n\
+-v        - проверка записанных данных после записи\n\
+-c        - только стереть заданный блок\n\
 \n");
     return;
     
@@ -94,12 +101,24 @@ while ((opt = getopt(argc, argv, "hp:k:b:mo")) != -1) {
      mflag=1;
      break;
      
+   case 'c':
+     cflag=1;
+     break;
+     
    case 'o':
      oflag=1;
      break;
      
    case 'b':
      sscanf(optarg,"%x",&block);
+     break;
+     
+   case 'v':
+     vflag=1;
+     break;
+     
+   case 'e':
+     eflag=0;
      break;
      
    case '?':
@@ -135,17 +154,33 @@ if (!open_port(devname))  {
    return; 
 }
 
-in=fopen(argv[optind],"rb");
-if (in == 0) {
-  printf("\nОшибка открытия входного файла\n");
+if (!cflag) { 
+ in=fopen(argv[optind],"rb");
+ if (in == 0) {
+   printf("\nОшибка открытия входного файла\n");
+   return;
+ }
+}
+else if (optind < argc) {// в режиме стирания входной файл не нужен
+  printf("\n С ключом -с недопустим входной файл\n");
   return;
 }
 
+
 get_flash_config(); // читаем параметры флешки
 
-// Сброс и настройка контроллера nand
+// Сброс контроллера nand
 nand_reset();
-mempoke(nand_ecc_cfg,mempeek(nand_ecc_cfg)&0xfffffffe); //ECC on
+
+// режим стирания
+if (cflag) {
+  block_erase(block);
+  return;
+}
+
+//ECC on-off
+mempoke(nand_ecc_cfg,mempeek(nand_ecc_cfg)&0xfffffffe|eflag); 
+mempoke(nand_cfg1,mempeek(nand_cfg1)&0xfffffffe|eflag); 
 
 printf("\n Запись из файла %s, стартовый блок %i\n Режим записи: ",argv[optind],block);
 if (mflag) printf("данные+oob\n");
@@ -163,21 +198,22 @@ for(;;block++) {
     printf("\r block: %04x   page:%02x",block,page); fflush(stdout);
     setaddr(block,page);
     // цикл по секторам
+    if (mflag) mempoke(nand_cmd,0x39); // запись data+oob
+               mempoke(nand_cmd,0x36); // page program
     for(sector=0;sector<spp;sector++) {
       memset(datacmd+34,0xff,sectorsize+28); // заполнитель секторного буфера
 
       if (mflag) {
 	// линуксовый (китайский извратный) вариант раскладки данных
        if (sector < (spp-1)) { //первые n секторов
-         memcpy(datacmd+34,databuf+sector*516,516); // данные сектора
+         memcpy(datacmd+34,databuf+sector*(sectorsize+4),sectorsize+4); // данные сектора
          //  для первых секторов oob не копируем
        } 
        else { // последний сектор
-         memcpy(datacmd+34,databuf+(spp-1)*516,sectorsize-4*(spp-1)); // данные последнего сектора
+         memcpy(datacmd+34,databuf+(spp-1)*(sectorsize+4),sectorsize-4*(spp-1)); // данные последнего сектора
          if (oflag) memcpy(datacmd+34+sectorsize-4*(spp-1),databuf+pagesize,16); // тэг yaffs, остальная часть OOB игнорируется
        }        
        iolen=send_cmd(datacmd,34+sectorsize+oobsize,iobuf);  // пересылаем сектор в секторный буфер
-       mempoke(nand_cmd,0x39); // запись data+oob
        mempoke(nand_exec,0x1);
        nandwait();
       }
@@ -186,12 +222,53 @@ for(;;block++) {
 
        memcpy(datacmd+34,databuf+sector*sectorsize,sectorsize); // данные сектора
        iolen=send_cmd(datacmd,34+sectorsize,iobuf);  // пересылаем сектор в секторный буфер
-       mempoke(nand_cmd,0x36); // page program
        mempoke(nand_exec,0x1);
        nandwait();
-     } 
+     }
+     // конец цикла записи по секторам
     }
+    // верификация данных, если надо
+    if (vflag) {
+      printf("\r");
+      setaddr(block,page);
+      mempoke(nand_cmd,0x34); // чтение data+ecc+spare
+      for(sector=0;sector<spp;sector++) {
+       mempoke(nand_exec,0x1);
+       nandwait();
+       memread(membuf,sector_buf,sectorsize+oobsize);
+       if (mflag) {
+	// верификация в линуксовом формате
+	  if (sector != (spp-1)) {
+	    // все сектора кроме последнего
+	    for (i=0;i<sectorsize+4;i++) 
+	      if (membuf[i] != databuf[sector*(sectorsize+4)+i])
+                 printf("! block: %04x  page:%02x  sector:%i  byte: %03x  %02x != %02x\n",
+			block,page,sector,i,membuf[i],databuf[sector*(sectorsize+4)+i]); 
+	  }  
+	  else {
+	      // последний сектор
+	    for (i=0;i<sectorsize-4*(spp-1);i++) 
+	      if (membuf[i] != databuf[(spp-1)*(sectorsize+4)+i])
+                 printf("! block: %04x  page:%02x  sector:%i  byte: %03x  %02x != %02x\n",
+			block,page,sector,i,membuf[i],databuf[(spp-1)*(sectorsize+4)+i]); 
+	    
+	 }    
+       }   	//mflag
+       //----------------------------------------------------------
+       else {
+	 // верификация в стандартном формате
+	    for (i=0;i<sectorsize;i++) 
+	      if (membuf[i] != databuf[sector*sectorsize+i])
+                 printf("! block: %04x  page:%02x  sector:%i  byte: %03x  %02x != %02x\n",
+			block,page,sector,i,membuf[i],databuf[sector*sectorsize+i]); 
+	    
+      }
+    }  // конец секторного цикла верификации
+//       printf("\n");
+    } // vflag 
+  // конец цикла по страницам 
   }
+// конец цикла по блокам  
 } 
 
 wdone:
