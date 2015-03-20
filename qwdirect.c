@@ -27,6 +27,7 @@ unsigned char datacmd[8192]={0x11,0x00,0x01,0xf1,0x1f,0x01,0x05,0x4a,
 unsigned char databuf[8192];
 unsigned char* oobuf=databuf+4096; // указатель на OOB. Пока жестко задаем 4096/160
 unsigned char membuf[1024];
+unsigned char vbuf[2048];
 int res;
 FILE* in;
 int mflag=0;
@@ -225,6 +226,18 @@ for(;;block++) {
 
        memcpy(datacmd+34,databuf+sector*sectorsize,sectorsize); // данные сектора
        iolen=send_cmd(datacmd,34+sectorsize,iobuf);  // пересылаем сектор в секторный буфер
+         for (i=0;i<512;i+=4)  {
+	   *((unsigned int*)&vbuf[i])=mempeek(sector_buf+i);
+	 }  
+// Проверка секторного буфера - только для отладки - в релизе не требуется	 
+/*       memread(vbuf,sector_buf,512);
+       if (memcmp(vbuf,databuf+sector*sectorsize,sectorsize) != 0) {
+	 printf("\n блок %x  страница %x сектор %i - ошибка сравнения\n",block,page,sector);
+	 for (i=0;i<512;i++) 
+	   if (vbuf[i] != databuf[sector*sectorsize+i]) printf("\n %03x: %02x %02x",i,
+	     vbuf[i],databuf[sector*sectorsize+i]);
+       } 
+*/       
        mempoke(nand_exec,0x1);
        nandwait();
      }

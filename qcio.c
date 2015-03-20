@@ -190,12 +190,15 @@ if (masslen != 0) {
    dump(replybuf,res+1,0);
    return 0;
  }  
- incount+=masslen; // у нас в буфере уже есть masslen байт
+ incount+=masslen-1; // у нас в буфере уже есть masslen байт
+// printf("\n ------ it mass --------");
+// dump(replybuf,incount,0);
 }
 
 // принимаем оставшийся хвост буфера
 while (read(siofd,&c,1) == 1)  {
  replybuf[incount++]=c;
+// printf("\n-- %02x",c);
  if (c == 0x7e) break;
 }
 
