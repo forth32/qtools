@@ -43,7 +43,7 @@ char devname[20]="";
 unsigned int i,opt,iolen,j;
 unsigned int block=0,page,sector,len;
 unsigned int fsize;
-unsigned int oobsize;
+unsigned int oobsize=64;
 
 
 // параметры флешки
@@ -51,7 +51,7 @@ oobsize=16;      // оов на 1 блок
 pagesize=2048;   // размер страницы в байтах 
 
 
-while ((opt = getopt(argc, argv, "hp:k:b:movce")) != -1) {
+while ((opt = getopt(argc, argv, "hp:k:b:movcez:")) != -1) {
   switch (opt) {
    case 'h': 
     printf("\n  Утилита предназначена для записи сырого образа flash через регистры контроллера\n\
@@ -61,6 +61,7 @@ while ((opt = getopt(argc, argv, "hp:k:b:movce")) != -1) {
 -b #      - начальный номер блока для записи \n\
 -m        - устанавливает линуксовый вариант раскладки данных на flash\n\
 -o        - запись с ООB, без ключа - входной фалй содержит только данные\n\
+-z #      - размер OOB на одну страницу, в байтах, по умолчанию - 64\n\
 -e        - включить ЕСС при записи\n\
 -v        - проверка записанных данных после записи\n\
 -c        - только стереть заданный блок\n\
@@ -83,8 +84,6 @@ while ((opt = getopt(argc, argv, "hp:k:b:movce")) != -1) {
 
        case '3':
         nand_cmd=0xf9af0000;
-        oobsize=20;           // оов на 1 блок
-        
 	break;
 
        default:
@@ -111,6 +110,10 @@ while ((opt = getopt(argc, argv, "hp:k:b:movce")) != -1) {
      
    case 'b':
      sscanf(optarg,"%x",&block);
+     break;
+     
+   case 'z':
+     sscanf(optarg,"%i",&oobsize);
      break;
      
    case 'v':
