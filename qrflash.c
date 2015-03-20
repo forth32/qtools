@@ -23,7 +23,7 @@
 //*************************************
 //* Чтение блока данных
 //*************************************
-void read_block(int block,int sectorsize,FILE* out) {
+void read_block(int block,int cwsize,FILE* out) {
 
 unsigned char iobuf[14096];  
 int page,sec;
@@ -36,14 +36,14 @@ for(page=0;page<ppb;page++)  {
    mempoke(nand_exec,0x1); 
    nandwait();
  retry:  
-   if (!memread(iobuf,sector_buf, sectorsize)) { // выгребаем порцию данных
+   if (!memread(iobuf,sector_buf, cwsize)) { // выгребаем порцию данных
      printf("\n memread вернул ошибку чтения секторного буфера.");
      printf("\n block = %08x  page=%08x  sector=%08x",block,page,sec);
      printf("\n Повторить операцию? (y,n):");
      if ((getchar() == 'y')||(getchar() == 'Y')) goto retry;
-     memset(iobuf,0,sectorsize);
+     memset(iobuf,0,cwsize);
    }  
-   fwrite(iobuf,1,sectorsize,out);
+   fwrite(iobuf,1,cwsize,out);
   }
  } 
 } 
@@ -59,7 +59,7 @@ for(page=0;page<ppb;page++)  {
 
   setaddr(block,page);
   // по секторам  
-  for(sec=0;sec<4;sec++) {
+  for(sec=0;sec<spp;sec++) {
    mempoke(nand_exec,0x1); 
    nandwait();
  retry:  
@@ -68,14 +68,14 @@ for(page=0;page<ppb;page++)  {
      printf("\n block = %08x  page=%08x  sector=%08x",block,page,sec);
      printf("\n Повторить операцию? (y,n):");
      if ((getchar() == 'y')||(getchar() == 'Y')) goto retry;
-     memset(iobuf,0,512);
+     memset(iobuf,0,sectorsize);
    }     
-   if (sec != 3) 
-     // Для секторов 0-2
-     fwrite(iobuf,1,516,out);    // Тело сектора + 4 байта OBB
+   if (sec != (spp-1)) 
+     // Для непоследних секторов
+     fwrite(iobuf,1,sectorsize+4,out);    // Тело сектора + 4 байта OBB
    else 
-     // для сектора 3
-     fwrite(iobuf,1,500,out);   // Тело сектора - 12 байт ненужного хвоста
+     // для последнего сектора
+     fwrite(iobuf,1,512-4*(spp-1),out);   // Тело сектора - хвост oob
   }
  } 
 } 
@@ -86,7 +86,7 @@ for(page=0;page<ppb;page++)  {
 //*****************************
 //* чтение сырого флеша
 //*****************************
-void read_raw(int start,int len,int sectorsize,FILE* out) {
+void read_raw(int start,int len,int cwsize,FILE* out) {
   
 int block;  
 
@@ -96,7 +96,7 @@ printf("\n");
 // по блокам
 for (block=start;block<(start+len);block++) {
   printf("\r %08x",block); fflush(stdout);
-  read_block(block,sectorsize,out);
+  read_block(block,cwsize,out);
 } 
 printf("\n"); 
 }
@@ -113,11 +113,14 @@ int res;
 unsigned char c;
 unsigned char* sptr;
 unsigned int start=0,len=1,helloflag=0,opt;
+unsigned int cwsize=sectorsize;
+
 FILE* out;
 FILE* part=0;
 int partflag=0;  // 0 - сырой флеш, 1 - таблица разделов из файла, 2 - таблица разделов из флеша
 int eccflag=1;  // 1 - отключить ECC,  0 - включить
 int partnumber=-1; // номер раздела для чтения, -1 - все разделы
+int rflag=0;     // формат разделов: 0 - авто, 1 - стандартный, 2 - линуксокитайский
 int listmode=0;    // 1- вывод карты разделов
 int truncflag=0;  //  1 - отрезать все FF от конца раздела
 int chipset9x15=1; // 0 - MSM8200, 1 - MDM9x00
@@ -135,9 +138,9 @@ char devname[50]="";
 unsigned char ptable[1100]; // таблица разделов
 
 // параметры флешки
-oobsize=16;      // оов на 1 блок
+oobsize=64;      // оов на 1 страницу
 
-while ((opt = getopt(argc, argv, "hp:a:l:o:ixs:ef:mt8k:")) != -1) {
+while ((opt = getopt(argc, argv, "hp:a:l:o:ixs:ef:mt8k:r:")) != -1) {
   switch (opt) {
    case 'h': 
     printf("\n  Утилита предназначена для чтения образа флеш через модифицированный загрузчик\n\
@@ -147,6 +150,7 @@ while ((opt = getopt(argc, argv, "hp:a:l:o:ixs:ef:mt8k:")) != -1) {
 -i        - запускает процедуру HELLO для инициализации загрузчика\n\
 -x        - читает полный сектор - данные+obb. Без ключа читает только данные.\n\n\
 -k #           - выбор чипсета: 0(MDM9x15, по умолчанию), 1(MDM8200), 2(MSM9x00), 3(MDM9x25)\n\
+-z #      - размер OOB на одну страницу, в байтах, по умолчанию - 64\n\
 Для режима неформатированного чтения:\n\
 -a <blk>  - начальный номер читаемого блока (по умолчанию 0)\n\
 -l <num>  - число читаемых блоков\n\
@@ -156,6 +160,10 @@ while ((opt = getopt(argc, argv, "hp:a:l:o:ixs:ef:mt8k:")) != -1) {
 -s @      - взять карту разделов из флеша (блок 2 страница 1 сектор 0)\n\
 -f n      - читать только раздел под номером n\n\
 -t        - отрезать все FF за последним значимым байтом раздела\n\
+-r <x>    - формат раздела:\n\
+        -rs - стандартный формат (512-байтные блоки)\n\
+        -rl - линуксовый формат 516-байтные блоки кроме последнего на странице)\n\
+        -ra - (по умолчанию) - автоопределение формата по атрибуту раздела\n\
 -m        - вывести на экран полную карту разделов\n");
     return;
     
@@ -200,12 +208,33 @@ while ((opt = getopt(argc, argv, "hp:a:l:o:ixs:ef:mt8k:")) != -1) {
      sscanf(optarg,"%x",&len);
      break;
 
+   case 'z':
+     sscanf(optarg,"%i",&oobsize);
+     break;
+     
    case 'i':
      helloflag=1;
      break;
+
+   case 'r':
+     switch(*optarg) {
+       case 'a':
+	 rflag=0;
+	 break;
+       case 's':
+	 rflag=1;
+	 break;
+       case 'l':
+	 rflag=2;
+	 break;
+       default:
+	 printf("\n Недопустимое значение ключа r\n");
+	 return;
+     } 
+     break;
      
    case 'x':
-     sectorsize+=16;
+     cwsize+=oobsize/spp; // наращиваем размер codeword на размер порции OOB на каждый сектор
      break;
      
    case 's':
@@ -237,7 +266,6 @@ while ((opt = getopt(argc, argv, "hp:a:l:o:ixs:ef:mt8k:")) != -1) {
   }
 }  
 
-spp=pagesize/52; // число секторов на страницу
 
 #ifdef WIN32
 if (*devname == '\0')
@@ -261,7 +289,7 @@ if (!open_port(devname))  {
    return; 
 }
 
-if ((truncflag == 1)&&(sectorsize>512)) {
+if ((truncflag == 1)&&(cwsize>sectorsize)) {
   printf("\nКлючи -t и -x несовместимы\n");
   return;
 }  
@@ -286,7 +314,7 @@ mempoke(nand_cmd,0x34); // чтение data+ecc+spare
 //###################################################
 if (partflag == 0) { 
   out=fopen(filename,"wb");
-  read_raw(start,len,sectorsize,out);
+  read_raw(start,len,cwsize,out);
   return;
 }  
 
@@ -294,12 +322,12 @@ if (partflag == 0) {
 //###################################################
 // Режим чтения по таблице разделов
 //###################################################
-/*
+
 if (strncmp(ptable,"\xAA\x73\xEE\x55\xDB\xBD\x5E\xE3",8) != 0) {
    printf("\nТаблица разделов повреждена\n");
    return;
 }
-*/
+
 npar=*((unsigned int*)&ptable[12]);
 printf("\n Версия таблицы разделов: %i",*((unsigned int*)&ptable[8]));
 if ((partnumber != -1) && (partnumber>=npar)) {
@@ -331,18 +359,33 @@ for(i=0;i<npar;i++) {
       // Все разделы или один конкретный  
       if ((partnumber == -1) || (partnumber==i)) {
         // формируем имя файла
-        if (sectorsize == 512) sprintf(filename,"%02i-%s.bin",i,partname); 
+        if (cwsize == sectorsize) sprintf(filename,"%02i-%s.bin",i,partname); 
         else                   sprintf(filename,"%02i-%s.obb",i,partname);  
         if (filename[4] == ':') filename[4]='-';    // заменяем : на -
         out=fopen(filename,"wb");  // открываем выходной файл
         for(block=start;block<(start+len);block++) {
           printf("\r * R: блок %08x (%i%%)",block-start,(block-start+1)*100/len); fflush(stdout);
-          if ((attr != 0x1ff)||(sectorsize>512)) 
-	     // сырое чтение или чтение неизварщенных разделов
-	     read_block(block,sectorsize,out);
-	  else 
-	     // чтение извращенных разделов
-	     read_block_resequence(block,out);
+	  
+    //	  Собственно чтение блока
+	  switch (rflag) {
+	    case 0: // автовыбор формата
+               if ((attr != 0x1ff)||(cwsize>sectorsize)) 
+	       // сырое чтение или чтение неизварщенных разделов
+	           read_block(block,cwsize,out);
+	       else 
+	       // чтение китайсколинуксовых разделов
+	           read_block_resequence(block,out);
+	       break;
+	       
+	    case 1: // стандартный формат  
+	      read_block(block,cwsize,out);
+	      break;
+	      
+	    case 2: // китайсколинуксовый формат  
+              read_block_resequence(block,out);
+	      break;
+	 }  
+
         }
      // Обрезка всех FF хвоста
       fclose(out);

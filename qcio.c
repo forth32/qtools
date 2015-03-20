@@ -602,8 +602,8 @@ void get_flash_config() {
 unsigned int cfg0;
 
 cfg0=mempeek(nand_cfg0);
-spp=(((cfg0>>6)&3)|((cfg0>>2)&4))+1;
-sectorsize=(cfg0>>9)&0x3ff;
+spp=(((cfg0>>6)&7)|((cfg0>>2)&8))+1;
+sectorsize=512;
 pagesize=sectorsize*spp;
 }
 

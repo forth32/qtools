@@ -170,8 +170,8 @@ else if (optind < argc) {// в режиме стирания входной фа
   return;
 }
 
-
 get_flash_config(); // читаем параметры флешки
+hello();
 
 // Сброс контроллера nand
 nand_reset();
@@ -186,7 +186,7 @@ if (cflag) {
 mempoke(nand_ecc_cfg,mempeek(nand_ecc_cfg)&0xfffffffe|eflag); 
 mempoke(nand_cfg1,mempeek(nand_cfg1)&0xfffffffe|eflag); 
 
-printf("\n Запись из файла %s, стартовый блок %i\n Режим записи: ",argv[optind],block);
+printf("\n Запись из файла %s, стартовый блок %03x\n Режим записи: ",argv[optind],block);
 if (mflag) printf("данные+oob\n");
 else       printf("только данные\n");
 port_timeout(1000);
