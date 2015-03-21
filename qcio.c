@@ -19,6 +19,10 @@ unsigned int nand_cmd=0x1b400000;
 unsigned int spp=4;
 unsigned int pagesize=2048;
 unsigned int sectorsize=512;
+unsigned int maxblock=0x800;     // Общее число блоков флешки
+char flash_mfr[30]={0};
+unsigned int oobsize=0;
+
 
 #ifndef WIN32
 struct termios sioparm;
@@ -506,15 +510,18 @@ if (rbuf[1] != 2) {
    dump(rbuf,i,0);
    return;
 }  
+printf("ok");
 //dump(rbuf,i,0);
 get_flash_config();
 i=rbuf[0x2c];
 rbuf[0x2d+i]=0;
-printf("ok\n Flash: %s",rbuf+0x2d);
+printf("\n Flash: %s %s",flash_mfr,rbuf+0x2d);
 printf("\n Версия протокола: %i",rbuf[0x22]);
 printf("\n Максимальный размер пакета: %i байта",*((unsigned int*)&rbuf[0x24]));
 printf("\n Размер сектора: %i байт",sectorsize);
 printf("\n Размер страницы: %i байт (%i секторов)",pagesize,spp);
+printf("\n Размер OOB: %i байт",oobsize);
+printf("\n Общий размер flash = %i блоков (%i MB)",maxblock,maxblock*ppb/1024*pagesize/1024);
 printf("\n");
 }
 
@@ -599,11 +606,182 @@ mempoke(nand_cfg0,oldcfg);   // восстанавливаем CFG0
 //**********************************************************
 void get_flash_config() {
   
-unsigned int cfg0;
+unsigned int cfg0, nandid, pid, fid, blocksize, devcfg;
+int i;
+
+struct {
+  char* type;   // тектовое описание типа
+  unsigned int id;      // ID флешки 
+  unsigned int chipsize; // размер флешки в мегабайтах
+} nand_ids[]= {
+
+	{"NAND 16MiB 1,8V 8-bit",	0x33, 16},
+	{"NAND 16MiB 3,3V 8-bit",	0x73, 16}, 
+	{"NAND 16MiB 1,8V 16-bit",	0x43, 16}, 
+	{"NAND 16MiB 3,3V 16-bit",	0x53, 16}, 
+
+	{"NAND 32MiB 1,8V 8-bit",	0x35, 32},
+	{"NAND 32MiB 3,3V 8-bit",	0x75, 32},
+	{"NAND 32MiB 1,8V 16-bit",	0x45, 32},
+	{"NAND 32MiB 3,3V 16-bit",	0x55, 32},
+
+	{"NAND 64MiB 1,8V 8-bit",	0x36, 64},
+	{"NAND 64MiB 3,3V 8-bit",	0x76, 64},
+	{"NAND 64MiB 1,8V 16-bit",	0x46, 64},
+	{"NAND 64MiB 3,3V 16-bit",	0x56, 64},
+
+	{"NAND 128MiB 1,8V 8-bit",	0x78, 128},
+	{"NAND 128MiB 1,8V 8-bit",	0x39, 128},
+	{"NAND 128MiB 3,3V 8-bit",	0x79, 128},
+	{"NAND 128MiB 1,8V 16-bit",	0x72, 128},
+	{"NAND 128MiB 1,8V 16-bit",	0x49, 128},
+	{"NAND 128MiB 3,3V 16-bit",	0x74, 128},
+	{"NAND 128MiB 3,3V 16-bit",	0x59, 128},
+
+	{"NAND 256MiB 3,3V 8-bit",	0x71, 256},
+
+	/*512 Megabit */
+	{"NAND 64MiB 1,8V 8-bit",	0xA2, 64},   
+	{"NAND 64MiB 1,8V 8-bit",	0xA0, 64},
+	{"NAND 64MiB 3,3V 8-bit",	0xF2, 64},
+	{"NAND 64MiB 3,3V 8-bit",	0xD0, 64},
+	{"NAND 64MiB 1,8V 16-bit",	0xB2, 64},
+	{"NAND 64MiB 1,8V 16-bit",	0xB0, 64},
+	{"NAND 64MiB 3,3V 16-bit",	0xC2, 64},
+	{"NAND 64MiB 3,3V 16-bit",	0xC0, 64},
+
+	/* 1 Gigabit */
+	{"NAND 128MiB 1,8V 8-bit",	0xA1,128},
+	{"NAND 128MiB 3,3V 8-bit",	0xF1,128},
+	{"NAND 128MiB 3,3V 8-bit",	0xD1,128},
+	{"NAND 128MiB 1,8V 16-bit",	0xB1,128},
+	{"NAND 128MiB 3,3V 16-bit",	0xC1,128},
+	{"NAND 128MiB 1,8V 16-bit",     0xAD,128},
+
+	/* 2 Gigabit */
+	{"NAND 256MiB 1,8V 8-bit",	0xAA,256},
+	{"NAND 256MiB 3,3V 8-bit",	0xDA,256},
+	{"NAND 256MiB 1,8V 16-bit",	0xBA,256},
+	{"NAND 256MiB 3,3V 16-bit",	0xCA,256},
+
+	/* 4 Gigabit */
+	{"NAND 512MiB 1,8V 8-bit",	0xAC,512},
+	{"NAND 512MiB 3,3V 8-bit",	0xDC,512},
+	{"NAND 512MiB 1,8V 16-bit",	0xBC,512},
+	{"NAND 512MiB 3,3V 16-bit",	0xCC,512},
+
+	/* 8 Gigabit */
+	{"NAND 1GiB 1,8V 8-bit",	0xA3,1024},
+	{"NAND 1GiB 3,3V 8-bit",	0xD3,1024},
+	{"NAND 1GiB 1,8V 16-bit",	0xB3,1024},
+	{"NAND 1GiB 3,3V 16-bit",	0xC3,1024},
+
+	/* 16 Gigabit */
+	{"NAND 2GiB 1,8V 8-bit",	0xA5,2048},
+	{"NAND 2GiB 3,3V 8-bit",	0xD5,2048},
+	{"NAND 2GiB 1,8V 16-bit",	0xB5,2048},
+	{"NAND 2GiB 3,3V 16-bit",	0xC5,2048},
+
+	/* 32 Gigabit */
+	{"NAND 4GiB 1,8V 8-bit",	0xA7,4096},
+	{"NAND 4GiB 3,3V 8-bit",	0xD7,4096},
+	{"NAND 4GiB 1,8V 16-bit",	0xB7,4096},
+	{"NAND 4GiB 3,3V 16-bit",	0xC7,4096},
+
+	/* 64 Gigabit */
+	{"NAND 8GiB 1,8V 8-bit",	0xAE,8192},
+	{"NAND 8GiB 3,3V 8-bit",	0xDE,8192},
+	{"NAND 8GiB 1,8V 16-bit",	0xBE,8192},
+	{"NAND 8GiB 3,3V 16-bit",	0xCE,8192},
+
+	/* 128 Gigabit */
+	{"NAND 16GiB 1,8V 8-bit",	0x1A,16384},
+	{"NAND 16GiB 3,3V 8-bit",	0x3A,16384},
+	{"NAND 16GiB 1,8V 16-bit",	0x2A,16384},
+	{"NAND 16GiB 3,3V 16-bit",	0x4A,16384},
+                                                  
+	/* 256 Gigabit */
+	{"NAND 32GiB 1,8V 8-bit",	0x1C,32768},
+	{"NAND 32GiB 3,3V 8-bit",	0x3C,32768},
+	{"NAND 32GiB 1,8V 16-bit",	0x2C,32768},
+	{"NAND 32GiB 3,3V 16-bit",	0x4C,32768},
+
+	/* 512 Gigabit */
+	{"NAND 64GiB 1,8V 8-bit",	0x1E,65536},
+	{"NAND 64GiB 3,3V 8-bit",	0x3E,65536},
+	{"NAND 64GiB 1,8V 16-bit",	0x2E,65536},
+	{"NAND 64GiB 3,3V 16-bit",	0x4E,65536},
+	{0,0,0},
+};
+
+#define NAND_MFR_TOSHIBA	0x98
+#define NAND_MFR_SAMSUNG	0xec
+#define NAND_MFR_FUJITSU	0x04
+#define NAND_MFR_NATIONAL	0x8f
+#define NAND_MFR_RENESAS	0x07
+#define NAND_MFR_STMICRO	0x20
+#define NAND_MFR_HYNIX		0xad
+#define NAND_MFR_MICRON		0x2c
+#define NAND_MFR_AMD		0x01
+
+struct  {
+  unsigned int id;
+  char* name;
+}  nand_manuf_ids[] = {
+	{0x98, "Toshiba"},
+	{0xec, "Samsung"},
+	{0x04, "Fujitsu"},
+	{0x8f, "National"},
+	{0x07, "Renesas"},
+	{0x20, "ST Micro"},
+	{0xad, "Hynix"},
+	{0x2c, "Micron"},
+	{0x01, "AMD"},
+	{0x0, 0}
+};
+
+
+maxblock=0;
+blocksize=pagesize*ppb/1024;  // размер блока в килобайтах
+nandid=mempeek(NAND_FLASH_READ_ID); // получаем ID флешки
+fid=(nandid>>8)&0xff;
+pid=nandid&0xff;
+
+// Определяем производителя флешки
+i=0;
+while (nand_manuf_ids[i].id != 0) {
+  if (nand_manuf_ids[i].id == pid) {
+    strcpy(flash_mfr,nand_manuf_ids[i].name);
+    break;
+  }
+  i++;
+}  
+    
+// Определяем емкость флешки
+i=0;
+while (nand_ids[i].id != 0) {
+  if (nand_ids[i].id == fid) {
+    maxblock=nand_ids[i].chipsize*1024/blocksize;
+    break;
+  }
+  i++;
+}  
+if (maxblock == 0) {
+  printf("\n Неопределенный Flash ID = %02x",fid);
+  maxblock=0x800;
+}  
+
+// Вынимаем параметры конфигурации
 
 cfg0=mempeek(nand_cfg0);
 spp=(((cfg0>>6)&7)|((cfg0>>2)&8))+1;
 sectorsize=512;
 pagesize=sectorsize*spp;
+
+if (oobsize == 0) {
+ devcfg = (nandid>>24)&0xFF;
+ oobsize = (8 << ((devcfg >> 2) & 0x3)) * (pagesize >> 9);
+} 
+
 }
 

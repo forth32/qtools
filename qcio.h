@@ -3,6 +3,8 @@ extern unsigned int nand_cmd;    // 0x1b400000
 extern unsigned int spp;
 extern unsigned int pagesize;
 extern unsigned int sectorsize;
+extern unsigned int maxblock;    // Общее число блоков флешки
+extern unsigned int oobsize;
 
 
 #define nand_addr0 nand_cmd+4
@@ -13,11 +15,10 @@ extern unsigned int sectorsize;
 #define nand_cfg0  nand_cmd+0x20
 #define nand_cfg1  nand_cmd+0x24
 #define nand_ecc_cfg  nand_cmd+0x28
+#define NAND_FLASH_READ_ID nand_cmd+0x40
 #define sector_buf nand_cmd+0x100
 
-
 #define ppb 64             // число страниц в 1 блоке
-#define maxblock 0x800     // Общее число блоков флешки
 
 void dump(char buffer[],int len,long base);
 int send_cmd(unsigned char* incmdbuf, int blen, unsigned char* iobuf);
