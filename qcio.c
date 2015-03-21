@@ -21,6 +21,7 @@ unsigned int pagesize=2048;
 unsigned int sectorsize=512;
 unsigned int maxblock=0x800;     // Общее число блоков флешки
 char flash_mfr[30]={0};
+char flash_descr[30]={0};
 unsigned int oobsize=0;
 
 
@@ -515,7 +516,7 @@ printf("ok");
 get_flash_config();
 i=rbuf[0x2c];
 rbuf[0x2d+i]=0;
-printf("\n Flash: %s %s",flash_mfr,rbuf+0x2d);
+printf("\n Flash: %s %s, %s",flash_mfr,rbuf+0x2d,flash_descr);
 printf("\n Версия протокола: %i",rbuf[0x22]);
 printf("\n Максимальный размер пакета: %i байта",*((unsigned int*)&rbuf[0x24]));
 printf("\n Размер сектора: %i байт",sectorsize);
@@ -762,6 +763,7 @@ i=0;
 while (nand_ids[i].id != 0) {
   if (nand_ids[i].id == fid) {
     maxblock=nand_ids[i].chipsize*1024/blocksize;
+    strcpy(flash_descr,nand_ids[i].type);
     break;
   }
   i++;
