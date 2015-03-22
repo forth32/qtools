@@ -660,70 +660,61 @@ struct {
 	{"NAND 128MiB 1,8V 16-bit",     0xAD,128},
 
 	/* 2 Gigabit */
-	{"NAND 256MiB 1,8V 8-bit",	0xAA,256},
-	{"NAND 256MiB 3,3V 8-bit",	0xDA,256},
-	{"NAND 256MiB 1,8V 16-bit",	0xBA,256},
-	{"NAND 256MiB 3,3V 16-bit",	0xCA,256},
+	{"NAND 256MiB 1.8V 8-bit",	0xAA,256},
+	{"NAND 256MiB 3.3V 8-bit",	0xDA,256},
+	{"NAND 256MiB 1.8V 16-bit",	0xBA,256},
+	{"NAND 256MiB 3.3V 16-bit",	0xCA,256},
 
 	/* 4 Gigabit */
-	{"NAND 512MiB 1,8V 8-bit",	0xAC,512},
-	{"NAND 512MiB 3,3V 8-bit",	0xDC,512},
-	{"NAND 512MiB 1,8V 16-bit",	0xBC,512},
-	{"NAND 512MiB 3,3V 16-bit",	0xCC,512},
+	{"NAND 512MiB 1.8V 8-bit",	0xAC,512},
+	{"NAND 512MiB 3.3V 8-bit",	0xDC,512},
+	{"NAND 512MiB 1.8V 16-bit",	0xBC,512},
+	{"NAND 512MiB 3.3V 16-bit",	0xCC,512},
 
 	/* 8 Gigabit */
-	{"NAND 1GiB 1,8V 8-bit",	0xA3,1024},
-	{"NAND 1GiB 3,3V 8-bit",	0xD3,1024},
-	{"NAND 1GiB 1,8V 16-bit",	0xB3,1024},
-	{"NAND 1GiB 3,3V 16-bit",	0xC3,1024},
+	{"NAND 1GiB 1.8V 8-bit",	0xA3,1024},
+	{"NAND 1GiB 3.3V 8-bit",	0xD3,1024},
+	{"NAND 1GiB 1.8V 16-bit",	0xB3,1024},
+	{"NAND 1GiB 3.3V 16-bit",	0xC3,1024},
 
 	/* 16 Gigabit */
-	{"NAND 2GiB 1,8V 8-bit",	0xA5,2048},
-	{"NAND 2GiB 3,3V 8-bit",	0xD5,2048},
-	{"NAND 2GiB 1,8V 16-bit",	0xB5,2048},
-	{"NAND 2GiB 3,3V 16-bit",	0xC5,2048},
+	{"NAND 2GiB 1.8V 8-bit",	0xA5,2048},
+	{"NAND 2GiB 3.3V 8-bit",	0xD5,2048},
+	{"NAND 2GiB 1.8V 16-bit",	0xB5,2048},
+	{"NAND 2GiB 3.3V 16-bit",	0xC5,2048},
 
 	/* 32 Gigabit */
-	{"NAND 4GiB 1,8V 8-bit",	0xA7,4096},
-	{"NAND 4GiB 3,3V 8-bit",	0xD7,4096},
-	{"NAND 4GiB 1,8V 16-bit",	0xB7,4096},
-	{"NAND 4GiB 3,3V 16-bit",	0xC7,4096},
+	{"NAND 4GiB 1.8V 8-bit",	0xA7,4096},
+	{"NAND 4GiB 3.3V 8-bit",	0xD7,4096},
+	{"NAND 4GiB 1.8V 16-bit",	0xB7,4096},
+	{"NAND 4GiB 3.3V 16-bit",	0xC7,4096},
 
 	/* 64 Gigabit */
-	{"NAND 8GiB 1,8V 8-bit",	0xAE,8192},
-	{"NAND 8GiB 3,3V 8-bit",	0xDE,8192},
-	{"NAND 8GiB 1,8V 16-bit",	0xBE,8192},
-	{"NAND 8GiB 3,3V 16-bit",	0xCE,8192},
+	{"NAND 8GiB 1.8V 8-bit",	0xAE,8192},
+	{"NAND 8GiB 3.3V 8-bit",	0xDE,8192},
+	{"NAND 8GiB 1.8V 16-bit",	0xBE,8192},
+	{"NAND 8GiB 3.3V 16-bit",	0xCE,8192},
 
 	/* 128 Gigabit */
-	{"NAND 16GiB 1,8V 8-bit",	0x1A,16384},
-	{"NAND 16GiB 3,3V 8-bit",	0x3A,16384},
-	{"NAND 16GiB 1,8V 16-bit",	0x2A,16384},
-	{"NAND 16GiB 3,3V 16-bit",	0x4A,16384},
+	{"NAND 16GiB 1.8V 8-bit",	0x1A,16384},
+	{"NAND 16GiB 3.3V 8-bit",	0x3A,16384},
+	{"NAND 16GiB 1.8V 16-bit",	0x2A,16384},
+	{"NAND 16GiB 3.3V 16-bit",	0x4A,16384},
                                                   
 	/* 256 Gigabit */
-	{"NAND 32GiB 1,8V 8-bit",	0x1C,32768},
-	{"NAND 32GiB 3,3V 8-bit",	0x3C,32768},
-	{"NAND 32GiB 1,8V 16-bit",	0x2C,32768},
-	{"NAND 32GiB 3,3V 16-bit",	0x4C,32768},
+	{"NAND 32GiB 1.8V 8-bit",	0x1C,32768},
+	{"NAND 32GiB 3.3V 8-bit",	0x3C,32768},
+	{"NAND 32GiB 1.8V 16-bit",	0x2C,32768},
+	{"NAND 32GiB 3.3V 16-bit",	0x4C,32768},
 
 	/* 512 Gigabit */
-	{"NAND 64GiB 1,8V 8-bit",	0x1E,65536},
-	{"NAND 64GiB 3,3V 8-bit",	0x3E,65536},
-	{"NAND 64GiB 1,8V 16-bit",	0x2E,65536},
-	{"NAND 64GiB 3,3V 16-bit",	0x4E,65536},
+	{"NAND 64GiB 1.8V 8-bit",	0x1E,65536},
+	{"NAND 64GiB 3.3V 8-bit",	0x3E,65536},
+	{"NAND 64GiB 1.8V 16-bit",	0x2E,65536},
+	{"NAND 64GiB 3.3V 16-bit",	0x4E,65536},
 	{0,0,0},
 };
 
-#define NAND_MFR_TOSHIBA	0x98
-#define NAND_MFR_SAMSUNG	0xec
-#define NAND_MFR_FUJITSU	0x04
-#define NAND_MFR_NATIONAL	0x8f
-#define NAND_MFR_RENESAS	0x07
-#define NAND_MFR_STMICRO	0x20
-#define NAND_MFR_HYNIX		0xad
-#define NAND_MFR_MICRON		0x2c
-#define NAND_MFR_AMD		0x01
 
 struct  {
   unsigned int id;
@@ -761,7 +752,8 @@ while (nand_manuf_ids[i].id != 0) {
 i=0;
 while (nand_ids[i].id != 0) {
   if (nand_ids[i].id == fid) {
-    chipsize=nand_ids[i].chipsize*1024/blocksize;
+    chipsize=nand_ids[i].chipsize;
+//    printf("\n ch=%i  chipsize=%i",nand_ids[i].chipsize,chipsize);
     strcpy(flash_descr,nand_ids[i].type);
     break;
   }
