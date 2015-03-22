@@ -219,7 +219,7 @@ else if (flen>fsize) {
   return;
 }  
   
-printf("\n Запись из файла %s, стартовый блок %03x, размер %03x\n Режим записи: ",argv[optind],block,flen);
+printf("\n Запись из файла %s, стартовый блок %03x, размер %03x\n Режим записи: ",argv[optind],startblock,flen);
 switch (wmode) {
   case w_standart:
     printf("только данные, стандартный формат\n");

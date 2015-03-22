@@ -16,10 +16,10 @@
 #include "qcio.h"
 
 unsigned int nand_cmd=0x1b400000;
-unsigned int spp=4;
-unsigned int pagesize=2048;
+unsigned int spp=0;
+unsigned int pagesize=0;
 unsigned int sectorsize=512;
-unsigned int maxblock=0x800;     // Общее число блоков флешки
+unsigned int maxblock=0;     // Общее число блоков флешки
 char flash_mfr[30]={0};
 char flash_descr[30]={0};
 unsigned int oobsize=0;
@@ -728,12 +728,12 @@ struct  {
 	{0x20, "ST Micro"},
 	{0xad, "Hynix"},
 	{0x2c, "Micron"},
+	{0xc8, "Elite semiconductor"},
 	{0x01, "AMD"},
 	{0x0, 0}
 };
 
 
-maxblock=0;
 nandid=mempeek(NAND_FLASH_READ_ID); // получаем ID флешки
 fid=(nandid>>8)&0xff;
 pid=nandid&0xff;
