@@ -36,6 +36,7 @@ int res;
 FILE* in;
 int vflag=0;
 int cflag=0;
+unsigned int flen=0;
 char* sptr;
 #ifndef WIN32
 char devname[]="/dev/ttyUSB0";
@@ -52,14 +53,7 @@ int wmode=0; // режим записи
 #define w_yaffs    2
 #define w_image    3
 
-
-
-// параметры флешки
-oobsize=16;      // оов на 1 блок
-pagesize=2048;   // размер страницы в байтах 
-
-
-while ((opt = getopt(argc, argv, "hp:k:b:f:vcz:")) != -1) {
+while ((opt = getopt(argc, argv, "hp:k:b:f:vcz:l:")) != -1) {
   switch (opt) {
    case 'h': 
     printf("\n  Утилита предназначена для записи сырого образа flash через регистры контроллера\n\
@@ -73,6 +67,7 @@ while ((opt = getopt(argc, argv, "hp:k:b:f:vcz:")) != -1) {
         -fy - запись yaffs2-образов\n\
         -fi - запись сырого образа данные+OOB, как есть, без пересчета ЕСС\n\
 -z #      - размер OOB на одну страницу, в байтах (перекрывает автоопределенный размер)\n\
+-l #      - число записываемых блоков, по умолчанию - до конца входного файла\n\
 -v        - проверка записанных данных после записи\n\
 -c        - только стереть заданный блок\n\
 \n");
@@ -116,6 +111,10 @@ while ((opt = getopt(argc, argv, "hp:k:b:f:vcz:")) != -1) {
      
    case 'z':
      sscanf(optarg,"%i",&oobsize);
+     break;
+     
+   case 'l':
+     sscanf(optarg,"%i",&flen);
      break;
      
    case 'v':
@@ -214,8 +213,13 @@ fseek(in,0,SEEK_END);
 fsize=ftell(in)/(pagesize*ppb); // размер в блоках
 rewind(in);
 
+if (flen == 0) flen=fsize;
+else if (flen>fsize) {
+  printf("\n Указанная длина превосходит размер файла\n");
+  return;
+}  
   
-printf("\n Запись из файла %s, стартовый блок %03x, размер %03x\n Режим записи: ",argv[optind],block,fsize);
+printf("\n Запись из файла %s, стартовый блок %03x, размер %03x\n Режим записи: ",argv[optind],block,flen);
 switch (wmode) {
   case w_standart:
     printf("только данные, стандартный формат\n");
@@ -226,7 +230,7 @@ switch (wmode) {
     break;
     
   case w_image: 
-    printf("сырой образ без рассчетаЕСС\n");
+    printf("сырой образ без рассчета ЕСС\n");
     break;
     
   case w_yaffs: 
@@ -238,15 +242,14 @@ port_timeout(1000);
 
 // цикл по блокам
 
-for(block=startblock;block<(startblock+fsize);block++) {
+for(block=startblock;block<(startblock+flen);block++) {
   // стираем блок
   block_erase(block);
   // цикл по страницам
   for(page=0;page<ppb;page++) {
     
     // читаем весь дамп страницы
-    len=fread(srcbuf,1,pagesize+(spp*oobsize),in);  // образ страницы - page+oob
-    if (len < (pagesize+(spp*oobsize))) goto wdone; // неполный хвост файла игнорируем - и на выход
+    fread(srcbuf,1,pagesize+(spp*oobsize),in);  // образ страницы - page+oob
     // разбираем дамп по буферам
     for (i=0;i<spp;i++) {
       memcpy(databuf+sectorsize*i,srcbuf+(sectorsize+oobsize)*i,sectorsize);
@@ -312,24 +315,11 @@ for(block=startblock;block<(startblock+fsize);block++) {
 	  }
 	  break;
       }
-      iolen=send_cmd(datacmd,34+sectorsize+oobsize,iobuf);  // пересылаем сектор в секторный буфер
-         for (i=0;i<512;i+=4)  {
-	   *((unsigned int*)&vbuf[i])=mempeek(sector_buf+i);
-	 }  
-// Проверка секторного буфера - только для отладки - в релизе не требуется	 
-/*       memread(vbuf,sector_buf,512);
-       if (memcmp(vbuf,srcbuf+sector*sectorsize,sectorsize) != 0) {
-	 printf("\n блок %x  страница %x сектор %i - ошибка сравнения\n",block,page,sector);
-	 for (i=0;i<512;i++) 
-	   if (vbuf[i] != srcbuf[sector*sectorsize+i]) printf("\n %03x: %02x %02x",i,
-	     vbuf[i],srcbuf[sector*sectorsize+i]);
-       } 
-*/       
-       // пересылаем сектор в секторный буфер  
-       iolen=send_cmd(datacmd,34+sectorsize+oobsize,iobuf);  
-       // выполняем команду записи и ждем ее завершения
-       mempoke(nand_exec,0x1);
-       nandwait();
+      // пересылаем сектор в секторный буфер
+      iolen=send_cmd(datacmd,34+sectorsize+oobsize,iobuf); 
+      // выполняем команду записи и ждем ее завершения
+      mempoke(nand_exec,0x1);
+      nandwait();
      }  // конец цикла записи по секторам
      if (!vflag) continue;   // верификация не требуется
     // верификация данных
@@ -352,16 +342,16 @@ for(block=startblock;block<(startblock+fsize);block++) {
 	  if (sector != (spp-1)) {
 	    // все сектора кроме последнего
 	    for (i=0;i<sectorsize+4;i++) 
-	      if (membuf[i] != srcbuf[sector*(sectorsize+4)+i])
+	      if (membuf[i] != databuf[sector*(sectorsize+4)+i])
                  printf("! block: %04x  page:%02x  sector:%i  byte: %03x  %02x != %02x\n",
-			block,page,sector,i,membuf[i],srcbuf[sector*(sectorsize+4)+i]); 
+			block,page,sector,i,membuf[i],databuf[sector*(sectorsize+4)+i]); 
 	  }  
 	  else {
 	      // последний сектор
 	    for (i=0;i<sectorsize-4*(spp-1);i++) 
-	      if (membuf[i] != srcbuf[(spp-1)*(sectorsize+4)+i])
+	      if (membuf[i] != databuf[(spp-1)*(sectorsize+4)+i])
                  printf("! block: %04x  page:%02x  sector:%i  byte: %03x  %02x != %02x\n",
-			block,page,sector,i,membuf[i],srcbuf[(spp-1)*(sectorsize+4)+i]); 
+			block,page,sector,i,membuf[i],databuf[(spp-1)*(sectorsize+4)+i]); 
 	  }    
 	  break; 
 	  
@@ -369,16 +359,14 @@ for(block=startblock;block<(startblock+fsize);block++) {
 	 case w_image:  
           // верификация в стандартном формате
 	  for (i=0;i<sectorsize;i++) 
-	      if (membuf[i] != srcbuf[sector*sectorsize+i])
+	      if (membuf[i] != databuf[sector*sectorsize+i])
                  printf("! block: %04x  page:%02x  sector:%i  byte: %03x  %02x != %02x\n",
-			block,page,sector,i,membuf[i],srcbuf[sector*sectorsize+i]); 
+			block,page,sector,i,membuf[i],databuf[sector*sectorsize+i]); 
 	  break;   
       }  // switch(wmode)
     }  // конец секторного цикла верификации
   }  // конец цикла по страницам 
 } // конец цикла по блокам  
-
-wdone:
 
 printf("\n");
 }
