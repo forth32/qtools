@@ -44,7 +44,7 @@ char devname[20]="";
 #endif
 unsigned int i,opt,iolen,j;
 unsigned int block,page,sector,len;
-unsigned int fsize,startblock=0;
+unsigned int startblock=0;
 int wmode=0; // режим записи
 
 #define w_standart 0

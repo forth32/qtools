@@ -778,7 +778,7 @@ spp=(((cfg0>>6)&7)|((cfg0>>2)&8))+1;
 sectorsize=512;
 pagesize=sectorsize*spp;
 blocksize=pagesize*ppb/1024;  // размер блока в килобайтах
-if (chipsize != 0)   maxmaxblock=chipsize*1024/blocksize;
+if (chipsize != 0)   maxblock=chipsize*1024/blocksize;
 else                 maxblock=0x800;
 
 if (oobsize == 0) {
