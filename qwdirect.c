@@ -311,7 +311,7 @@ for(block=startblock;block<(startblock+flen);block++) {
           else  {
 	 // последний сектор
              memcpy(datacmd+34,databuf+(spp-1)*(sectorsize+4),sectorsize-4*(spp-1)); // данные последнего сектора - укорачиваем
-             memcpy(datacmd+34+sectorsize,oobuf,16 );    // oob - тег yaffs
+             memcpy(datacmd+34+sectorsize-4*(spp-1),oobuf,16 );    // oob - тег yaffs
 	  }
 	  break;
       }
