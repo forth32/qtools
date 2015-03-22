@@ -607,7 +607,7 @@ mempoke(nand_cfg0,oldcfg);   // восстанавливаем CFG0
 //**********************************************************
 void get_flash_config() {
   
-unsigned int cfg0, nandid, pid, fid, blocksize, devcfg;
+unsigned int cfg0, nandid, pid, fid, blocksize, devcfg, chipsize;
 int i;
 
 struct {
@@ -743,7 +743,6 @@ struct  {
 
 
 maxblock=0;
-blocksize=pagesize*ppb/1024;  // размер блока в килобайтах
 nandid=mempeek(NAND_FLASH_READ_ID); // получаем ID флешки
 fid=(nandid>>8)&0xff;
 pid=nandid&0xff;
@@ -762,15 +761,14 @@ while (nand_manuf_ids[i].id != 0) {
 i=0;
 while (nand_ids[i].id != 0) {
   if (nand_ids[i].id == fid) {
-    maxblock=nand_ids[i].chipsize*1024/blocksize;
+    chipsize=nand_ids[i].chipsize*1024/blocksize;
     strcpy(flash_descr,nand_ids[i].type);
     break;
   }
   i++;
 }  
-if (maxblock == 0) {
+if (chipsize == 0) {
   printf("\n Неопределенный Flash ID = %02x",fid);
-  maxblock=0x800;
 }  
 
 // Вынимаем параметры конфигурации
@@ -779,6 +777,9 @@ cfg0=mempeek(nand_cfg0);
 spp=(((cfg0>>6)&7)|((cfg0>>2)&8))+1;
 sectorsize=512;
 pagesize=sectorsize*spp;
+blocksize=pagesize*ppb/1024;  // размер блока в килобайтах
+if (chipsize != 0)   maxmaxblock=chipsize*1024/blocksize;
+else                 maxblock=0x800;
 
 if (oobsize == 0) {
  devcfg = (nandid>>24)&0xFF;

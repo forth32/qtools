@@ -113,7 +113,7 @@ int res;
 unsigned char c;
 unsigned char* sptr;
 unsigned int start=0,len=1,opt;
-unsigned int cwsize=sectorsize;
+unsigned int cwsize;
 
 FILE* out;
 FILE* part=0;
@@ -182,7 +182,6 @@ while ((opt = getopt(argc, argv, "hp:a:l:o:xs:ef:mt8k:r:z:")) != -1) {
 
        case '3':
         nand_cmd=0xf9af0000;
-        oobsize=20;           // оов на 1 блок
 	break;
 
        default:
@@ -289,6 +288,7 @@ if ((truncflag == 1)&&(cwsize>sectorsize)) {
   return;
 }  
 hello();
+cwsize=sectorsize;
 if (xflag) cwsize+=oobsize/spp; // наращиваем размер codeword на размер порции OOB на каждый сектор
 
 if (partflag == 2) load_ptable(ptable); // загружаем таблицу разделов

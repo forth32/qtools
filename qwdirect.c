@@ -31,6 +31,7 @@ unsigned char srcbuf[8192]; // буфер страницы
 unsigned char membuf[1024]; // буфер верификации
 unsigned char databuf[8192], oobuf[8192]; // буферы сектора данных и ООВ
 unsigned char vbuf[2048];
+unsigned int fsize;
 int res;
 FILE* in;
 int vflag=0;
@@ -42,8 +43,8 @@ char devname[]="/dev/ttyUSB0";
 char devname[20]="";
 #endif
 unsigned int i,opt,iolen,j;
-unsigned int block=0,page,sector,len;
-unsigned int fsize;
+unsigned int block,page,sector,len;
+unsigned int fsize,startblock=0;
 int wmode=0; // режим записи
 
 #define w_standart 0
@@ -110,7 +111,7 @@ while ((opt = getopt(argc, argv, "hp:k:b:f:vcz:")) != -1) {
      break;
      
    case 'b':
-     sscanf(optarg,"%x",&block);
+     sscanf(optarg,"%x",&startblock);
      break;
      
    case 'z':
@@ -208,8 +209,13 @@ else {
   mempoke(nand_cfg1,mempeek(nand_cfg1)|1); 
 }
   
+// Определяем размер файла
+fseek(in,0,SEEK_END);
+fsize=ftell(in)/(pagesize*ppb); // размер в блоках
+rewind(in);
 
-printf("\n Запись из файла %s, стартовый блок %03x\n Режим записи: ",argv[optind],block);
+  
+printf("\n Запись из файла %s, стартовый блок %03x, размер %03x\n Режим записи: ",argv[optind],block,fsize);
 switch (wmode) {
   case w_standart:
     printf("только данные, стандартный формат\n");
@@ -228,11 +234,11 @@ switch (wmode) {
     break;
 }   
     
-    
 port_timeout(1000);
 
 // цикл по блокам
-for(;;block++) {
+
+for(block=startblock;block<(startblock+fsize);block++) {
   // стираем блок
   block_erase(block);
   // цикл по страницам
