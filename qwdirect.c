@@ -53,7 +53,7 @@ int wmode=0; // режим записи
 #define w_yaffs    2
 #define w_image    3
 
-while ((opt = getopt(argc, argv, "hp:k:b:f:vcz:l:")) != -1) {
+while ((opt = getopt(argc, argv, "hp:k:b:f:vc:z:l:")) != -1) {
   switch (opt) {
    case 'h': 
     printf("\n  Утилита предназначена для записи сырого образа flash через регистры контроллера\n\
@@ -69,7 +69,7 @@ while ((opt = getopt(argc, argv, "hp:k:b:f:vcz:l:")) != -1) {
 -z #      - размер OOB на одну страницу, в байтах (перекрывает автоопределенный размер)\n\
 -l #      - число записываемых блоков, по умолчанию - до конца входного файла\n\
 -v        - проверка записанных данных после записи\n\
--c        - только стереть заданный блок\n\
+-c n      - только стереть n блоков, начиная от начального.\n\
 \n");
     return;
     
@@ -102,7 +102,11 @@ while ((opt = getopt(argc, argv, "hp:k:b:f:vcz:l:")) != -1) {
     break;
     
    case 'c':
-     cflag=1;
+     sscanf(optarg,"%x",&cflag);
+     if (cflag == 0) {
+       printf("\n Неправильно указан аргумент ключа -с");
+       return;
+     }  
      break;
      
    case 'b':
@@ -179,6 +183,7 @@ if (!cflag) {
    printf("\nОшибка открытия входного файла\n");
    return;
  }
+ 
 }
 else if (optind < argc) {// в режиме стирания входной файл не нужен
   printf("\n С ключом -с недопустим входной файл\n");
@@ -186,6 +191,8 @@ else if (optind < argc) {// в режиме стирания входной фа
 }
 
 hello();
+
+
 if ((wmode == w_standart)||(wmode == w_linux)) oobsize=0; // для входных файлов без OOB
 oobsize/=spp;   // теперь oobsize - это размер OOB на один сектор
 
@@ -194,7 +201,12 @@ nand_reset();
 
 // режим стирания
 if (cflag) {
-  block_erase(block);
+  printf("\n");
+  for (block=startblock;block<(startblock+cflag);block++) {
+    printf("\r Стирание блока %03x",block); 
+    block_erase(block);
+  }  
+  printf("\n");
   return;
 }
 
