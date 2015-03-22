@@ -41,4 +41,4 @@ echo download mode entered
 sleep 2
 ./qdload -p $PORT  -a 100000 $LDR
 sleep 2
-./qcommand -p $PORT -c "i"
+./qcommand -p $PORT -k1 -c "i"

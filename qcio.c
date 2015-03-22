@@ -49,7 +49,7 @@ unsigned int i,j;
 char ch;
 
 for (i=0;i<len;i+=16) {
-  printf("%06lx: ",(long)(base+i));
+  printf("%08x: ",(unsigned long)(base+i));
   for (j=0;j<16;j++){
    if ((i+j) < len) printf("%02x ",buffer[i+j]&0xff);
    else printf("   ");
@@ -767,6 +767,11 @@ if (chipsize == 0) {
 
 cfg0=mempeek(nand_cfg0);
 spp=(((cfg0>>6)&7)|((cfg0>>2)&8))+1;
+if (spp == 1) {
+  // для старых чипсетов младшие 2 байта CFG1 надо настраивать руками
+  spp=4;  
+  mempoke(nand_cfg0,(cfg0|0x400c0));
+}  
 sectorsize=512;
 pagesize=sectorsize*spp;
 blocksize=pagesize*ppb/1024;  // размер блока в килобайтах
