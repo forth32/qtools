@@ -263,10 +263,17 @@ for(block=startblock;block<(startblock+flen);block++) {
     // читаем весь дамп страницы
     fread(srcbuf,1,pagesize+(spp*oobsize),in);  // образ страницы - page+oob
     // разбираем дамп по буферам
-    for (i=0;i<spp;i++) {
-      memcpy(databuf+sectorsize*i,srcbuf+(sectorsize+oobsize)*i,sectorsize);
-      if (oobsize != 0) memcpy(oobuf+oobsize*i,srcbuf+(sectorsize+oobsize)*i+sectorsize,oobsize);
-    }  
+    if (wmode != w_yaffs) 
+      // для всех режимов кроме yaffs - формат входного файла 512+obb
+     for (i=0;i<spp;i++) {
+       memcpy(databuf+sectorsize*i,srcbuf+(sectorsize+oobsize)*i,sectorsize);
+       if (oobsize != 0) memcpy(oobuf+oobsize*i,srcbuf+(sectorsize+oobsize)*i+sectorsize,oobsize);
+     }  
+     else {
+      // для режима yaffs - формат входного файла pagesize+obb 
+       memcpy(databuf,srcbuf,sectorsize*spp);
+       memcpy(oobuf,srcbuf+sectorsize*spp,oobsize*spp);
+     }  
     
     // устанавливаем адрес флешки
     printf("\r block: %04x   page:%02x",block,page); fflush(stdout);
