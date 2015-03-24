@@ -35,14 +35,8 @@ for(page=0;page<ppb;page++)  {
   for(sec=0;sec<spp;sec++) {
    mempoke(nand_exec,0x1); 
    nandwait();
- retry:  
-   if (!memread(iobuf,sector_buf, cwsize)) { // выгребаем порцию данных
-     printf("\n memread вернул ошибку чтения секторного буфера.");
-     printf("\n block = %08x  page=%08x  sector=%08x",block,page,sec);
-     printf("\n Повторить операцию? (y,n):");
-     if ((getchar() == 'y')||(getchar() == 'Y')) goto retry;
-     memset(iobuf,0,cwsize);
-   }  
+   // выгребаем порцию данных
+   memread(iobuf,sector_buf, cwsize);
    fwrite(iobuf,1,cwsize,out);
   }
  } 
@@ -62,14 +56,8 @@ for(page=0;page<ppb;page++)  {
   for(sec=0;sec<spp;sec++) {
    mempoke(nand_exec,0x1); 
    nandwait();
- retry:  
-   if (!memread(iobuf,sector_buf,576)) { // выгребаем порцию данных
-     printf("\n memread вернул ошибку чтения секторного буфера.");
-     printf("\n block = %08x  page=%08x  sector=%08x",block,page,sec);
-     printf("\n Повторить операцию? (y,n):");
-     if ((getchar() == 'y')||(getchar() == 'Y')) goto retry;
-     memset(iobuf,0,sectorsize);
-   }     
+   // выгребаем порцию данных
+   memread(iobuf,sector_buf,516);
    if (sec != (spp-1)) 
      // Для непоследних секторов
      fwrite(iobuf,1,sectorsize+4,out);    // Тело сектора + 4 байта OBB
@@ -79,14 +67,13 @@ for(page=0;page<ppb;page++)  {
   }
  } 
 } 
-  
 
 
 
 //*****************************
 //* чтение сырого флеша
 //*****************************
-void read_raw(int start,int len,int cwsize,FILE* out) {
+void read_raw(int start,int len,int cwsize,FILE* out, unsigned int rflag) {
   
 int block;  
 
@@ -96,7 +83,8 @@ printf("\n Формат данных: %i+%i\n",sectorsize,cwsize-sectorsize);
 // по блокам
 for (block=start;block<(start+len);block++) {
   printf("\r Блок: %08x",block); fflush(stdout);
-  read_block(block,cwsize,out);
+  if (rflag != 2) read_block(block,cwsize,out);
+  else            read_block_resequence(block,out); 
 } 
 printf("\n"); 
 }
@@ -160,10 +148,10 @@ while ((opt = getopt(argc, argv, "hp:b:l:o:xs:ef:mtk:r:z:")) != -1) {
 -s @      - взять карту разделов из флеша (блок 2 страница 1 сектор 0)\n\
 -f n      - читать только раздел под номером n\n\
 -t        - отрезать все FF за последним значимым байтом раздела\n\
--r <x>    - формат раздела:\n\
+-r <x>    - формат данных:\n\
         -rs - стандартный формат (512-байтные блоки)\n\
         -rl - линуксовый формат (516-байтные блоки кроме последнего на странице)\n\
-        -ra - (по умолчанию) - автоопределение формата по атрибуту раздела\n\
+        -ra - (по умолчанию и только для режима разделов) - автоопределение формата по атрибуту раздела\n\
 -m        - вывести на экран полную карту разделов\n");
     return;
     
@@ -214,13 +202,13 @@ while ((opt = getopt(argc, argv, "hp:b:l:o:xs:ef:mtk:r:z:")) != -1) {
    case 'r':
      switch(*optarg) {
        case 'a':
-	 rflag=0;
-	 break;
+	 rflag=0;   // авто
+	 break;     
        case 's':
-	 rflag=1;
+	 rflag=1;   // стандартный
 	 break;
        case 'l':
-	 rflag=2;
+	 rflag=2;   // линуксовый
 	 break;
        default:
 	 printf("\n Недопустимое значение ключа r\n");
@@ -300,10 +288,13 @@ mempoke(nand_cmd,1); // Сброс всех операций контролле�
 mempoke(nand_exec,0x1);
 nandwait();
 // устанавливаем код команды
-if (cwsize == sectorsize) mempoke(nand_cmd,0x32); // чтение только данных
-else  mempoke(nand_cmd,0x34); // чтение data+ecc+spare
+//if (cwsize == sectorsize) mempoke(nand_cmd,0x32); // чтение только данных
+//else  
 
-// чистоим секторный буфер
+// В принципе, проще всегда читать data+oob, а уже программа сама разберется, что из этого реально нужно.
+mempoke(nand_cmd,0x34); // чтение data+ecc+spare
+
+// чистим секторный буфер
 for(i=0;i<cwsize;i+=4) mempoke(sector_buf+i,0xffffffff);
 
 //###################################################
@@ -314,7 +305,7 @@ if (len == 0) len=maxblock-start; //  до конца флешки
 
 if (partflag == 0) { 
   out=fopen(filename,"wb");
-  read_raw(start,len,cwsize,out);
+  read_raw(start,len,cwsize,out,rflag);
   return;
 }  
 
@@ -372,7 +363,7 @@ for(i=0;i<npar;i++) {
 	      break;
 	      
 	    case 2: // китайсколинуксовый формат  
-              read_block_resequence(block,out);
+               read_block_resequence(block,out);
 	      break;
 	 }  
 
