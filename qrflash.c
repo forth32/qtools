@@ -57,13 +57,13 @@ for(page=0;page<ppb;page++)  {
    mempoke(nand_exec,0x1); 
    nandwait();
    // выгребаем порцию данных
-   memread(iobuf,sector_buf,516);
+   memread(iobuf,sector_buf,sectorsize+4);
    if (sec != (spp-1)) 
      // Для непоследних секторов
      fwrite(iobuf,1,sectorsize+4,out);    // Тело сектора + 4 байта OBB
    else 
      // для последнего сектора
-     fwrite(iobuf,1,512-4*(spp-1),out);   // Тело сектора - хвост oob
+     fwrite(iobuf,1,sectorsize-4*(spp-1),out);   // Тело сектора - хвост oob
   }
  } 
 } 
