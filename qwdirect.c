@@ -222,8 +222,10 @@ else {
   
 // Определяем размер файла
 fseek(in,0,SEEK_END);
-fsize=ftell(in)/(pagesize*ppb); // размер в блоках
+i=ftell(in);
 rewind(in);
+fsize=i/(pagesize*ppb); // размер в блоках
+if (i%(pagesize*ppb) != 0) fsize++; // округляем вверх до границы блока
 
 if (flen == 0) flen=fsize;
 else if (flen>fsize) {
@@ -261,7 +263,7 @@ for(block=startblock;block<(startblock+flen);block++) {
   for(page=0;page<ppb;page++) {
     
     // читаем весь дамп страницы
-    fread(srcbuf,1,pagesize+(spp*oobsize),in);  // образ страницы - page+oob
+    if (fread(srcbuf,1,pagesize+(spp*oobsize),in) < (pagesize+(spp*oobsize))) goto endpage;  // образ страницы - page+oob
     // разбираем дамп по буферам
     if (wmode != w_yaffs) 
       // для всех режимов кроме yaffs - формат входного файла 512+obb
@@ -386,6 +388,7 @@ for(block=startblock;block<(startblock+flen);block++) {
     }  // конец секторного цикла верификации
   }  // конец цикла по страницам 
 } // конец цикла по блокам  
+endpage:  
 
 printf("\n");
 }
