@@ -78,10 +78,10 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\source\mibibsplit.c" />
+    <ClCompile Include="..\..\mibibsplit.c" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\source\printf.h" />
+    <ClInclude Include="..\..\printf.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
