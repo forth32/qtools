@@ -136,7 +136,7 @@ while ((opt = getopt(argc, argv, "hp:b:l:o:xs:ef:mtk:r:z:")) != -1) {
 Допустимы следующие ключи:\n\n\
 -p <tty>  - указывает имя устройства последовательного порта для общения с загрузчиком\n\
 -e        - включает коррекцию ECC при чтении (по умолчанию выключаена)\n\
--x        - читает полный сектор - данные+obb. Без ключа читает только данные.\n\n\
+-x        - читает полный сектор - данные+oob. Без ключа читает только данные.\n\n\
 -k #           - выбор чипсета: 0(MDM9x15, по умолчанию), 1(MDM8200), 2(MSM9x00), 3(MDM9x25)\n\
 -z #      - размер OOB на одну страницу, в байтах (перекрывает автоопределенный размер)\n\
 Для режима неформатированного чтения:\n\
@@ -341,7 +341,7 @@ for(i=0;i<npar;i++) {
       if ((partnumber == -1) || (partlist[i]==1)) {
         // формируем имя файла
         if (cwsize == sectorsize) sprintf(filename,"%02i-%s.bin",i,partname); 
-        else                   sprintf(filename,"%02i-%s.obb",i,partname);  
+        else                   sprintf(filename,"%02i-%s.oob",i,partname);  
         if (filename[4] == ':') filename[4]='-';    // заменяем : на -
         out=fopen(filename,"wb");  // открываем выходной файл
         for(block=start;block<(start+len);block++) {

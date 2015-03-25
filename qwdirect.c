@@ -10,6 +10,15 @@
 #endif
 #include "qcio.h"
 
+//**********************************************************
+//*  Установка размера блока в конфигурации контроллера
+//**********************************************************
+void set_blocksize(unsigned int blocksize) {
+  
+unsigned int cfg0=mempeek(nand_cfg0);
+cfg0=(cfg0&(~(0x3ff<<9)))|(blocksize<<9);
+mempoke(nand_cfg0,cfg0);
+}
 
 
   
@@ -249,6 +258,7 @@ switch (wmode) {
     
   case w_yaffs: 
     printf("образ yaffs2\n");
+    set_blocksize(516); // в этом режиме размер блока - 516 байт
     break;
 }   
     
@@ -284,11 +294,11 @@ for(block=startblock;block<(startblock+flen);block++) {
     // устанавливаем код команды записи
     switch (wmode) {
       case w_standart:
+      case w_yaffs:
 	mempoke(nand_cmd,0x36); // page program
 	break;
 
       case w_linux:
-      case w_yaffs:
         mempoke(nand_cmd,0x39); // запись data+spare
 	break;
 	 
@@ -324,15 +334,16 @@ for(block=startblock;block<(startblock+flen);block++) {
           break;
 
 	case w_yaffs:
-	 // образ yaffs - записываем только данные и yaffs-тег в область spare
-	 // входной файл имеет формат 512+oob, но при этом тег лежит с позиции 0 OOB 
+	 // образ yaffs - записываем только данные 516-байтными блоками 
+	 //  и yaffs-тег в конце последнего блока
+	 // входной файл имеет формат page+oob, но при этом тег лежит с позиции 0 OOB 
           if (sector < (spp-1))  
 	 //первые n секторов
              memcpy(datacmd+34,databuf+sector*(sectorsize+4),sectorsize+4); 
           else  {
 	 // последний сектор
              memcpy(datacmd+34,databuf+(spp-1)*(sectorsize+4),sectorsize-4*(spp-1)); // данные последнего сектора - укорачиваем
-             memcpy(datacmd+34+sectorsize-4*(spp-1),oobuf,16 );    // oob - тег yaffs
+             memcpy(datacmd+34+sectorsize-4*(spp-1),oobuf,16 );    // тег yaffs присоединяем к нему
 	  }
 	  break;
       }
@@ -358,7 +369,6 @@ for(block=startblock;block<(startblock+flen);block++) {
       memread(membuf,sector_buf,sectorsize+oobsize);
       switch (wmode) {
         case w_linux:
-	case w_yaffs:  
  	// верификация в линуксовом формате
 	  if (sector != (spp-1)) {
 	    // все сектора кроме последнего
@@ -378,6 +388,7 @@ for(block=startblock;block<(startblock+flen);block++) {
 	  
 	 case w_standart:
 	 case w_image:  
+         case w_yaffs:  
           // верификация в стандартном формате
 	  for (i=0;i<sectorsize;i++) 
 	      if (membuf[i] != databuf[sector*sectorsize+i])
@@ -389,7 +400,7 @@ for(block=startblock;block<(startblock+flen);block++) {
   }  // конец цикла по страницам 
 } // конец цикла по блокам  
 endpage:  
-
+set_blocksize(512);
 printf("\n");
 }
 
