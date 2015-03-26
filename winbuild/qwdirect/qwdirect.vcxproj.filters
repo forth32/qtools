@@ -15,10 +15,13 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\printf.h">
+    <Text Include="ReadMe.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\qcio.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\qcio.h">
+    <ClInclude Include="..\..\printf.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\wingetopt.h">
@@ -29,7 +32,7 @@
     <ClCompile Include="..\..\qcio.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\qcommand.c">
+    <ClCompile Include="..\..\qwdirect.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\wingetopt.c">

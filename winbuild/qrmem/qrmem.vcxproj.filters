@@ -15,24 +15,24 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\source\printf.h">
+    <ClInclude Include="..\..\printf.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\source\qcio.h">
+    <ClInclude Include="..\..\qcio.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\source\wingetopt.h">
+    <ClInclude Include="..\..\wingetopt.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\source\qcio.c">
+    <ClCompile Include="..\..\qcio.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\source\qread.c">
+    <ClCompile Include="..\..\wingetopt.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\source\wingetopt.c">
+    <ClCompile Include="..\..\qrmem.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

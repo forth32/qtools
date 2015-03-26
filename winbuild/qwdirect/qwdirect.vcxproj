@@ -10,20 +10,10 @@
       <Platform>Win32</Platform>
     </ProjectConfiguration>
   </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="..\..\printf.h" />
-    <ClInclude Include="..\..\qcio.h" />
-    <ClInclude Include="..\..\wingetopt.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="..\..\qcio.c" />
-    <ClCompile Include="..\..\qrflash.c" />
-    <ClCompile Include="..\..\wingetopt.c" />
-  </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{9C2988B5-07FE-4402-9106-91B39F153D28}</ProjectGuid>
+    <ProjectGuid>{15C9BDAA-C676-4FB2-BEFD-8AD242127E20}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
-    <RootNamespace>qrflash</RootNamespace>
+    <RootNamespace>qwdirect</RootNamespace>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -59,11 +49,10 @@
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
-      <PrecompiledHeader>
-      </PrecompiledHeader>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;_CRT_SECURE_NO_WARNINGS;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -73,12 +62,11 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
-      <PrecompiledHeader>
-      </PrecompiledHeader>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32;_CRT_SECURE_NO_WARNINGS;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -87,6 +75,19 @@
       <OptimizeReferences>true</OptimizeReferences>
     </Link>
   </ItemDefinitionGroup>
+  <ItemGroup>
+    <Text Include="ReadMe.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\printf.h" />
+    <ClInclude Include="..\..\qcio.h" />
+    <ClInclude Include="..\..\wingetopt.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\qcio.c" />
+    <ClCompile Include="..\..\qwdirect.c" />
+    <ClCompile Include="..\..\wingetopt.c" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

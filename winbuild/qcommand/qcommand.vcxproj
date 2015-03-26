@@ -78,14 +78,14 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="..\source\printf.h" />
-    <ClInclude Include="..\source\qcio.h" />
-    <ClInclude Include="..\source\wingetopt.h" />
+    <ClInclude Include="..\..\printf.h" />
+    <ClInclude Include="..\..\qcio.h" />
+    <ClInclude Include="..\..\wingetopt.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\source\qcio.c" />
-    <ClCompile Include="..\source\qcommand.c" />
-    <ClCompile Include="..\source\wingetopt.c" />
+    <ClCompile Include="..\..\qcio.c" />
+    <ClCompile Include="..\..\qcommand.c" />
+    <ClCompile Include="..\..\wingetopt.c" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
