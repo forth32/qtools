@@ -224,8 +224,8 @@ else {
 fseek(in,0,SEEK_END);
 i=ftell(in);
 rewind(in);
-fsize=i/(pagesize*ppb); // размер в блоках
-if (i%(pagesize*ppb) != 0) fsize++; // округляем вверх до границы блока
+fsize=i/((pagesize+oobsize*spp)*ppb); // размер в блоках
+if (i%((pagesize+oobsize*spp)*ppb) != 0) fsize++; // округляем вверх до границы блока
 
 if (flen == 0) flen=fsize;
 else if (flen>fsize) {
