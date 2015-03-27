@@ -258,7 +258,6 @@ switch (wmode) {
     
   case w_yaffs: 
     printf("образ yaffs2\n");
-    set_blocksize(516); // в этом режиме размер блока - 516 байт
     break;
 }   
     
@@ -294,11 +293,11 @@ for(block=startblock;block<(startblock+flen);block++) {
     // устанавливаем код команды записи
     switch (wmode) {
       case w_standart:
-      case w_yaffs:
 	mempoke(nand_cmd,0x36); // page program
 	break;
 
       case w_linux:
+	  case w_yaffs:	  
         mempoke(nand_cmd,0x39); // запись data+spare
 	break;
 	 
