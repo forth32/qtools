@@ -13,10 +13,12 @@
 //**********************************************************
 //*  Установка размера блока в конфигурации контроллера
 //**********************************************************
-void set_blocksize(unsigned int blocksize) {
+void set_blocksize(unsigned int blocksize, unsigned int ss,unsigned int eccs) {
   
 unsigned int cfg0=mempeek(nand_cfg0);
-cfg0=(cfg0&(~(0x3ff<<9)))|(blocksize<<9);
+cfg0=(cfg0&(~(0x3ff<<9)))|(blocksize<<9); //UD_SIZE_BYTES = blocksize
+cfg0=cfg0&(~(0xf<<23))|(ss<<23); //SPARE_SIZE_BYTES = ss
+cfg0=cfg0&(~(0xf<<19))|(eccs<<19); //ECC_PARITY_SIZE_BYTES = eccs
 mempoke(nand_cfg0,cfg0);
 }
 
@@ -52,6 +54,7 @@ char devname[]="/dev/ttyUSB0";
 #else
 char devname[20]="";
 #endif
+unsigned int cfg0bak,cfg1bak,cfgeccbak;
 unsigned int i,opt,iolen,j;
 unsigned int block,page,sector,len;
 unsigned int startblock=0;
@@ -208,6 +211,11 @@ oobsize/=spp;   // теперь oobsize - это размер OOB на один 
 // Сброс контроллера nand
 nand_reset();
 
+// Сохранение значений реистров контроллера
+cfg0bak=mempeek(nand_cfg0);
+cfg1bak=mempeek(nand_cfg1);
+cfgeccbak=mempeek(nand_ecc_cfg);
+
 // режим стирания
 if (cflag) {
   printf("\n");
@@ -258,7 +266,7 @@ switch (wmode) {
     
   case w_yaffs: 
     printf("образ yaffs2\n");
-    set_blocksize(516); // в этом режиме размер блока - 516 байт
+    set_blocksize(516,1,10); // data - 516, spare - 1 (чего-то), ecc - 10
     break;
 }   
     
@@ -294,11 +302,11 @@ for(block=startblock;block<(startblock+flen);block++) {
     // устанавливаем код команды записи
     switch (wmode) {
       case w_standart:
-      case w_yaffs:
 	mempoke(nand_cmd,0x36); // page program
 	break;
 
       case w_linux:
+      case w_yaffs:
         mempoke(nand_cmd,0x39); // запись data+spare
 	break;
 	 
@@ -400,7 +408,9 @@ for(block=startblock;block<(startblock+flen);block++) {
   }  // конец цикла по страницам 
 } // конец цикла по блокам  
 endpage:  
-set_blocksize(512);
+mempoke(nand_cfg0,cfg0bak);
+mempoke(nand_cfg1,cfg1bak);
+mempoke(nand_ecc_cfg,cfgeccbak);
 printf("\n");
 }
 
