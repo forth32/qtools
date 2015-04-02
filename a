@@ -1,0 +1,12 @@
+ Отсылка hello...ok
+ Flash: Hynix H9DA2GG1GJAMCR, NAND 256MiB 1.8V 8-bit
+ Версия протокола: 3
+ Максимальный размер пакета: 1024 байта
+ Размер сектора: 512 байт
+ Размер страницы: 2048 байт (4 секторов)
+ Размер OOB: 64 байт
+ Общий размер flash = 2048 блоков (256 MB)
+
+ Запись из файла 0.obb, стартовый блок 000, размер 001
+ Режим записи: сырой образ без рассчетаЕСС
+ block: 0000   page:00 block: 0000   page:01 block: 0000   page:02 block: 0000   page:03 block: 0000   page:04 block: 0000   page:05 block: 0000   page:06 block: 0000   page:07 block: 0000   page:08 block: 0000   page:09 block: 0000   page:0a block: 0000   page:0b block: 0000   page:0c block: 0000   page:0d block: 0000   page:0e block: 0000   page:0f block: 0000   page:10 block: 0000   page:11 block: 0000   page:12 block: 0000   page:13 block: 0000   page:14 block: 0000   page:15 block: 0000   page:16 block: 0000   page:17 block: 0000   page:18 block: 0000   page:19 block: 0000   page:1a block: 0000   page:1b block: 0000   page:1c block: 0000   page:1d block: 0000   page:1e block: 0000   page:1f block: 0000   page:20 block: 0000   page:21 block: 0000   page:22 block: 0000   page:23 block: 0000   page:24 block: 0000   page:25 block: 0000   page:26 block: 0000   page:27 block: 0000   page:28 block: 0000   page:29 block: 0000   page:2a block: 0000   page:2b block: 0000   page:2c block: 0000   page:2d block: 0000   page:2e block: 0000   page:2f block: 0000   page:30 block: 0000   page:31 block: 0000   page:32 block: 0000   page:33 block: 0000   page:34 block: 0000   page:35 block: 0000   page:36 block: 0000   page:37 block: 0000   page:38 block: 0000   page:39 block: 0000   page:3a block: 0000   page:3b block: 0000   page:3c block: 0000   page:3d block: 0000   page:3e block: 0000   page:3f

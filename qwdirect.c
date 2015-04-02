@@ -58,6 +58,7 @@ unsigned int cfg0bak,cfg1bak,cfgeccbak;
 unsigned int i,opt,iolen,j;
 unsigned int block,page,sector,len;
 unsigned int startblock=0;
+unsigned int chipset9x25=0;
 int wmode=0; // режим записи
 
 #define w_standart 0
@@ -101,6 +102,7 @@ while ((opt = getopt(argc, argv, "hp:k:b:f:vc:z:l:")) != -1) {
 
        case '3':
         nand_cmd=0xf9af0000;
+        chipset9x25=1;
 	break;
 
        default:
@@ -266,7 +268,8 @@ switch (wmode) {
     
   case w_yaffs: 
     printf("образ yaffs2\n");
-    set_blocksize(516,1,10); // data - 516, spare - 1 (чего-то), ecc - 10
+    if (!chipset9x25) set_blocksize(516,1,10); // data - 516, spare - 1 (чего-то), ecc - 10
+    else              set_blocksize(516,2,10); // data - 516, spare - 2 (чего-то), ecc - 10 
     break;
 }   
     
@@ -277,6 +280,11 @@ port_timeout(1000);
 for(block=startblock;block<(startblock+flen);block++) {
   // стираем блок
   block_erase(block);
+  if (chipset9x25) {
+    mempoke(nand_ecc_cfg,(mempeek(nand_ecc_cfg))|2); // сброс движка BCH
+    mempoke(nand_ecc_cfg,cfgeccbak); // восстановление конфигурации BCH
+  } 
+
   // цикл по страницам
   for(page=0;page<ppb;page++) {
     
