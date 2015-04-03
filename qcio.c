@@ -29,6 +29,7 @@ unsigned int oobsize=0;
 struct termios sioparm;
 #else
 static HANDLE hSerial;
+COMMTIMEOUTS ct;
 #endif
 int siofd; // fd для работы с Последовательным портом
 
@@ -123,7 +124,7 @@ static int read(int siofd, unsigned char* buf, int len)
 
     do {
         ReadFile(hSerial, buf, len, &bytes_read, NULL);
-    } while (bytes_read == 0 && GetTickCount() - t < 1000);
+    } while (bytes_read == 0 && (GetTickCount() - t < 1000));
 
     return bytes_read;
 }
@@ -139,17 +140,24 @@ static int write(int siofd, unsigned char* buf, int len)
 
 #endif
 
+// очиска буфера последовательного порта
+void ttyflush() { 
+
+#ifndef WIN32
+tcflush(siofd,TCIOFLUSH); 
+#else
+PurgeComm(hSerial, PURGE_RXCLEAR);
+#endif
+}
+
 //*************************************************
 //*    отсылка буфера в модем
 //*************************************************
 unsigned int send_unframed_buf(char* outcmdbuf, unsigned int outlen, int prefixflag) {
 
+// сбрасываем недочитанный буфер ввода
+ttyflush();
 
-#ifndef WIN32
-tcflush(siofd,TCIOFLUSH);  // сбрасываем недочитанный буфер ввода
-#else
-PurgeComm(hSerial, PURGE_RXCLEAR);
-#endif
 if (prefixflag) write(siofd,"\x7e",1);  // отсылаем префикс если надо
 
 //if (outcmdbuf[0] == 7) dump(outcmdbuf,iolen,0);
@@ -313,7 +321,7 @@ int send_cmd(unsigned char* incmdbuf, int blen, unsigned char* iobuf) {
 }
 
 //*************************************
-// Настройка Последовательного порта
+// Открытие и настройка последовательного порта
 //*************************************
 
 int open_port(char* devname)
@@ -362,7 +370,20 @@ return 1;
 }
 
 //*************************************
-// Настройка Последовательного порта
+// Закрытие последовательного порта
+//*************************************
+
+void close_port(char* devname)
+{
+#ifndef WIN32
+close(siofd);
+#else
+CloseHandle(hSerial);
+#endif
+}
+
+//*************************************
+// Настройка таймаутов последовательного порта
 //*************************************
 
 void port_timeout(int timeout) {
@@ -375,6 +396,13 @@ sioparm.c_lflag = 0;
 sioparm.c_cc[VTIME]=timeout; // timeout  
 sioparm.c_cc[VMIN]=0;  
 tcsetattr(siofd, TCSANOW, &sioparm);
+#else
+ct.ReadIntervalTimeout=10;
+ct.ReadTotalTimeoutMultiplier=0;
+ct.ReadTotalTimeoutConstant=100*timeout;
+ct.WriteTotalTimeoutMultiplier=0;
+ct.WriteTotalTimeoutConstant=0;
+SetCommTimeouts(hSerial,&ct);
 #endif
 }
 
@@ -527,7 +555,7 @@ printf("\n");
 }
 
 //*************************************
-//* чтение таблицы разделв из flash
+//* чтение таблицы разделов из flash
 //*************************************
 void load_ptable(char* ptable) {
   
@@ -785,3 +813,102 @@ if (oobsize == 0) {
 
 }
 
+//****************************************
+//* Загрузка через сахару
+//****************************************
+int dload_sahara() {
+
+FILE* in;
+char* infilename;
+unsigned char sendbuf[131072];
+unsigned char replybuf[128];
+unsigned int iolen,offset,len,donestat,imgid;
+unsigned char helloreply[60]={
+ 02, 00, 00, 00, 48, 00, 00, 00, 02, 00, 00, 00, 01, 00, 00, 00,
+ 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00,
+ 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00
+}; 
+unsigned char donemes[8]={5,0,0,0,8,0,0,0};
+
+printf("\nОжидаем пакет Hello от устройства...\n");
+port_timeout(100); // пакета Hello будем ждать 10 секунд
+iolen=read(siofd,replybuf,48);  // читаем Hello
+if ((iolen != 48)||(replybuf[0] != 1)) {
+  printf("\n Пакет Hello от устройства не получен\n");
+  dump(replybuf,iolen,0);
+  return 1;
+}
+
+// Получили Hello, 
+ttyflush();  // очищаем буфер приема
+port_timeout(10); // теперь обмен пакетами пойдет быстрее - таймаут 1 с
+write(siofd,helloreply,48);   // отправляем Hello Response с переключением режима
+iolen=read(siofd,replybuf,20); // ответный пакет
+  if (iolen == 0) {
+    printf("\n Нет ответа от устройства\n");
+    return 1;
+  }  
+// в replybuf должен быть запрос первого блока загрузчика
+imgid=*((unsigned int*)&replybuf[8]); // идентификатор образа
+printf("\nИдентификатор образа для загрузки: %08x\n",imgid);
+switch (imgid) {
+
+	case 0x07:
+	infilename="loaders/NPRG9x25p.bin";
+	break;
+
+	case 0x0d:
+	infilename="loaders/ENPRG9x25p.bin";
+	break;
+
+	default:
+	printf("\nНеизвестный идентификатор - нет такого образа!\n");
+	return 1;
+}
+printf("\nЗагружаем %s...\n",infilename); 
+in=fopen(infilename,"rb");
+if (in == 0) {
+  printf("\nОшибка открытия входного файла\n");
+  return 1;
+}
+
+// Основной цикл передачи кода загрузчика
+printf("\nПередаём загрузчик в устройство...\n");
+while(replybuf[0] != 4) { // сообщение EOIT
+ if (replybuf[0] != 3) { // сообщение Read Data
+    printf("\n Пакет с недопустимым кодом - прерываем загрузку!");
+    dump(replybuf,iolen,0);
+    return 1;
+ }
+  // выделяем параметры фрагмента файла
+  offset=*((unsigned int*)&replybuf[12]);
+  len=*((unsigned int*)&replybuf[16]);
+//  printf("\r* адрес=%08x длина=%08x",offset,len);
+  fseek(in,offset,SEEK_SET);
+  fread(sendbuf,1,len,in);
+  // отправляем блок данных сахаре
+  write(siofd,sendbuf,len);
+  // получаем ответ
+  iolen=read(siofd,replybuf,20);      // ответный пакет
+  if (iolen == 0) {
+    printf("\n Нет ответа от устройства\n");
+    return 1;
+  }  
+}
+// получили EOIT, конец загрузки
+write(siofd,donemes,8);   // отправляем пакет Done
+iolen=read(siofd,replybuf,12); // ожидаем Done Response
+if (iolen == 0) {
+  printf("\n Нет ответа от устройства\n");
+  return 1;
+} 
+// получаем статус
+donestat=*((unsigned int*)&replybuf[12]); 
+if (donestat == 0) {
+  printf("\nЗагрузчик запущен успешно\n");
+} else {
+  printf("\nОшибка запуска загрузчика\n");
+}
+return donestat;
+
+}

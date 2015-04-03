@@ -42,3 +42,4 @@ int qclose(int errmode);
 int block_erase(int block);
 void get_flash_config();
 void nand_reset();
+int dload_sahara();
