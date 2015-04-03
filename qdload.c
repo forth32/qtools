@@ -1,6 +1,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #ifndef WIN32
 #include <unistd.h>
@@ -14,6 +15,62 @@
 // Размер блока загрузки
 #define dlblock 1017
 
+//****************************************
+//* Загрузка через сахару
+//****************************************
+void dload_sahara(FILE* in) {
+
+unsigned char sendbuf[10240];
+unsigned char replybuf[10240];
+unsigned int iolen,offset,len;
+unsigned char helloreply[60]={
+ 02, 00, 00, 00, 30, 00, 00, 00, 02, 00, 00, 00, 01, 00, 00, 00,
+ 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00,
+ 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00
+}; 
+
+
+port_timeout(50); // запроса HELLO будем ждать 5 секунд
+iolen=read(siofd,replybuf,48);  // читаем запрос HELLO
+if ((iolen != 48)||(replybuf[1] != 1)) {
+  printf("\n Пакет HELLO не получен\n");
+  dump(replybuf,iolen,0);
+  exit(1);
+}
+
+// Получили запрос HELLO, 
+tcflush(siofd);  // очищаем буфер приема
+port_timeout(1); // теперь обмен пакетами пойдет быстро - таймаут 0.1с
+send_cmd( helloreply,48,replybuf);  // отвечаем подтверждением hello
+// в replybuf - запрос первого блока загрузчика
+
+// Основной цикл передачи тела загрузчика
+printf("\nПоблочная передача загрузчика\n");
+while(replybuf[1] != 4) {
+ if (replybuf[1] != 3) {
+    printf("\n Запрос с недопустимым кодом, прерываем загрузку");
+    dump(replybuf,iolen,0);
+    exit(1);
+ }
+  // выделяем параметры фоагмента файла
+  offset=*((unsigned int*)&replybuf[13]);
+  len=*((unsigned int*)&replybuf[17]);
+  printf("\r* адрес=%08x длина=%08x");
+  fseek(in,offset,SEEK_SET);
+  fread(sendbuf,1,len,in);
+  // отправляем блок данных сахаре
+  write(siofd,sendbuf,len);
+  // получаем ответ
+  iolen=receive_reply(replybuf,0);
+  if (iolen == 0) {
+    printf("\n Нет ответа от модема\n");
+    exit(1);
+  }  
+}
+// конец загрузки
+}
+
+//@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@2
 void main(int argc, char* argv[]) {
 
 int opt;
@@ -26,6 +83,7 @@ char devname[50]="";
 FILE* in;
 struct stat fstatus;
 unsigned int i,partsize,iolen,adr,helloflag=0;
+unsigned int sahara_flag=0;
 
 unsigned char iobuf[4096];
 unsigned char cmd1[]={0x06};
@@ -34,13 +92,14 @@ unsigned char cmddl[2048]={0xf};
 unsigned char cmdstart[2048]={0x5,0,0,0,0};
 
 
-while ((opt = getopt(argc, argv, "p:a:hi8")) != -1) {
+while ((opt = getopt(argc, argv, "p:a:his")) != -1) {
   switch (opt) {
    case 'h': 
      printf("\n Утилита предназначена для загрузки программ-прошивальщика (E)NPRG в память модема\n\n\
 Допустимы следующие ключи:\n\n\
 -p <tty>  - указывает имя устройства последовательного порта, переведенного в download mode\n\
 -i        - запускает процедуру HELLO для инициализации загрузчика\n\
+-s        - использовать протокол SAHARA\n\
 -k #           - выбор чипсета: 0(MDM9x15, по умолчанию), 1(MDM8200), 2(MSM9x00), 3(MDM9x25)\n\
 -a <adr>  - адрес загрузки, по умолчанию 41700000\n");
     return;
@@ -77,6 +136,10 @@ while ((opt = getopt(argc, argv, "p:a:hi8")) != -1) {
     helloflag=1;
     break;
     
+   case 's':
+    sahara_flag=1;
+    break;
+    
    case 'a':
      sscanf(optarg,"%x",&start);
      break;
@@ -105,6 +168,16 @@ if (!open_port(devname))  {
 #endif
    return; 
 }
+
+//----- Вариант загрузки через сахару -------
+if (sahara_flag) {
+  dload_sahara(in);
+  if (helloflag) hello();
+  printf("\n");
+  return;
+}
+
+//------- Вариант загрузки через запись загрузчика в память ----------
 
 printf("\n Загрузка файла %s\n Адрес загрузки: %08x",argv[optind],start);
 iolen=send_cmd_base(cmd1,1,iobuf,1);
