@@ -268,8 +268,8 @@ switch (wmode) {
     
   case w_yaffs: 
     printf("образ yaffs2\n");
-    if (!chipset9x25) set_blocksize(516,1,0); // data - 516, spare - 1 (чего-то), ecc - 0
-    else              set_blocksize(516,2,10); // data - 516, spare - 2 (чего-то), ecc - 10
+    if (!chipset9x25) set_blocksize(516,1,10); // data - 516, spare - 1 (чего-то), ecc - 0
+    else              set_blocksize(516,2,0); // data - 516, spare - 2 (чего-то), ecc - 10
     break;
 }   
     
