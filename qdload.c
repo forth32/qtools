@@ -41,7 +41,12 @@ if ((iolen != 48)||(replybuf[1] != 1)) {
 // Получили запрос HELLO, 
 tcflush(siofd);  // очищаем буфер приема
 port_timeout(1); // теперь обмен пакетами пойдет быстро - таймаут 0.1с
-send_cmd( helloreply,48,replybuf);  // отвечаем подтверждением hello
+write(siofd,helloreply,48);   // отвечаем подтверждением hello
+iolen=read(siofd,replybuf,20);      // ответный пакет
+  if (iolen == 0) {
+    printf("\n Нет ответа от модема\n");
+    exit(1);
+  }  
 // в replybuf - запрос первого блока загрузчика
 
 // Основной цикл передачи тела загрузчика
@@ -61,7 +66,7 @@ while(replybuf[1] != 4) {
   // отправляем блок данных сахаре
   write(siofd,sendbuf,len);
   // получаем ответ
-  iolen=receive_reply(replybuf,0);
+  iolen=read(siofd,replybuf,20);      // ответный пакет
   if (iolen == 0) {
     printf("\n Нет ответа от модема\n");
     exit(1);
