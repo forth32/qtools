@@ -529,7 +529,7 @@ return 1;
 void hello() {
 
 int i;  
-char rbuf[1024];
+char rbuf[1024],*yesno="Да";
 char hellocmd[]="\x01QCOM fast download protocol host\x03### ";
 
 printf(" Отсылка hello...");
@@ -544,14 +544,18 @@ printf("ok");
 get_flash_config();
 i=rbuf[0x2c];
 rbuf[0x2d+i]=0;
-printf("\n Flash: %s %s, %s",flash_mfr,rbuf+0x2d,flash_descr);
+printf("\n Флеш-память: %s %s, %s",flash_mfr,rbuf+0x2d,flash_descr);
 printf("\n Версия протокола: %i",rbuf[0x22]);
 printf("\n Максимальный размер пакета: %i байта",*((unsigned int*)&rbuf[0x24]));
 printf("\n Размер сектора: %i байт",sectorsize);
 printf("\n Размер страницы: %i байт (%i секторов)",pagesize,spp);
 printf("\n Размер OOB: %i байт",oobsize);
-printf("\n Общий размер flash = %i блоков (%i MB)",maxblock,maxblock*ppb/1024*pagesize/1024);
-printf("\n");
+printf("\n Общий размер флеш-памяти = %i блоков (%i MB)",maxblock,maxblock*ppb/1024*pagesize/1024);
+printf("\n Применимость qtools для чтения и записи флеш-памяти: ");
+if (nand_cmd=0xf9af0000) { // если чипсет - 9x25
+	if (mempeek(nand_cmd+0xf00) != 0) yesno="Нет"; // и включен BAM, то работать с флешкой мы не можем
+}
+printf("%s\n",yesno);
 }
 
 //*************************************
@@ -834,9 +838,14 @@ printf("\nОжидаем пакет Hello от устройства...\n");
 port_timeout(100); // пакета Hello будем ждать 10 секунд
 iolen=read(siofd,replybuf,48);  // читаем Hello
 if ((iolen != 48)||(replybuf[0] != 1)) {
-  printf("\n Пакет Hello от устройства не получен\n");
-  dump(replybuf,iolen,0);
-  return 1;
+	sendbuf[0]=0x3a; // может быть любое число
+	write(siofd,sendbuf,1); // инициируем отправку пакета Hello 
+	iolen=read(siofd,replybuf,48);  // пробуем читать Hello ещё раз
+	if ((iolen != 48)||(replybuf[0] != 1)) { // теперь всё - больше ждать нечего
+		printf("\n Пакет Hello от устройства не получен\n");
+		dump(replybuf,iolen,0);
+		return 1;
+	}
 }
 
 // Получили Hello, 
@@ -883,7 +892,7 @@ while(replybuf[0] != 4) { // сообщение EOIT
   // выделяем параметры фрагмента файла
   offset=*((unsigned int*)&replybuf[12]);
   len=*((unsigned int*)&replybuf[16]);
-//  printf("\r* адрес=%08x длина=%08x",offset,len);
+//  printf("\n адрес=%08x длина=%08x",offset,len);
   fseek(in,offset,SEEK_SET);
   fread(sendbuf,1,len,in);
   // отправляем блок данных сахаре

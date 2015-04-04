@@ -111,15 +111,15 @@ if (!open_port(devname))  {
 //----- Вариант загрузки через сахару -------
 
 if (sahara_flag) {
-  dload_sahara();
-  if (helloflag) {
-	  #ifndef WIN32
-	  usleep(200000);   // ждем инициализации загрузчика
-      #else
-      Sleep(200);   // ждем инициализации загрузчика
-      #endif
-	  printf("\n");
-	  hello();
+  if (dload_sahara() == 0) {;
+	if (helloflag) {
+		#ifndef WIN32
+		usleep(200000);   // ждем инициализации загрузчика
+		#else
+		Sleep(200);   // ждем инициализации загрузчика
+		#endif
+		hello();
+	}
   }
   printf("\n");
   return;
