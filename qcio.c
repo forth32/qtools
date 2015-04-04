@@ -557,12 +557,14 @@ printf("\n");
 //*************************************
 //* чтение таблицы разделов из flash
 //*************************************
-void load_ptable(char* ptable) {
-  
+void load_ptable(unsigned char* ptable,unsigned int chipind) {
+
+unsigned int blknum=2; // номер блока с таблицей для 9x15 и более ранних чипсетов
+if (chipind == 3) blknum=10; // номер блока для 9x25
 memset(ptable,0,1024); // обнуляем таблицу
-flash_read(2, 1, 0);  // блок 2 страница 1 - здесь лежит таблица разделов  
+flash_read(blknum, 1, 0);  // страница 1 - здесь лежит таблица разделов  
 memread(ptable,sector_buf, 512);
-flash_read(2, 1, 1);  // продолжение таблицы разделов
+flash_read(blknum, 1, 1);  // продолжение таблицы разделов
 memread(ptable+512,sector_buf, 512);
 }
 

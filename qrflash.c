@@ -102,6 +102,7 @@ unsigned char c;
 unsigned char* sptr;
 unsigned int start=0,len=1,opt;
 unsigned int cwsize;
+unsigned int chipind=0;
 unsigned int partlist[60]; // список разделов, разрешенных для чтения
 
 FILE* out;
@@ -157,6 +158,7 @@ printf("\n Утилита предназначена для чтения обр�
     return;
     
    case 'k':
+
      switch(*optarg) {
        case '0':
         nand_cmd=0x1b400000;
@@ -172,6 +174,7 @@ printf("\n Утилита предназначена для чтения обр�
 
        case '3':
         nand_cmd=0xf9af0000;
+		chipind=3;
 	break;
 
        default:
@@ -279,7 +282,7 @@ hello();
 cwsize=sectorsize;
 if (xflag) cwsize+=oobsize/spp; // наращиваем размер codeword на размер порции OOB на каждый сектор
 
-if (partflag == 2) load_ptable(ptable); // загружаем таблицу разделов
+if (partflag == 2) load_ptable(ptable,chipind); // загружаем таблицу разделов
 
 mempoke(nand_cfg1,mempeek(nand_cfg1)&0xfffffffe|eccflag); // ECC on/off
 //mempoke(nand_cs,4); // data mover
