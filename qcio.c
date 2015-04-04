@@ -560,12 +560,16 @@ printf("\n");
 void load_ptable(unsigned char* ptable,unsigned int chipind) {
 
 unsigned int blknum=2; // номер блока с таблицей для 9x15 и более ранних чипсетов
-if (chipind == 3) blknum=10; // номер блока для 9x25
+unsigned int offset=0; // поле данных секторов таблицы = 512
+if (chipind == 3) {
+	blknum=10; // номер блока для 9x25
+	offset=4; // поле данных секторов таблицы = 516
+}
 memset(ptable,0,1024); // обнуляем таблицу
 flash_read(blknum, 1, 0);  // страница 1 - здесь лежит таблица разделов  
-memread(ptable,sector_buf, 512);
+memread(ptable,sector_buf, 512+offset);
 flash_read(blknum, 1, 1);  // продолжение таблицы разделов
-memread(ptable+512,sector_buf, 512);
+memread(ptable+512+offset,sector_buf, 512-offset);
 }
 
 //*****************************************************
@@ -765,34 +769,37 @@ struct  {
 
 
 nandid=mempeek(NAND_FLASH_READ_ID); // получаем ID флешки
-fid=(nandid>>8)&0xff;
-pid=nandid&0xff;
+chipsize=0;
+if (nandid != 0x49464e4f) { // ONFI
 
-// Определяем производителя флешки
-i=0;
-while (nand_manuf_ids[i].id != 0) {
-  if (nand_manuf_ids[i].id == pid) {
-    strcpy(flash_mfr,nand_manuf_ids[i].name);
-    break;
-  }
-  i++;
-}  
+	fid=(nandid>>8)&0xff;
+	pid=nandid&0xff;
+
+	// Определяем производителя флешки
+	i=0;
+	while (nand_manuf_ids[i].id != 0) {
+		if (nand_manuf_ids[i].id == pid) {
+		strcpy(flash_mfr,nand_manuf_ids[i].name);
+		break;
+		}
+	i++;
+	}  
     
-// Определяем емкость флешки
-i=0;
-while (nand_ids[i].id != 0) {
-  if (nand_ids[i].id == fid) {
-    chipsize=nand_ids[i].chipsize;
-//    printf("\n ch=%i  chipsize=%i",nand_ids[i].chipsize,chipsize);
-    strcpy(flash_descr,nand_ids[i].type);
-    break;
-  }
-  i++;
-}  
-if (chipsize == 0) {
-  printf("\n Неопределенный Flash ID = %02x",fid);
-}  
-
+	// Определяем емкость флешки
+	i=0;
+	while (nand_ids[i].id != 0) {
+	if (nand_ids[i].id == fid) {
+		chipsize=nand_ids[i].chipsize;
+		//printf("\n ch=%i  chipsize=%i",nand_ids[i].chipsize,chipsize);
+		strcpy(flash_descr,nand_ids[i].type);
+		break;
+		}
+	i++;
+	}  
+	if (chipsize == 0) {
+		printf("\n Неопределенный Flash ID = %02x",fid);
+	}  
+}
 // Вынимаем параметры конфигурации
 
 cfg0=mempeek(nand_cfg0);

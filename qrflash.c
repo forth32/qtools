@@ -329,6 +329,7 @@ if ((partnumber != -1) && (partnumber>=npar)) {
   printf("\nНедопустимый номер раздела: %i, всего разделов %i\n",partnumber,npar);
   return;
 }  
+printf("\nmaxblock=%d",maxblock);
 printf("\n #  адрес    размер   атрибуты ------ Имя------\n");     
 for(i=0;i<npar;i++) {
    // разбираем элементы таблицы разделов
