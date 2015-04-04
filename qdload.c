@@ -29,12 +29,14 @@ FILE* in;
 struct stat fstatus;
 unsigned int i,partsize,iolen,adr,helloflag=0;
 unsigned int sahara_flag=0;
+unsigned int nandcstate[64];
 
 unsigned char iobuf[4096];
 unsigned char cmd1[]={0x06};
 unsigned char cmd2[]={0x07};
 unsigned char cmddl[2048]={0xf};
 unsigned char cmdstart[2048]={0x5,0,0,0,0};
+
 
 
 while ((opt = getopt(argc, argv, "p:k:a:his")) != -1) {
@@ -112,13 +114,18 @@ if (!open_port(devname))  {
 
 if (sahara_flag) {
   if (dload_sahara() == 0) {
+	#ifndef WIN32
+	usleep(200000);   // ждем инициализации загрузчика
+	#else
+	Sleep(200);   // ждем инициализации загрузчика
+	#endif
 	if (helloflag) {
-		#ifndef WIN32
-		usleep(200000);   // ждем инициализации загрузчика
-		#else
-		Sleep(200);   // ждем инициализации загрузчика
-		#endif
 		hello();
+		// отключаем NANDc BAM
+		for (i=0;i<0xec;i+=4) nandcstate[i]=mempeek(nand_cmd+i); // сохраняем состояние контроллера NAND
+		mempoke(0xfc401a40,1); // GCC_QPIC_BCR
+		mempoke(0xfc401a40,0); // полный асинхронный сброс QPIC
+		for (i=0;i<0xec;i+=4) mempoke(nand_cmd+i,nandcstate[i]);  // восстанавливаем состояние
 	}
   }
   printf("\n");

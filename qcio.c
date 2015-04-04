@@ -551,11 +551,7 @@ printf("\n Размер сектора: %i байт",sectorsize);
 printf("\n Размер страницы: %i байт (%i секторов)",pagesize,spp);
 printf("\n Размер OOB: %i байт",oobsize);
 printf("\n Общий размер флеш-памяти = %i блоков (%i MB)",maxblock,maxblock*ppb/1024*pagesize/1024);
-printf("\n Применимость qtools для чтения и записи флеш-памяти: ");
-if (nand_cmd=0xf9af0000) { // если чипсет - 9x25
-	if (mempeek(nand_cmd+0xf00) != 0) yesno="Нет"; // и включен BAM, то работать с флешкой мы не можем
-}
-printf("%s\n",yesno);
+printf("\n");
 }
 
 //*************************************
