@@ -111,7 +111,7 @@ if (!open_port(devname))  {
 //----- Вариант загрузки через сахару -------
 
 if (sahara_flag) {
-  if (dload_sahara() == 0) {;
+  if (dload_sahara() == 0) {
 	if (helloflag) {
 		#ifndef WIN32
 		usleep(200000);   // ждем инициализации загрузчика
