@@ -126,6 +126,7 @@ if (sahara_flag) {
 		mempoke(0xfc401a40,1); // GCC_QPIC_BCR
 		mempoke(0xfc401a40,0); // полный асинхронный сброс QPIC
 		for (i=0;i<0xec;i+=4) mempoke(nand_cmd+i,nandcstate[i]);  // восстанавливаем состояние
+		mempoke(nand_exec,1); // фиктивное чтение для снятия защиты адресных регистров контроллера от записи
 	}
   }
   printf("\n");
