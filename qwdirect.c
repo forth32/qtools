@@ -11,12 +11,16 @@
 #include "qcio.h"
 
 //**********************************************************
-//*  Установка размера блока в конфигурации контроллера
+//*  Установка формата сектора в конфигурации контроллера
+//*
+//*  udsize - размер данных в байтах
+//*  ss - размер spare в хз каких единицах
+//*  eccs - размер ecc в байтах
 //**********************************************************
-void set_blocksize(unsigned int blocksize, unsigned int ss,unsigned int eccs) {
+void set_blocksize(unsigned int udsize, unsigned int ss,unsigned int eccs) {
   
 unsigned int cfg0=mempeek(nand_cfg0);
-cfg0=(cfg0&(~(0x3ff<<9)))|(blocksize<<9); //UD_SIZE_BYTES = blocksize
+cfg0=(cfg0&(~(0x3ff<<9)))|(udsize<<9); //UD_SIZE_BYTES = blocksize
 cfg0=cfg0&(~(0xf<<23))|(ss<<23); //SPARE_SIZE_BYTES = ss
 cfg0=cfg0&(~(0xf<<19))|(eccs<<19); //ECC_PARITY_SIZE_BYTES = eccs
 mempoke(nand_cfg0,cfg0);
