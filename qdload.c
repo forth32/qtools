@@ -15,6 +15,76 @@
 // Размер блока загрузки
 #define dlblock 1017
 
+//****************************************************
+//*  Выделенеи таблиц разделов в отдельные файлы
+//****************************************************
+void extract_ptable() {
+  
+unsigned int addr,blk,pg,udsize,ptlen,npar;
+unsigned char buf[4096];
+FILE* out;
+
+// получаем размер юзерских даных сектора
+udsize=(mempeek(nand_cfg0)&(0x3ff<<9))>>9; 
+
+// вынимаем координаты страницы с таблицей
+
+addr=mempeek(nand_addr0)>>16;
+blk=addr/ppb;
+pg=addr%ppb;
+nandwait(); // ждем окончания всех предыдущих операций
+
+
+flash_read(blk, pg, 0);  // сектор 0 - начало таблицы разделов  
+memread(buf,sector_buf, udsize);
+
+mempoke(nand_exec,1);     // сектор 1 - продолжение таблицы
+nandwait();
+memread(buf+udsize,sector_buf, udsize);
+
+// проверяем таблицу
+if (memcmp(buf,"\xAA\x73\xEE\x55\xDB\xBD\x5E\xE3",8) != 0) {
+   printf("\nТаблица разделов режима чтения повреждена - извлечение невозможно\n");
+   return;
+}
+
+// Определяем размер и записываем таблицу чтения
+npar=*((unsigned int*)&buf[12]); // число разделов в таблице
+out=fopen("ptable/current-r.bin","wb");
+if (out == 0) {
+  printf("\n Ошибка открытия выходного файла ptable/current-r.bin");
+  return;
+}  
+fwrite(buf,16+28*npar,1,out);
+printf("\n Найдена таблица разделов режима чтения");
+fclose (out);
+
+// Ищем таблицу записи
+for (pg=pg+1;pg<ppb;pg++) {
+  flash_read(blk, pg, 0);  // сектор 0 - начало таблицы разделов    
+  memread(buf,sector_buf, udsize);
+  if (memcmp(buf,"\x9a\x1b\x7d\xaa\xbc\x48\x7d\x1f",8) != 0) continue; // сигнатура не найдена - ищем дальше
+
+  // нашли таблицу записи   
+  mempoke(nand_exec,1);     // сектор 1 - продолжение таблицы
+  nandwait();
+  memread(buf+udsize,sector_buf, udsize);
+  npar=*((unsigned int*)&buf[12]); // число разделов в таблице
+  out=fopen("ptable/current-w.bin","wb");
+  if (out == 0) {
+    printf("\n Ошибка открытия выходного файла ptable/current-w.bin");
+    return;
+  }  
+  fwrite(buf,16+28*npar,1,out);
+  fclose (out);
+  printf("\n Найдена таблица разделов режима записи");
+  return;
+}
+printf("\n Таблица разделов режима записи не найдена");
+}
+
+
+
 //@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@2
 void main(int argc, char* argv[]) {
 
@@ -30,6 +100,7 @@ struct stat fstatus;
 unsigned int i,partsize,iolen,adr,helloflag=0;
 unsigned int sahara_flag=0;
 unsigned int nandcstate[64];
+unsigned int tflag=0;
 
 unsigned char iobuf[4096];
 unsigned char cmd1[]={0x06};
@@ -39,13 +110,14 @@ unsigned char cmdstart[2048]={0x5,0,0,0,0};
 
 
 
-while ((opt = getopt(argc, argv, "p:k:a:his")) != -1) {
+while ((opt = getopt(argc, argv, "p:k:a:hist")) != -1) {
   switch (opt) {
    case 'h': 
      printf("\n Утилита предназначена для загрузки программ-прошивальщика (E)NPRG в память модема\n\n\
 Допустимы следующие ключи:\n\n\
 -p <tty>  - указывает имя устройства последовательного порта, переведенного в download mode\n\
 -i        - запускает процедуру HELLO для инициализации загрузчика\n\
+-t        - вынимает из модема таблицы разделов в файлы ptable/current-r(w).bin\n\
 -s        - использовать протокол SAHARA\n\
 -k #           - выбор чипсета: 0(MDM9x15, по умолчанию), 1(MDM8200), 2(MDM9x00), 3(MDM9x25)\n\
 -a <adr>  - адрес загрузки, по умолчанию 41700000\n");
@@ -87,11 +159,20 @@ while ((opt = getopt(argc, argv, "p:k:a:his")) != -1) {
     sahara_flag=1;
     break;
     
+   case 't':
+    tflag=1;
+    break;
+    
    case 'a':
      sscanf(optarg,"%x",&start);
      break;
   }     
 }
+
+if ((tflag == 1) && (helloflag == 0)) {
+  printf("\n Ключ -t без ключа -i указывать нельзя\n");
+  exit(1);
+}  
 
 #ifdef WIN32
 if (*devname == '\0')
@@ -121,6 +202,10 @@ if (sahara_flag) {
 	#endif
 	if (helloflag) {
 		hello();
+		if (bad_loader) {
+		  printf("\n Отключение BAM невозможно!");
+		  return;
+		}  
 		// отключаем NANDc BAM
 		for (i=0;i<0xec;i+=4) nandcstate[i]=mempeek(nand_cmd+i); // сохраняем состояние контроллера NAND
 		mempoke(0xfc401a40,1); // GCC_QPIC_BCR
@@ -130,6 +215,7 @@ if (sahara_flag) {
 	}
   }
   printf("\n");
+  if (tflag) extract_ptable();  // вынимаем таблицы разделов
   return;
 }	
 
@@ -155,7 +241,7 @@ fstat(fileno(in),&fstatus);
 #else
 fstat(_fileno(in),&fstatus);
 #endif
-printf("\n Размер файла: %i\n",fstatus.st_size);
+printf("\n Размер файла: %i\n",(unsigned int)fstatus.st_size);
 partsize=dlblock;
 
 // Цикл поблочной загрузки 
@@ -190,6 +276,7 @@ Sleep(200);   // ждем инициализации загрузчика
 #endif
 printf("ok\n");
 if (helloflag) hello();
+if (!bad_loader && tflag) extract_ptable();  // вынимаем таблицы разделов
 printf("\n");
 
 }

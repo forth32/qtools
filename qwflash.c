@@ -131,6 +131,7 @@ while ((opt = getopt(argc, argv, "hp:s:w:imrk:")) != -1) {
 -i        - запускает процедуру HELLO для инициализации загрузчика\n\
 -k #           - выбор чипсета: 0(MDM9x15, по умолчанию), 1(MDM8200), 2(MSM9x00), 3(MDM9x25)\n\
 -s <file> - взять карту разделов из указанного файла\n\
+-s - - взять карту разделов из файла ptable/current-r.bin\n\
 -r        - переименовать разделы PAD в PADnn (дбавляется номер раздела\n\
 -w #:file - записать раздел с номером # из файла file\n\
 -m        - вывести на экран полную карту разделов\n");
@@ -192,7 +193,8 @@ while ((opt = getopt(argc, argv, "hp:s:w:imrk:")) != -1) {
      
    case 's':
        // загружаем таблицу разделов из файла
-       part=fopen(optarg,"rb");
+       if (optarg[0] == '-')   part=fopen("ptable/current-w.bin","rb");
+       else part=fopen(optarg,"rb");
        if (part == 0) {
          printf("\nОшибка открытия файла таблицы разделов\n");
          return;

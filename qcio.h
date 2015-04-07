@@ -5,6 +5,7 @@ extern unsigned int pagesize;
 extern unsigned int sectorsize;
 extern unsigned int maxblock;    // Общее число блоков флешки
 extern unsigned int oobsize;
+extern unsigned int bad_loader;
 
 
 #define nand_addr0 nand_cmd+4
@@ -20,7 +21,7 @@ extern unsigned int oobsize;
 
 #define ppb 64             // число страниц в 1 блоке
 
-void dump(char buffer[],int len,long base);
+void dump(char buffer[],unsigned int len,unsigned int base);
 int send_cmd(unsigned char* incmdbuf, int blen, unsigned char* iobuf);
 int send_cmd_base(unsigned char* incmdbuf, int blen, unsigned char* iobuf, int prefixflag);
 int open_port(char* devname);

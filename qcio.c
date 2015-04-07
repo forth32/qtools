@@ -23,6 +23,7 @@ unsigned int maxblock=0;     // Общее число блоков флешки
 char flash_mfr[30]={0};
 char flash_descr[30]={0};
 unsigned int oobsize=0;
+unsigned int bad_loader=0;
 
 
 #ifndef WIN32
@@ -45,12 +46,12 @@ void nandwait() {
 //* Дамп области памяти *
 //***********************
 
-void dump(char buffer[],int len,long base) {
+void dump(char buffer[],unsigned int len,unsigned int base) {
 unsigned int i,j;
 char ch;
 
 for (i=0;i<len;i+=16) {
-  printf("%08x: ",(unsigned long)(base+i));
+  printf("%08x: ",base+i);
   for (j=0;j<16;j++){
    if ((i+j) < len) printf("%02x ",buffer[i+j]&0xff);
    else printf("   ");
@@ -239,7 +240,6 @@ return iolen;
 }
 
 
-//##############33
 
 //***********************************************************
 //* Преобразование командного буфера с Escape-подстановкой
@@ -406,6 +406,32 @@ SetCommTimeouts(hSerial,&ct);
 #endif
 }
 
+
+//*******************************************************
+//* Проверка работы патча загрузчика
+//*
+//* Возвращает 0 если кманда 05 не поддерживается
+//* и устанавливает глобальную переменную bad_loader=1
+//*******************************************************
+int test_loader() {
+
+unsigned char cmdbuf[]={5,0,0,0,0,0,0,0,0,0};
+unsigned char iobuf[1024];
+unsigned int iolen;		
+
+*((unsigned int*)&cmdbuf[2])=sector_buf;  //вписываем адрес
+*((unsigned int*)&cmdbuf[6])=mempeek(sector_buf);  //вписываем данные - те же что там и лежат, чтобы ничего не портить
+iolen=send_cmd(cmdbuf,10,iobuf);
+
+if (iobuf[2] != 06) {
+  bad_loader=1;
+  return 0;
+}
+return 1;
+}
+
+
+
 //***********************************8
 //* Чтение области памяти
 //***********************************8
@@ -458,6 +484,7 @@ unsigned char iobuf[300];
 unsigned char cmdbuf[]={5,0,0,0,0,0,0,0,0,0};
 int iolen;
 
+if (bad_loader) return 0;  // непатченный загрузчик - запись невозможна
 *((unsigned int*)&cmdbuf[2])=adr;  //вписываем адрес
 *((unsigned int*)&cmdbuf[6])=data;  //вписываем данные
 
@@ -470,7 +497,7 @@ if (iobuf[2] != 06) {
   printf("\n");
   exit(1);
 }  
-return 1;
+  return 1;
 }
 
 
@@ -541,6 +568,9 @@ if (rbuf[1] != 2) {
 }  
 printf("ok");
 //dump(rbuf,i,0);
+if (!test_loader()) {
+  printf("\n ! ** Загрузчик не поддерживает команду 05 - загрузчик не содержит патча!!!! **\n");
+}  
 get_flash_config();
 i=rbuf[0x2c];
 rbuf[0x2d+i]=0;
@@ -557,19 +587,35 @@ printf("\n");
 //*************************************
 //* чтение таблицы разделов из flash
 //*************************************
-void load_ptable(unsigned char* ptable,unsigned int chipind) {
+void load_ptable(unsigned char* buf,unsigned int chipind) {
 
-unsigned int blknum=2; // номер блока с таблицей для 9x15 и более ранних чипсетов
-unsigned int offset=0; // поле данных секторов таблицы = 512
-if (chipind == 3) {
-	blknum=10; // номер блока для 9x25
-	offset=4; // поле данных секторов таблицы = 516
-}
-memset(ptable,0,1024); // обнуляем таблицу
-flash_read(blknum, 1, 0);  // страница 1 - здесь лежит таблица разделов  
-memread(ptable,sector_buf, 512+offset);
-flash_read(blknum, 1, 1);  // продолжение таблицы разделов
-memread(ptable+512+offset,sector_buf, 512-offset);
+unsigned int udsize=512;
+unsigned int blk,pg;
+
+if (chipind == 3) udsize=516;
+
+memset(buf,0,1024); // обнуляем таблицу
+
+for (blk=0;blk<12;blk++) {
+  // Ищем блок с картами
+  flash_read(blk, 0, 0);     
+  memread(buf,sector_buf, udsize);
+  if (memcmp(buf,"\xac\x9f\x56\xfe\x7a\x12\x7f\xcd",8) != 0) continue; // сигнатура не найдена - ищем дальше
+
+  // нашли блок с таблицами - теперь ищем страницу с таблицей чтения
+  for (pg=0;pg<ppb;pg++) {
+    flash_read(blk, pg, 0);     
+    memread(buf,sector_buf, udsize);
+    if (memcmp(buf,"\xAA\x73\xEE\x55\xDB\xBD\x5E\xE3",8) != 0) continue; // сигнатура таблицы чтения не найдена
+    // нашли таблицу - читаем хвост
+    mempoke(nand_exec,1);     // сектор 1 - продолжение таблицы
+    nandwait();
+    memread(buf+udsize,sector_buf, udsize);
+    return; // все - таблица найдна, более тут делать нечего
+  }
+}  
+printf("\n Таблица разделов не найдена. Завершаем работу.");
+exit(1);
 }
 
 //*****************************************************
@@ -805,9 +851,9 @@ if (nandid != 0x49464e4f) { // ONFI
 cfg0=mempeek(nand_cfg0);
 spp=(((cfg0>>6)&7)|((cfg0>>2)&8))+1;
 if (spp == 1) {
-  // для старых чипсетов младшие 2 байта CFG1 надо настраивать руками
+  // для старых чипсетов младшие 2 байта CFG0 надо настраивать руками
   spp=4;  
-  mempoke(nand_cfg0,(cfg0|0x400c0));
+  if (!bad_loader) mempoke(nand_cfg0,(cfg0|0x400c0));
 }  
 sectorsize=512;
 pagesize=sectorsize*spp;
@@ -926,3 +972,4 @@ if (donestat == 0) {
 return donestat;
 
 }
+
