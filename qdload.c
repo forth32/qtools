@@ -99,7 +99,7 @@ FILE* in;
 struct stat fstatus;
 unsigned int i,partsize,iolen,adr,helloflag=0;
 unsigned int sahara_flag=0;
-unsigned int nandcstate[64];
+unsigned int nandcstate[256];
 unsigned int tflag=0;
 
 unsigned char iobuf[4096];
@@ -190,6 +190,11 @@ if (!open_port(devname))  {
 #endif
    return; 
 }
+
+// Удаляем старые таблицы разделов
+
+unlink("ptable/current-r.bin");
+unlink("ptable/current-w.bin");
 
 //----- Вариант загрузки через сахару -------
 
