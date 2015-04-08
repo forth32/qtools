@@ -99,7 +99,6 @@ FILE* in;
 struct stat fstatus;
 unsigned int i,partsize,iolen,adr,helloflag=0;
 unsigned int sahara_flag=0;
-unsigned int nandcstate[256];
 unsigned int tflag=0;
 
 unsigned char iobuf[4096];
@@ -205,22 +204,13 @@ if (sahara_flag) {
 	#else
 	Sleep(200);   // ждем инициализации загрузчика
 	#endif
+
 	if (helloflag) {
 		hello();
-		if (bad_loader) {
-		  printf("\n Отключение BAM невозможно!");
-		  return;
-		}  
-		// отключаем NANDc BAM
-		for (i=0;i<0xec;i+=4) nandcstate[i]=mempeek(nand_cmd+i); // сохраняем состояние контроллера NAND
-		mempoke(0xfc401a40,1); // GCC_QPIC_BCR
-		mempoke(0xfc401a40,0); // полный асинхронный сброс QPIC
-		for (i=0;i<0xec;i+=4) mempoke(nand_cmd+i,nandcstate[i]);  // восстанавливаем состояние
-		mempoke(nand_exec,1); // фиктивное чтение для снятия защиты адресных регистров контроллера от записи
+		printf("\n");
+		if (tflag) extract_ptable();  // вынимаем таблицы разделов
 	}
   }
-  printf("\n");
-  if (tflag) extract_ptable();  // вынимаем таблицы разделов
   return;
 }	
 

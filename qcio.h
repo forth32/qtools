@@ -21,7 +21,7 @@ extern unsigned int bad_loader;
 
 #define ppb 64             // число страниц в 1 блоке
 
-void dump(char buffer[],unsigned int len,unsigned int base);
+void dump(unsigned char buffer[],unsigned int len,unsigned int base);
 int send_cmd(unsigned char* incmdbuf, int blen, unsigned char* iobuf);
 int send_cmd_base(unsigned char* incmdbuf, int blen, unsigned char* iobuf, int prefixflag);
 int open_port(char* devname);
@@ -44,3 +44,4 @@ int block_erase(int block);
 void get_flash_config();
 void nand_reset();
 int dload_sahara();
+void disable_bam();

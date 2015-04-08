@@ -46,7 +46,7 @@ void nandwait() {
 //* Дамп области памяти *
 //***********************
 
-void dump(char buffer[],unsigned int len,unsigned int base) {
+void dump(unsigned char buffer[],unsigned int len,unsigned int base) {
 unsigned int i,j;
 char ch;
 
@@ -556,7 +556,7 @@ return 1;
 void hello() {
 
 int i;  
-char rbuf[1024],*yesno="Да";
+unsigned char rbuf[1024];
 char hellocmd[]="\x01QCOM fast download protocol host\x03### ";
 
 printf(" Отсылка hello...");
@@ -568,9 +568,14 @@ if (rbuf[1] != 2) {
 }  
 printf("ok");
 //dump(rbuf,i,0);
+
 if (!test_loader()) {
   printf("\n ! ** Загрузчик не поддерживает команду 05 - загрузчик не содержит патча!!!! **\n");
-}  
+  return;
+}
+
+if (nand_cmd == 0xf9af0000) disable_bam(); // отключаем NANDc BAM, если работаем с 9x25
+
 get_flash_config();
 i=rbuf[0x2c];
 rbuf[0x2d+i]=0;
@@ -814,7 +819,7 @@ struct  {
 };
 
 mempoke(nand_cmd,0x8000b); // команда Extended Fetch ID
-mempoke(nand_exec,1);
+mempoke(nand_exec,1); 
 nandwait();
 nandid=mempeek(NAND_FLASH_READ_ID); // получаем ID флешки
 chipsize=0;
@@ -855,7 +860,7 @@ blocksize = 64 << ((devcfg >> 4) & 0x3);  // размер блока в кило
 spp = pagesize/sectorsize; // секторов в странице
 
 cfg0=mempeek(nand_cfg0);
-if (!((cfg0>>6)&7)|((cfg0>>2)&8)) {
+if (((cfg0>>6)&7)|((cfg0>>2)&8) == 0) {
   // для старых чипсетов младшие 2 байта CFG0 надо настраивать руками
   if (!bad_loader) mempoke(nand_cfg0,(cfg0|0x40000|((spp&8)<<2)|((spp&7)<<6)));
 }  
@@ -889,7 +894,7 @@ unsigned char helloreply[60]={
 }; 
 unsigned char donemes[8]={5,0,0,0,8,0,0,0};
 
-printf("\nОжидаем пакет Hello от устройства...\n");
+printf("\n Ожидаем пакет Hello от устройства...\n");
 port_timeout(100); // пакета Hello будем ждать 10 секунд
 iolen=read(siofd,replybuf,48);  // читаем Hello
 if ((iolen != 48)||(replybuf[0] != 1)) {
@@ -914,7 +919,7 @@ iolen=read(siofd,replybuf,20); // ответный пакет
   }  
 // в replybuf должен быть запрос первого блока загрузчика
 imgid=*((unsigned int*)&replybuf[8]); // идентификатор образа
-printf("\nИдентификатор образа для загрузки: %08x\n",imgid);
+printf("\n Идентификатор образа для загрузки: %08x\n",imgid);
 switch (imgid) {
 
 	case 0x07:
@@ -926,18 +931,18 @@ switch (imgid) {
 	break;
 
 	default:
-	printf("\nНеизвестный идентификатор - нет такого образа!\n");
+	printf("\n Неизвестный идентификатор - нет такого образа!\n");
 	return 1;
 }
-printf("\nЗагружаем %s...\n",infilename); 
+printf("\n Загружаем %s...\n",infilename); 
 in=fopen(infilename,"rb");
 if (in == 0) {
-  printf("\nОшибка открытия входного файла\n");
+  printf("\n Ошибка открытия входного файла\n");
   return 1;
 }
 
 // Основной цикл передачи кода загрузчика
-printf("\nПередаём загрузчик в устройство...\n");
+printf("\n Передаём загрузчик в устройство...\n");
 while(replybuf[0] != 4) { // сообщение EOIT
  if (replybuf[0] != 3) { // сообщение Read Data
     printf("\n Пакет с недопустимым кодом - прерываем загрузку!");
@@ -969,11 +974,24 @@ if (iolen == 0) {
 // получаем статус
 donestat=*((unsigned int*)&replybuf[12]); 
 if (donestat == 0) {
-  printf("\nЗагрузчик запущен успешно\n");
+  printf("\n Загрузчик запущен успешно\n");
 } else {
-  printf("\nОшибка запуска загрузчика\n");
+  printf("\n Ошибка запуска загрузчика\n");
 }
 return donestat;
 
 }
 
+//****************************************
+//* Отключение NANDc BAM
+//****************************************
+void disable_bam() {
+
+unsigned int i,nandcstate[256];
+
+for (i=0;i<0xec;i+=4) nandcstate[i]=mempeek(nand_cmd+i); // сохраняем состояние контроллера NAND
+mempoke(0xfc401a40,1); // GCC_QPIC_BCR
+mempoke(0xfc401a40,0); // полный асинхронный сброс QPIC
+for (i=0;i<0xec;i+=4) mempoke(nand_cmd+i,nandcstate[i]);  // восстанавливаем состояние
+mempoke(nand_exec,1); // фиктивное чтение для снятия защиты адресных регистров контроллера от записи
+}
