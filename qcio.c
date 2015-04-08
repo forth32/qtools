@@ -808,62 +808,66 @@ struct  {
 	{0x20, "ST Micro"},
 	{0xad, "Hynix"},
 	{0x2c, "Micron"},
-	{0xc8, "Elite semiconductor"},
-	{0x01, "AMD"},
+	{0xc8, "Elite Semiconductor"},
+	{0x01, "Spansion/AMD"},
 	{0x0, 0}
 };
 
-
+mempoke(nand_cmd,0x8000b); // команда Extended Fetch ID
+mempoke(nand_exec,1);
+nandwait();
 nandid=mempeek(NAND_FLASH_READ_ID); // получаем ID флешки
 chipsize=0;
-if (nandid != 0x49464e4f) { // ONFI
 
-	fid=(nandid>>8)&0xff;
-	pid=nandid&0xff;
+fid=(nandid>>8)&0xff;
+pid=nandid&0xff;
 
-	// Определяем производителя флешки
-	i=0;
-	while (nand_manuf_ids[i].id != 0) {
-		if (nand_manuf_ids[i].id == pid) {
-		strcpy(flash_mfr,nand_manuf_ids[i].name);
-		break;
-		}
-	i++;
-	}  
+// Определяем производителя флешки
+i=0;
+while (nand_manuf_ids[i].id != 0) {
+	if (nand_manuf_ids[i].id == pid) {
+	strcpy(flash_mfr,nand_manuf_ids[i].name);
+	break;
+	}
+i++;
+}  
     
-	// Определяем емкость флешки
-	i=0;
-	while (nand_ids[i].id != 0) {
-	if (nand_ids[i].id == fid) {
-		chipsize=nand_ids[i].chipsize;
-		//printf("\n ch=%i  chipsize=%i",nand_ids[i].chipsize,chipsize);
-		strcpy(flash_descr,nand_ids[i].type);
-		break;
-		}
-	i++;
-	}  
-	if (chipsize == 0) {
-		printf("\n Неопределенный Flash ID = %02x",fid);
-	}  
-}
+// Определяем емкость флешки
+i=0;
+while (nand_ids[i].id != 0) {
+if (nand_ids[i].id == fid) {
+	chipsize=nand_ids[i].chipsize;
+	strcpy(flash_descr,nand_ids[i].type);
+	break;
+	}
+i++;
+}  
+if (chipsize == 0) {
+	printf("\n Неопределенный Flash ID = %02x",fid);
+}  
+
 // Вынимаем параметры конфигурации
 
-cfg0=mempeek(nand_cfg0);
-spp=(((cfg0>>6)&7)|((cfg0>>2)&8))+1;
-if (spp == 1) {
-  // для старых чипсетов младшие 2 байта CFG0 надо настраивать руками
-  spp=4;  
-  if (!bad_loader) mempoke(nand_cfg0,(cfg0|0x400c0));
-}  
 sectorsize=512;
-pagesize=sectorsize*spp;
-blocksize=pagesize*ppb/1024;  // размер блока в килобайтах
+devcfg = (nandid>>24) & 0xff;
+pagesize = 1024 << (devcfg & 0x3); // размер страницы в байтах
+blocksize = 64 << ((devcfg >> 4) & 0x3);  // размер блока в килобайтах
+spp = pagesize/sectorsize; // секторов в странице
+
+cfg0=mempeek(nand_cfg0);
+if (!((cfg0>>6)&7)|((cfg0>>2)&8)) {
+  // для старых чипсетов младшие 2 байта CFG0 надо настраивать руками
+  if (!bad_loader) mempoke(nand_cfg0,(cfg0|0x40000|((spp&8)<<2)|((spp&7)<<6)));
+}  
+
 if (chipsize != 0)   maxblock=chipsize*1024/blocksize;
 else                 maxblock=0x800;
 
 if (oobsize == 0) {
- devcfg = (nandid>>24)&0xFF;
- oobsize = (8 << ((devcfg >> 2) & 0x3)) * (pagesize >> 9);
+	// Micron MT29F4G08ABBEA3W: на самом деле 224, определяется 128, 
+	// реально используется 160, для raw-режима нагляднее 256 :)
+	if (nandid == 0x2690ac2c) oobsize = 256; 
+	else oobsize = (8 << ((devcfg >> 2) & 0x1)) * (pagesize >> 9);
 } 
 
 }
