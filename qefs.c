@@ -86,6 +86,7 @@ if (iolen != 11) {
   dump(iobuf,iolen,0);
   return;
 }
+printf("\n");
 
 // главный цикл получения efs.mbn
 while(1) {
@@ -95,11 +96,12 @@ while(1) {
     dump(iobuf,iolen,0);
     return;
   }
-  printf("\n block: %02x %02x %02x %02x",iobuf[8],iobuf[9],iobuf[12],iobuf[13]);
+  printf("\r block: %02x %02x %02x %02x",iobuf[8],iobuf[9],iobuf[12],iobuf[13]);
   if (iobuf[8] == 0) break;
   fwrite(iobuf+16,512,1,out);
   memcpy(cmd_efsdata+4,iobuf+8,8);
 }
+printf("\n");
 
 }
 
