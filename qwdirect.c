@@ -267,7 +267,8 @@ switch (wmode) {
     break;
     
   case w_image: 
-    printf("сырой образ без рассчета ЕСС\n");
+    printf("сырой образ без расчета ЕСС\n");
+	printf(" Формат данных: %i+%i\n",sectorsize,oobsize); 
     break;
     
   case w_yaffs: 
@@ -308,7 +309,7 @@ for(block=startblock;block<(startblock+flen);block++) {
      }  
     
     // устанавливаем адрес флешки
-    printf("\r block: %04x   page:%02x",block,page); fflush(stdout);
+    printf("\r Блок: %04x   Страница: %02x",block,page); fflush(stdout);
     setaddr(block,page);
 
     // устанавливаем код команды записи
