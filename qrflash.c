@@ -77,7 +77,7 @@ void read_raw(int start,int len,int cwsize,FILE* out, unsigned int rflag) {
   
 int block;  
 
-printf("\n Чтение блоков %08x - %08x",start,start+len);
+printf("\n Чтение блоков %08x - %08x",start,start+len-1);
 printf("\n Формат данных: %i+%i\n",sectorsize,cwsize-sectorsize);
 // главыный цикл
 // по блокам
