@@ -558,6 +558,17 @@ void hello() {
 int i;  
 unsigned char rbuf[1024];
 char hellocmd[]="\x01QCOM fast download protocol host\x03### ";
+unsigned char cmdbuf[]={3,0,0,0,0,4,0};
+
+*((unsigned int*)&cmdbuf[1])=sector_buf;  //вписываем адрес секторного буфера - он безопасный.
+i=send_cmd(cmdbuf,7,rbuf);
+
+// Проверяем, не инициализировался ли загрузчик ранее
+if (i == 13) {
+ get_flash_config();
+ return;
+}  
+
 
 printf(" Отсылка hello...");
 i=send_cmd(hellocmd,strlen(hellocmd),rbuf);
@@ -566,7 +577,7 @@ if (rbuf[1] != 2) {
    dump(rbuf,i,0);
    return;
 }  
-printf("ok");
+ printf("ok");
 //dump(rbuf,i,0);
 
 if (!test_loader()) {
