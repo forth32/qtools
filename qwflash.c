@@ -101,7 +101,6 @@ unsigned char scmd[13068]={0x7,0,0,0};
 int res;
 char ptabraw[4048];
 FILE* part;
-int helloflag=0;
 int ptflag=0;
 int listmode=0;
 int wcount=0; 
@@ -122,13 +121,12 @@ unsigned int fsize;
 for(i=0;i<50;i++)  wname[i][0]=0;
 
 
-while ((opt = getopt(argc, argv, "hp:s:w:imrk:")) != -1) {
+while ((opt = getopt(argc, argv, "hp:s:w:mrk:")) != -1) {
   switch (opt) {
    case 'h': 
     printf("\n  Утилита предназначена для записи разделов (по таблице) на флеш модема\n\
 Допустимы следующие ключи:\n\n\
 -p <tty>  - указывает имя устройства последовательного порта для общения с загрузчиком\n\
--i        - запускает процедуру HELLO для инициализации загрузчика\n\
 -k #           - выбор чипсета: 0(MDM9x15, по умолчанию), 1(MDM8200), 2(MSM9x00), 3(MDM9x25)\n\
 -s <file> - взять карту разделов из указанного файла\n\
 -s - - взять карту разделов из файла ptable/current-r.bin\n\
@@ -165,10 +163,6 @@ while ((opt = getopt(argc, argv, "hp:s:w:imrk:")) != -1) {
     strcpy(devname,optarg);
     break;
     
-   case 'i':
-     helloflag=1;
-     break;
-     
    case 'r': 
      renameflag=1;
      break;
@@ -230,7 +224,7 @@ if (!open_port(devname))  {
 #endif
    return; 
 }
-if (helloflag) hello();
+hello();
 // сохраняем конфигурацию контроллера
 cfg0=mempeek(nand_cfg0);
 cfg1=mempeek(nand_cfg1);
