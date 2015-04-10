@@ -552,8 +552,11 @@ return 1;
 
 //**********************************************8
 //* Процедура активации загрузчика hello
+//*
+//* mode=0 - автоопределение нужности hello
+//* mode=1 - прринудительный запуск hello
 //**********************************************8
-void hello() {
+void hello(int mode) {
 
 int i;  
 unsigned char rbuf[1024];
@@ -561,14 +564,17 @@ char hellocmd[]="\x01QCOM fast download protocol host\x03### ";
 unsigned char cmdbuf[]={3,0,0,0,0,4,0};
 
 *((unsigned int*)&cmdbuf[1])=sector_buf;  //вписываем адрес секторного буфера - он безопасный.
-i=send_cmd(cmdbuf,7,rbuf);
 
-// Проверяем, не инициализировался ли загрузчик ранее
-if (i == 13) {
- get_flash_config();
- return;
+if (mode == 0) {
+  i=send_cmd(cmdbuf,7,rbuf);
+  tcflush(siofd,TCIOFLUSH); 
+
+  // Проверяем, не инициализировался ли загрузчик ранее
+  if (i == 13) {
+     get_flash_config();
+     return;
+  }  
 }  
-
 
 printf(" Отсылка hello...");
 i=send_cmd(hellocmd,strlen(hellocmd),rbuf);

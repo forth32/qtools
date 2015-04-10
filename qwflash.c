@@ -224,7 +224,7 @@ if (!open_port(devname))  {
 #endif
    return; 
 }
-hello();
+hello(0);
 // сохраняем конфигурацию контроллера
 cfg0=mempeek(nand_cfg0);
 cfg1=mempeek(nand_cfg1);

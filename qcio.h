@@ -31,7 +31,7 @@ int mempoke(int adr, int data);
 int flash_read(int block, int page, int sect);
 void setaddr(int block, int page);
 void nandwait();
-void hello();
+void hello(int mode);
 void load_ptable(unsigned char* ptable,unsigned int chipind);
 extern int siofd;
 void port_timeout(int timeout);

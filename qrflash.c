@@ -280,7 +280,7 @@ if ((truncflag == 1)&&(cwsize>sectorsize)) {
   printf("\nКлючи -t и -x несовместимы\n");
   return;
 }  
-hello();
+hello(0);
 cwsize=sectorsize;
 if (xflag) cwsize+=oobsize/spp; // наращиваем размер codeword на размер порции OOB на каждый сектор
 

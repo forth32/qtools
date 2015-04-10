@@ -106,10 +106,11 @@ unsigned char cmd1[]={0x06};
 unsigned char cmd2[]={0x07};
 unsigned char cmddl[2048]={0xf};
 unsigned char cmdstart[2048]={0x5,0,0,0,0};
+unsigned int delay=2;
 
 
 
-while ((opt = getopt(argc, argv, "p:k:a:hist")) != -1) {
+while ((opt = getopt(argc, argv, "p:k:a:histd:")) != -1) {
   switch (opt) {
    case 'h': 
      printf("\n Утилита предназначена для загрузки программ-прошивальщика (E)NPRG в память модема\n\n\
@@ -119,7 +120,9 @@ while ((opt = getopt(argc, argv, "p:k:a:hist")) != -1) {
 -t        - вынимает из модема таблицы разделов в файлы ptable/current-r(w).bin\n\
 -s        - использовать протокол SAHARA\n\
 -k #           - выбор чипсета: 0(MDM9x15, по умолчанию), 1(MDM8200), 2(MDM9x00), 3(MDM9x25)\n\
--a <adr>  - адрес загрузки, по умолчанию 41700000\n");
+-a <adr>  - адрес загрузки, по умолчанию 41700000\n\
+-d <n>    - задержка для инициализации загрузчика, 0.1с\n\
+\n");
     return;
      
    case 'p':
@@ -165,6 +168,10 @@ while ((opt = getopt(argc, argv, "p:k:a:hist")) != -1) {
    case 'a':
      sscanf(optarg,"%x",&start);
      break;
+
+   case 'd':
+     sscanf(optarg,"%i",&delay);
+     break;
   }     
 }
 
@@ -173,6 +180,7 @@ if ((tflag == 1) && (helloflag == 0)) {
   exit(1);
 }  
 
+delay*=100000; // переводим в микросекунды
 #ifdef WIN32
 if (*devname == '\0')
 {
@@ -206,7 +214,7 @@ if (sahara_flag) {
 	#endif
 
 	if (helloflag) {
-		hello();
+		hello(1);
 		printf("\n");
 		if (tflag) extract_ptable();  // вынимаем таблицы разделов
 	}
@@ -258,19 +266,30 @@ for(i=0;i<fstatus.st_size;i+=dlblock) {
 // dump(iobuf,iolen,0);
 } 
 // вписываем адрес в команду запуска
-printf("\n Запуск загрузчика...");
+printf("\n Запуск загрузчика..."); fflush(stdout);
 cmdstart[1]=(start>>24)&0xff;
 cmdstart[2]=(start>>16)&0xff;
 cmdstart[3]=(start>>8)&0xff;
 cmdstart[4]=(start)&0xff;
 iolen=send_cmd_base(cmdstart,5,iobuf,1);
+close(siofd);
 #ifndef WIN32
-usleep(200000);   // ждем инициализации загрузчика
+usleep(delay);   // ждем инициализации загрузчика
 #else
-Sleep(200);   // ждем инициализации загрузчика
+Sleep(delay/1000);   // ждем инициализации загрузчика
 #endif
+
+if (!open_port(devname))  {
+#ifndef WIN32
+   printf("\n - Последовательный порт %s не открывается\n", devname); 
+#else
+   printf("\n - Последовательный порт COM%s не открывается\n", devname); 
+#endif
+   return; 
+}
 printf("ok\n");
-if (helloflag) hello();
+
+if (helloflag) hello(1);
 if (!bad_loader && tflag) extract_ptable();  // вынимаем таблицы разделов
 printf("\n");
 

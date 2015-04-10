@@ -93,7 +93,7 @@ if (!open_port(devname))  {
 
 out=fopen(filename,"wb");
 
-hello();
+hello(0);
 
 endadr=adr+len;
 printf("\n Чтение области %08x - %08x\n",adr,endadr);

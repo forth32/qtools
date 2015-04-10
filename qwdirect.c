@@ -208,7 +208,7 @@ else if (optind < argc) {// в режиме стирания входной фа
   return;
 }
 
-hello();
+hello(0);
 
 
 if ((wmode == w_standart)||(wmode == w_linux)) oobsize=0; // для входных файлов без OOB

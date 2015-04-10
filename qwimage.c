@@ -57,13 +57,12 @@ unsigned int adr,badr=0,len;
 unsigned int fsize;
 
 
-while ((opt = getopt(argc, argv, "hp:ika:")) != -1) {
+while ((opt = getopt(argc, argv, "hp:ka:")) != -1) {
   switch (opt) {
    case 'h': 
     printf("\n  Утилита предназначена для записи сырого образа flash\n\
 Допустимы следующие ключи:\n\n\
 -p <tty>  - указывает имя устройства последовательного порта для общения с загрузчиком\n\
--i        - запускает процедуру HELLO для инициализации загрузчика\n\
 -k #      - выбор чипсета: 0(MDM9x15, по умолчанию), 1(MDM8200), 2(MSM9x00), 3(MDM9x25)\n\
 -a #      - начальный адрес (в байтах) для записи \n\
 \n");
@@ -97,10 +96,6 @@ while ((opt = getopt(argc, argv, "hp:ika:")) != -1) {
     strcpy(devname,optarg);
     break;
     
-   case 'i':
-     helloflag=1;
-     break;
-     
    case 'a':
      sscanf(optarg,"%x",&badr);
      break;
@@ -127,7 +122,7 @@ if (!open_port(devname))  {
 #endif
    return; 
 }
-if (helloflag) hello();
+hello(0);
 // сохраняем конфигурацию контроллера
 cfg0=mempeek(nand_cfg0);
 cfg1=mempeek(nand_cfg1);

@@ -101,7 +101,7 @@ i                 - запуск процедуры HELLO\n");
  
   // активация загрузчика 
   case 'i':
-    hello();
+    hello(1);
     break;
     
   // дамп памяти
@@ -283,7 +283,7 @@ if (!open_port(devname))  {
 #endif
    return; 
 }
-if (helloflag) hello();
+if (helloflag) hello(1);
 printf("\n");
 
 // запуск команды из ключа -C, если есть
