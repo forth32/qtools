@@ -373,7 +373,7 @@ return 1;
 // Закрытие последовательного порта
 //*************************************
 
-void close_port(char* devname)
+void close_port()
 {
 #ifndef WIN32
 close(siofd);

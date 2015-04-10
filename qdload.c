@@ -272,7 +272,7 @@ cmdstart[2]=(start>>16)&0xff;
 cmdstart[3]=(start>>8)&0xff;
 cmdstart[4]=(start)&0xff;
 iolen=send_cmd_base(cmdstart,5,iobuf,1);
-close(siofd);
+close_port();
 #ifndef WIN32
 usleep(delay);   // ждем инициализации загрузчика
 #else

@@ -45,3 +45,5 @@ void get_flash_config();
 void nand_reset();
 int dload_sahara();
 void disable_bam();
+void close_port();
+
