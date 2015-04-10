@@ -877,9 +877,9 @@ blocksize = 64 << ((devcfg >> 4) & 0x3);  // размер блока в кило
 spp = pagesize/sectorsize; // секторов в странице
 
 cfg0=mempeek(nand_cfg0);
-if (((cfg0>>6)&7)|((cfg0>>2)&8) == 0) {
+if ((((cfg0>>6)&7)|((cfg0>>2)&8)) == 0) {
   // для старых чипсетов младшие 2 байта CFG0 надо настраивать руками
-  if (!bad_loader) mempoke(nand_cfg0,(cfg0|0x40000|((spp&8)<<2)|((spp&7)<<6)));
+  if (!bad_loader) mempoke(nand_cfg0,(cfg0|0x40000|(((spp-1)&8)<<2)|(((spp-1)&7)<<6)));
 }  
 
 if (chipsize != 0)   maxblock=chipsize*1024/blocksize;
