@@ -567,7 +567,7 @@ unsigned char cmdbuf[]={3,0,0,0,0,4,0};
 
 if (mode == 0) {
   i=send_cmd(cmdbuf,7,rbuf);
-  tcflush(siofd,TCIOFLUSH); 
+  ttyflush(); 
 
   // Проверяем, не инициализировался ли загрузчик ранее
   if (i == 13) {
