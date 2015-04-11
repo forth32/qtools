@@ -26,7 +26,6 @@ FILE* out;
 
 // получаем размер юзерских даных сектора
 udsize=(mempeek(nand_cfg0)&(0x3ff<<9))>>9; 
-
 // вынимаем координаты страницы с таблицей
 addr=mempeek(nand_addr0)>>16;
 if (addr == 0) { 
@@ -44,7 +43,7 @@ memread(buf,sector_buf, udsize);
 mempoke(nand_exec,1);     // сектор 1 - продолжение таблицы
 nandwait();
 memread(buf+udsize,sector_buf, udsize);
-
+printf("-----------------------------------------------------");
 // проверяем таблицу
 if (memcmp(buf,"\xAA\x73\xEE\x55\xDB\xBD\x5E\xE3",8) != 0) {
    printf("\nТаблица разделов режима чтения не найдена\n");
@@ -59,7 +58,7 @@ if (out == 0) {
   return;
 }  
 fwrite(buf,16+28*npar,1,out);
-printf("\n Найдена таблица разделов режима чтения");
+printf("\n * Найдена таблица разделов режима чтения");
 fclose (out);
 
 // Ищем таблицу записи
@@ -80,10 +79,10 @@ for (pg=pg+1;pg<ppb;pg++) {
   }  
   fwrite(buf,16+28*npar,1,out);
   fclose (out);
-  printf("\n Найдена таблица разделов режима записи");
+  printf("\n * Найдена таблица разделов режима записи");
   return;
 }
-printf("\n Таблица разделов режима записи не найдена");
+printf("\n - Таблица разделов режима записи не найдена");
 }
 
 

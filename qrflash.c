@@ -175,7 +175,7 @@ printf("\n Утилита предназначена для чтения обр�
 
        case '3':
         nand_cmd=0xf9af0000;
-		chipind=3;
+	chipind=3;
 	break;
 
        default:
