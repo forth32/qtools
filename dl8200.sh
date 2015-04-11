@@ -39,6 +39,4 @@ while [ ! -c $PORT ]
 # Заливаем загрузчик
 echo download mode entered
 sleep 2
-./qdload -p $PORT  -a 100000 $LDR
-sleep 2
-./qcommand -p $PORT -k1 -c "i"
+./qdload -p $PORT  -i -t -k1 -d20 -a100000 $LDR

@@ -28,12 +28,15 @@ FILE* out;
 udsize=(mempeek(nand_cfg0)&(0x3ff<<9))>>9; 
 
 // вынимаем координаты страницы с таблицей
-
 addr=mempeek(nand_addr0)>>16;
+if (addr == 0) { 
+  // если адреса таблицы нет в регистре - ищем его
+  load_ptable(buf,1); 
+  addr=mempeek(nand_addr0)>>16;
+}  
 blk=addr/ppb;
 pg=addr%ppb;
 nandwait(); // ждем окончания всех предыдущих операций
-
 
 flash_read(blk, pg, 0);  // сектор 0 - начало таблицы разделов  
 memread(buf,sector_buf, udsize);
@@ -44,7 +47,7 @@ memread(buf+udsize,sector_buf, udsize);
 
 // проверяем таблицу
 if (memcmp(buf,"\xAA\x73\xEE\x55\xDB\xBD\x5E\xE3",8) != 0) {
-   printf("\nТаблица разделов режима чтения повреждена - извлечение невозможно\n");
+   printf("\nТаблица разделов режима чтения не найдена\n");
    return;
 }
 
