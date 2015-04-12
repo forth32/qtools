@@ -77,7 +77,7 @@ unsigned int cfg0=mempeek(nand_cfg0);
 printf("\n **** Конфигурационный регистр 0 *****");
 printf("\n * NUM_ADDR_CYCLES              = %x",(cfg0>>27)&7);
 printf("\n * SPARE_SIZE_BYTES             = %x",(cfg0>>23)&0xf);
-printf("\n * ECC_PARITY_SIZE_BYTES        = %x",(cfg0>>22)&0xf);
+printf("\n * ECC_PARITY_SIZE_BYTES        = %x",(cfg0>>19)&0xf);
 printf("\n * UD_SIZE_BYTES                = %x",(cfg0>>9)&0x3ff);
 printf("\n * CW_PER_PAGE                  = %x",((cfg0>>6)&7) | ((cfg0>>2)&8));
 printf("\n * DISABLE_STATUS_AFTER_WRITE   = %x",(cfg0>>4)&1);
