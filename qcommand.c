@@ -68,6 +68,44 @@ char cmd07[]={7,0,0,0};
 //char cmdsend[1024]={
 }
 
+//**********************************************
+//*  Разбор содержимого регистра CFG0
+//**********************************************
+void decode_cfg0() {
+  
+unsigned int cfg0=mempeek(nand_cfg0);
+printf("\n **** Конфигурационный регистр 0 *****");
+printf("\n * NUM_ADDR_CYCLES              = %x",(cfg0>>27)&7);
+printf("\n * SPARE_SIZE_BYTES             = %x",(cfg0>>23)&0xf);
+printf("\n * ECC_PARITY_SIZE_BYTES        = %x",(cfg0>>22)&0xf);
+printf("\n * UD_SIZE_BYTES                = %x",(cfg0>>9)&0x3ff);
+printf("\n * CW_PER_PAGE                  = %x",((cfg0>>6)&7) | ((cfg0>>2)&8));
+printf("\n * DISABLE_STATUS_AFTER_WRITE   = %x",(cfg0>>4)&1);
+printf("\n * BUSY_TIMEOUT_ERROR_SELECT    = %x",(cfg0)&7);
+}
+
+//**********************************************
+//*  Разбор содержимого регистра CFG1
+//**********************************************
+void decode_cfg1() {
+  
+unsigned int cfg1=mempeek(nand_cfg1);
+printf("\n **** Конфигурационный регистр 1 *****");
+printf("\n * ECC_MODE                      = %x",(cfg1>>28)&3);
+printf("\n * ENABLE_BCH_ECC                = %x",(cfg1>>27)&1);
+printf("\n * DISABLE_ECC_RESET_AFTER_OPDONE= %x",(cfg1>>25)&1);
+printf("\n * ECC_DECODER_CGC_EN            = %x",(cfg1>>24)&1);
+printf("\n * ECC_ENCODER_CGC_EN            = %x",(cfg1>>23)&1);
+printf("\n * WR_RD_BSY_GAP                 = %x",(cfg1>>17)&0x3f);
+printf("\n * BAD_BLOCK_IN_SPARE_AREA       = %x",(cfg1>>16)&1);
+printf("\n * BAD_BLOCK_BYTE_NUM            = %x",(cfg1>>6)&0x3ff);
+printf("\n * CS_ACTIVE_BSY                 = %x",(cfg1>>5)&1);
+printf("\n * NAND_RECOVERY_CYCLES          = %x",(cfg1>>2)&7);
+printf("\n * WIDE_FLASH                    = %x",(cfg1>>1)&1);
+printf("\n * ECC_DISABLE                   = %x",(cfg1)&1);
+}
+
+
 //**********************************************8
 //* обработка команд
 //**********************************************8
@@ -91,6 +129,7 @@ m adr word ...    - записать слова по указанному адр
 r block page sect - чтение блока флешки в секторный буфер \n\
 s                 - прсмотр дампа сектороного буфера NAND-контроллера\n\
 n                 - просмотр содежримого регистров NAND-контроллера\n\
+k                 - разбор содержимого конфигурационных регистров\n\
 x                 - выход из программы\n\
 i                 - запуск процедуры HELLO\n");
     break;
@@ -188,6 +227,13 @@ i                 - запуск процедуры HELLO\n");
    exit(0);
    break;
 
+  case 'k':
+    decode_cfg0();
+    printf("\n");
+    decode_cfg1();
+    printf("\n");
+    break;
+   
   default:
     printf("\nНеопределенная команда\n");
     break;

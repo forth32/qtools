@@ -711,7 +711,7 @@ mempoke(nand_cfg0,oldcfg);   // восстанавливаем CFG0
 //**********************************************************
 void get_flash_config() {
   
-unsigned int cfg0, nandid, pid, fid, blocksize, devcfg, chipsize;
+unsigned int cfg0, cfg1, nandid, pid, fid, blocksize, devcfg, chipsize;
 int i;
 
 struct {
@@ -882,6 +882,14 @@ cfg0=mempeek(nand_cfg0);
 if ((((cfg0>>6)&7)|((cfg0>>2)&8)) == 0) {
   // для старых чипсетов младшие 2 байта CFG0 надо настраивать руками
   if (!bad_loader) mempoke(nand_cfg0,(cfg0|0x40000|(((spp-1)&8)<<2)|(((spp-1)&7)<<6)));
+}  
+
+// Для чипсета 8200 требуется настройка конфигурации 1 - позиции маркера бедблока
+if (nand_cmd == 0xa0a00000) {
+  cfg1=mempeek(nand_cfg1);
+  cfg1&=~(0x7ff<<6);  //сбрасываем BAD_BLOCK_BYTE_NUM и BAD_BLOCK_IN_SPARE_AREA
+  cfg1|=(0x1d1<<6); // BAD_BLOCK_BYTE_NUM
+  mempoke(nand_cfg1,cfg1);
 }  
 
 if (chipsize != 0)   maxblock=chipsize*1024/blocksize;
