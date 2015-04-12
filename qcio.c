@@ -562,7 +562,7 @@ int i;
 unsigned char rbuf[1024];
 char hellocmd[]="\x01QCOM fast download protocol host\x03### ";
 unsigned char cmdbuf[]={3,0,0,0,0,4,0};
-unsigned int cfg1;
+unsigned int cfg1,ecccfg;
 
 *((unsigned int*)&cmdbuf[1])=sector_buf;  //вписываем адрес секторного буфера - он безопасный.
 
@@ -594,6 +594,7 @@ if (!test_loader()) {
 
 if (nand_cmd == 0xf9af0000) disable_bam(); // отключаем NANDc BAM, если работаем с 9x25
 cfg1=mempeek(nand_cfg1);
+ecccfg=mempeek(nand_ecc_cfg);
 get_flash_config();
 i=rbuf[0x2c];
 rbuf[0x2d+i]=0;
@@ -604,6 +605,7 @@ printf("\n Размер сектора: %i байт",sectorsize);
 printf("\n Размер страницы: %i байт (%i секторов)",pagesize,spp);
 printf("\n Размер OOB: %i байт",oobsize);
 printf("\n Тип ECC: %s",(cfg1&(1<<27))?"BCH":"R-S");
+printf(", %i бит",(cfg1&(1<<27))?(((ecccfg>>4)&3)?(((ecccfg>>4)&3)+1)*4:4):4);
 printf("\n Общий размер флеш-памяти = %i блоков (%i MB)",maxblock,maxblock*ppb/1024*pagesize/1024);
 printf("\n");
 }
