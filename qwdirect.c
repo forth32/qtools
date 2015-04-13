@@ -45,12 +45,12 @@ unsigned char datacmd_t[8192]={0x11,0x00,0x01,0xf1,0x1f,0x01,0x05,0x4a,
 
 //   Для ARM-32 режима  
 unsigned char datacmd_a[8192]={
-  0x2a, 0x10, 0x81, 0xe2, 0x1a, 0x20, 0x9f, 0xe5, // 0
-  0x00, 0x30, 0xa0, 0xe3, 0x03, 0x01, 0x91, 0xe7, // 8 
-  0x03, 0x01, 0x82, 0xe7, 0x01, 0x30, 0x93, 0xe2, // 16 
-  0x8f, 0x00, 0x53, 0xe3, 0xfa, 0xff, 0xff, 0x3a, // 24
-  0x1e, 0xff, 0x2f, 0xe1, 0x00, 0x00, 0x00, 0x01, // 32
-  0xaf, 0xf9}; // 40-41 - старшие байты адреса контроллера 
+  0x11, 0x00, 0x2a, 0x10, 0x81, 0xe2, 0x1a, 0x20,   // 0
+  0x9f, 0xe5, 0x00, 0x30, 0xa0, 0xe3, 0x03, 0x01,   // 8
+  0x91, 0xe7, 0x03, 0x01, 0x82, 0xe7, 0x01, 0x30,   // 16
+  0x93, 0xe2, 0x8f, 0x00, 0x53, 0xe3, 0xfa, 0xff,   // 24
+  0xff, 0x3a, 0x1e, 0xff, 0x2f, 0xe1, 0x00, 0x00,   // 32
+  0x00, 0x01, 0xaf, 0xf9}; // 40    42-43 - старшие байты адреса контроллера 
 			     
 unsigned char* datacmd=datacmd_t; // указатель на совместимую с данным контроллером программу
 unsigned int dataoffset=34;       // смещение до буфера данных в рабочей программе			     
@@ -113,13 +113,13 @@ while ((opt = getopt(argc, argv, "hp:k:b:f:vc:z:l:")) != -1) {
        case '1':
         nand_cmd=0xA0A00000;
 	datacmd=datacmd_a;
-	dataoffset=42;
+	dataoffset=44;
 	break;
 
        case '2':
         nand_cmd=0x81200000;
-	dataoffset=42;
-        nand_cmd=0xA0A00000;
+	datacmd=datacmd_a;
+	dataoffset=44;
 	break;
 
        case '3':
@@ -194,7 +194,7 @@ while ((opt = getopt(argc, argv, "hp:k:b:f:vc:z:l:")) != -1) {
 
 // вписываем адрес контроллера в образы команды копирования
 *((unsigned short*)&datacmd_t[32])=nand_cmd>>16;
-*((unsigned short*)&datacmd_a[40])=nand_cmd>>16;
+*((unsigned short*)&datacmd_a[42])=nand_cmd>>16;
 
 
 #ifdef WIN32
@@ -389,7 +389,13 @@ for(block=startblock;block<(startblock+flen);block++) {
       }
       // пересылаем сектор в секторный буфер
       iolen=send_cmd(datacmd,dataoffset+sectorsize+oobsize,iobuf); 
-      
+      if (iobuf[1] != 0x12) {
+	printf("\n Зазрузчик не поддерживает команду 11 (exec)\n");
+	return;
+      }	
+      memread(databuf,sector_buf,512);
+      dump(databuf,512,0);
+      return;
       // выполняем команду записи и ждем ее завершения
       mempoke(nand_exec,0x1);
       nandwait();
