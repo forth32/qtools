@@ -65,13 +65,14 @@ unsigned char cmdbuf[8192]={0x19,0};
 int iolen;
   
 memcpy(cmdbuf+2,ptraw,len);
-//printf("\n");
-//dump(cmdbuf,len+2,0);
+printf("\n");
+dump(cmdbuf,len+2,0);
 
 iolen=send_cmd(cmdbuf,len+2,iobuf);
 
 if (iobuf[1] == 0x1a) return 1;
 show_errpacket("send_ptable()",iobuf,iolen);
+printf("\n iolen = %i",iolen);
 return 0; // была ошибка
 }
 
