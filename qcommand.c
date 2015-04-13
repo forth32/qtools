@@ -267,7 +267,7 @@ while ((opt = getopt(argc, argv, "p:ic:hek:")) != -1) {
 -p <tty>       - указывает имя устройства последовательного порта для общения с загрузчиком\n\
 -i             - запускает процедуру HELLO для инициализации загрузчика\n\
 -e             - запрещает передачу префикса 7E перед командой\n\
--k #           - выбор чипсета: 0(MDM9x15, по умолчанию), 1(MDM8200), 2(MSM9x00), 3(MDM9x25) \n\
+-k #           - код чипсета (-kl - получить список кодов)\n\
 -c \"<команда>\" - запускает указанную команду и завершает работу\n");
     return;
      
@@ -276,27 +276,7 @@ while ((opt = getopt(argc, argv, "p:ic:hek:")) != -1) {
     break;
      
    case 'k':
-     switch(optarg[0]) {
-       case '0':
-        nand_cmd=0x1b400000;
-	break;
-
-       case '1':
-        nand_cmd=0xA0A00000;
-	break;
-
-       case '2':
-        nand_cmd=0x81200000;
-	break;
-
-       case '3':
-        nand_cmd=0xf9af0000;
-	break;
-
-       default:
-	printf("\nНедопустимый номер чипсета\n");
-	return;
-     }	
+    define_chipset(optarg);
     break;
     
    case 'i':

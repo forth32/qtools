@@ -25,7 +25,27 @@ char flash_descr[30]={0};
 unsigned int oobsize=0;
 unsigned int bad_loader=0;
 
+// тип чипcета:
+unsigned int chip_type=0; 
+unsigned int maxchip=0;
 
+// описатели чипсетов
+struct {
+  unsigned int nandbase;   // адрес контроллера
+  unsigned char armflag;   // тип исполняемого кода: 0-ARM, 1-Thumb-2
+  unsigned char udflag;    // udsize таблицы разделов, 0-512, 1-516
+  unsigned char name[20];  // имя чипсета
+}  chipset[]= {
+//  адрес NAND   ARM  UDflag  имя           ##
+  { 0x1b400000,   1,    0, "MDM9x15"},  //  0
+  { 0xA0A00000,   0,    0, "MDM8200"},  //  1
+  { 0x81200000,   0,    0, "MDM9x00"},  //  2
+  { 0xf9af0000,   1,    1, "MDM9x25"},  //  3
+  { 0x70000000,   0,    0, "MDM6600"},  //  4
+  { 0,0,0 }
+};
+  
+  
 #ifndef WIN32
 struct termios sioparm;
 #else
@@ -33,6 +53,55 @@ static HANDLE hSerial;
 COMMTIMEOUTS ct;
 #endif
 int siofd; // fd для работы с Последовательным портом
+
+//************************************************
+//* Печать списка поддерживаемых чипсетов
+//***********************************************
+void list_chipset() {
+  
+int i;
+printf("\n Код     Имя    Адрес NAND\n-----------------------------------");
+for(i=0;chipset[i].nandbase != 0 ;i++) {
+  printf("\n %2i  %9.9s    %08x",i,chipset[i].name,chipset[i].nandbase);
+  if (i == 0)  printf(" (по умолчанию)");
+}
+printf("\n\n");
+exit(0);
+}
+
+//****************************************************************
+//*   Установка параметров контроллера по номеру чипсета
+//* 
+//* arg - указатель на optarg, указанный в ключе -к
+//****************************************************************
+void define_chipset(char* arg) {
+
+// проверяем на -kl
+if (optarg[0]=='l') list_chipset();
+
+// получаем кд чипсета из аргумента
+sscanf(arg,"%i",&chip_type);
+
+// получаем размер массива чипсетов
+for(maxchip=0;chipset[maxchip].nandbase != 0 ;maxchip++);  
+// проверяем наш номер
+if (chip_type>=maxchip) {
+  printf("\n - Неверный код чипсета - %i",chip_type);
+  exit(1);
+}
+nand_cmd=chipset[chip_type].nandbase;
+}
+
+//**************************************************************
+//*  Проверяет, требуется ли текущему чипсету ARM или Thumb-2 код
+//*
+//*   0 - arm
+//*   1 - Thumb-2
+//***********************************************
+unsigned int is_arm_chipset() {
+  return chipset[chip_type].armflag;
+}  
+
 
 //****************************************************************
 //* Ожидание завершения операции, выполняемой контроллером nand  *
@@ -613,12 +682,12 @@ printf("\n");
 //*************************************
 //* чтение таблицы разделов из flash
 //*************************************
-void load_ptable(unsigned char* buf,unsigned int chipind) {
+void load_ptable(unsigned char* buf) {
 
 unsigned int udsize=512;
 unsigned int blk,pg;
 
-if (chipind == 3) udsize=516;
+if (chipset[chip_type].udflag) udsize=516;
 
 memset(buf,0,1024); // обнуляем таблицу
 

@@ -30,7 +30,7 @@ udsize=(mempeek(nand_cfg0)&(0x3ff<<9))>>9;
 addr=mempeek(nand_addr0)>>16;
 if (addr == 0) { 
   // если адреса таблицы нет в регистре - ищем его
-  load_ptable(buf,1); 
+  load_ptable(buf); 
   addr=mempeek(nand_addr0)>>16;
 }  
 blk=addr/ppb;
@@ -121,7 +121,7 @@ while ((opt = getopt(argc, argv, "p:k:a:histd:")) != -1) {
 -i        - запускает процедуру HELLO для инициализации загрузчика\n\
 -t        - вынимает из модема таблицы разделов в файлы ptable/current-r(w).bin\n\
 -s        - использовать протокол SAHARA\n\
--k #           - выбор чипсета: 0(MDM9x15, по умолчанию), 1(MDM8200), 2(MDM9x00), 3(MDM9x25)\n\
+-k #      - код чипсета (-kl - получить список кодов)\n\
 -a <adr>  - адрес загрузки, по умолчанию 41700000\n\
 -d <n>    - задержка для инициализации загрузчика, 0.1с\n\
 \n");
@@ -132,27 +132,7 @@ while ((opt = getopt(argc, argv, "p:k:a:histd:")) != -1) {
     break;
 
    case 'k':
-     switch(*optarg) {
-       case '0':
-        nand_cmd=0x1b400000;
-	break;
-
-       case '1':
-        nand_cmd=0xA0A00000;
-	break;
-
-       case '2':
-        nand_cmd=0x81200000;
-	break;
-
-       case '3':
-        nand_cmd=0xf9af0000;
-	break;
-
-       default:
-	printf("\nНедопустимый номер чипсета\n");
-	return;
-     }	
+    define_chipset(optarg);
     break;
 
    case 'i':

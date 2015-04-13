@@ -128,7 +128,7 @@ while ((opt = getopt(argc, argv, "hp:s:w:mrk:")) != -1) {
     printf("\n  Утилита предназначена для записи разделов (по таблице) на флеш модема\n\
 Допустимы следующие ключи:\n\n\
 -p <tty>  - указывает имя устройства последовательного порта для общения с загрузчиком\n\
--k #           - выбор чипсета: 0(MDM9x15, по умолчанию), 1(MDM8200), 2(MSM9x00), 3(MDM9x25)\n\
+-k #      - код чипсета (-kl - получить список кодов)\n\
 -s <file> - взять карту разделов из указанного файла\n\
 -s - - взять карту разделов из файла ptable/current-r.bin\n\
 -r        - переименовать разделы PAD в PADnn (дбавляется номер раздела\n\
@@ -137,27 +137,7 @@ while ((opt = getopt(argc, argv, "hp:s:w:mrk:")) != -1) {
     return;
     
    case 'k':
-     switch(*optarg) {
-       case '0':
-        nand_cmd=0x1b400000;
-	break;
-
-       case '1':
-        nand_cmd=0xA0A00000;
-	break;
-
-       case '2':
-        nand_cmd=0x81200000;
-	break;
-
-       case '3':
-        nand_cmd=0xf9af0000;
-	break;
-
-       default:
-	printf("\nНедопустимый номер чипсета\n");
-	return;
-     }	
+    define_chipset(optarg);
     break;
     
    case 'p':

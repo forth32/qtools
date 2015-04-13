@@ -52,8 +52,8 @@ unsigned char datacmd_a[8192]={
   0xff, 0x3a, 0x1e, 0xff, 0x2f, 0xe1, 0x00, 0x01,   // 32
   0xaf, 0xf9}; // 40    40-41 - старшие байты адреса контроллера 
 			     
-unsigned char* datacmd=datacmd_t; // указатель на совместимую с данным контроллером программу
-unsigned int dataoffset=34;       // смещение до буфера данных в рабочей программе			     
+unsigned char* datacmd; // указатель на совместимую с данным контроллером программу
+unsigned int dataoffset;       // смещение до буфера данных в рабочей программе			     
 			     
 unsigned char iobuf[2048]; // буфер ответа команд
 unsigned char srcbuf[8192]; // буфер страницы 
@@ -90,7 +90,7 @@ while ((opt = getopt(argc, argv, "hp:k:b:f:vc:z:l:")) != -1) {
     printf("\n  Утилита предназначена для записи сырого образа flash через регистры контроллера\n\
 Допустимы следующие ключи:\n\n\
 -p <tty>  - указывает имя устройства последовательного порта для общения с загрузчиком\n\
--k #      - выбор чипсета: 0(MDM9x15, по умолчанию), 1(MDM8200), 2(MSM9x00), 3(MDM9x25)\n\
+-k #      - код чипсета (-kl - получить список кодов)\n\
 -b #      - начальный номер блока для записи \n\
 -f <x>    - выбор формата записи:\n\
         -fs (по умолчанию) - запись только секторов данных\n\
@@ -105,34 +105,9 @@ while ((opt = getopt(argc, argv, "hp:k:b:f:vc:z:l:")) != -1) {
     return;
     
    case 'k':
-     switch(*optarg) {
-       case '0':
-        nand_cmd=0x1b400000;
-	break;
-
-       case '1':
-        nand_cmd=0xA0A00000;
-	datacmd=datacmd_a;
-	dataoffset=42;
-	break;
-
-       case '2':
-        nand_cmd=0x81200000;
-	datacmd=datacmd_a;
-	dataoffset=42;
-	break;
-
-       case '3':
-        nand_cmd=0xf9af0000;
-        chipset9x25=1;
-	break;
-
-       default:
-	printf("\nНедопустимый номер чипсета\n");
-	return;
-     }	
+    define_chipset(optarg);
     break;
-    
+
    case 'p':
     strcpy(devname,optarg);
     break;
@@ -192,10 +167,19 @@ while ((opt = getopt(argc, argv, "hp:k:b:f:vc:z:l:")) != -1) {
 }  
 
 
-// вписываем адрес контроллера в образы команды копирования
-*((unsigned short*)&datacmd_t[32])=nand_cmd>>16;
-*((unsigned short*)&datacmd_a[40])=nand_cmd>>16;
-
+// определяем параметры программы заполнения буфера
+if (is_arm_chipset() == 0) {
+  // ARM-режим
+  datacmd=datacmd_a;
+  *((unsigned short*)&datacmd_a[40])=nand_cmd>>16;
+  dataoffset=42;
+} 
+else {
+  // Thumb2- режим
+  datacmd=datacmd_t;
+  *((unsigned short*)&datacmd_t[32])=nand_cmd>>16;
+  dataoffset=34;
+}  
 
 #ifdef WIN32
 if (*devname == '\0')

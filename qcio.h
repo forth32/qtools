@@ -7,6 +7,14 @@ extern unsigned int maxblock;    // Общее число блоков флеш�
 extern unsigned int oobsize;
 extern unsigned int bad_loader;
 
+// тип чипcета:
+//-----------------------------------
+//  0 - (MDM9x15, по умолчанию), 
+//  1 - (MDM8200)
+//  2 - (MDM9x00), 
+//  3 - (MDM9x25)
+extern unsigned int chip_type; 
+
 
 #define nand_addr0 nand_cmd+4
 #define nand_addr1 nand_cmd+8
@@ -32,7 +40,7 @@ int flash_read(int block, int page, int sect);
 void setaddr(int block, int page);
 void nandwait();
 void hello(int mode);
-void load_ptable(unsigned char* ptable,unsigned int chipind);
+void load_ptable(unsigned char* ptable);
 extern int siofd;
 void port_timeout(int timeout);
 int send_cmd_massdata(unsigned char* incmdbuf, int blen, unsigned char* iobuf, unsigned int datalen);
@@ -46,4 +54,8 @@ void nand_reset();
 int dload_sahara();
 void disable_bam();
 void close_port();
+unsigned int is_arm_chipset();
+void define_chipset(char* arg);
+
+
 
