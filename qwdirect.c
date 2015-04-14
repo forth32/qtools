@@ -3,6 +3,7 @@
 #ifndef WIN32
 #include <unistd.h>
 #include <getopt.h>
+#include <termios.h>
 #else
 #include <windows.h>
 #include "wingetopt.h"
