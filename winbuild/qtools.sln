@@ -15,6 +15,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "qwflash", "qwflash\qwflash.
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "qwdirect", "qwdirect\qwdirect.vcxproj", "{15C9BDAA-C676-4FB2-BEFD-8AD242127E20}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "qefs", "qefs\qefs.vcxproj", "{B00B8A73-AAF3-41B8-87AC-2BD451C7E8EA}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -49,6 +51,10 @@ Global
 		{15C9BDAA-C676-4FB2-BEFD-8AD242127E20}.Debug|Win32.Build.0 = Release|Win32
 		{15C9BDAA-C676-4FB2-BEFD-8AD242127E20}.Release|Win32.ActiveCfg = Release|Win32
 		{15C9BDAA-C676-4FB2-BEFD-8AD242127E20}.Release|Win32.Build.0 = Release|Win32
+		{B00B8A73-AAF3-41B8-87AC-2BD451C7E8EA}.Debug|Win32.ActiveCfg = Release|Win32
+		{B00B8A73-AAF3-41B8-87AC-2BD451C7E8EA}.Debug|Win32.Build.0 = Release|Win32
+		{B00B8A73-AAF3-41B8-87AC-2BD451C7E8EA}.Release|Win32.ActiveCfg = Release|Win32
+		{B00B8A73-AAF3-41B8-87AC-2BD451C7E8EA}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
