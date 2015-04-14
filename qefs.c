@@ -39,6 +39,12 @@ unsigned int altflag=0;
 unsigned int fixname=0;
 int iolen,opt,i;
 FILE* out;
+enum{
+  MODE_BACK_EFS,
+  MODE_BACK_NVRAM
+}; 
+
+int mode=-1;
 
 char filename[50]="efs.mbn";
 
@@ -47,11 +53,15 @@ char devname[50]="/dev/ttyUSB0";
 #else
 char devname[50]="";
 #endif
-while ((opt = getopt(argc, argv, "po:a")) != -1) {
+while ((opt = getopt(argc, argv, "po:ab")) != -1) {
   switch (opt) {
    case 'h': 
     printf("\n  Утилита предназначена для работы с разделом efs \n\
 Допустимы следующие ключи:\n\n\
+Ключи, определяюще выполняемую операцию:\n\
+-be       - дамп efs\n\
+-bn       - дамп nvram\n\n\
+Ключи-модификаторы:\n\
 -p <tty>  - указывает имя устройства диагностического порта модема\n\
 -a        - использовать альтернативную EFS\n\
 -o <file> - имя файла для сохранения efs\n\
@@ -62,7 +72,27 @@ while ((opt = getopt(argc, argv, "po:a")) != -1) {
      strcpy(filename,optarg);
      fixname=1;
      break;
-    
+
+   case 'b':
+     if (mode != -1) {
+       printf("\n В командной строке задано более 1 ключа режима работы");
+       return;
+     }  
+     switch(*optarg) {
+       case 'e':
+         mode=MODE_BACK_EFS;
+         break;
+     
+       case 'n':
+         mode=MODE_BACK_NVRAM;
+         break;
+	 
+       default:
+	 printf("\n Неправильно задано значение ключа -b\n");
+	 return;
+      }
+      break;
+      
    case 'p':
     strcpy(devname,optarg);
     break;
@@ -75,6 +105,11 @@ while ((opt = getopt(argc, argv, "po:a")) != -1) {
    case ':':  
      return;
   }
+}  
+
+if (mode == -1) {
+  printf("\n Не указан ключ выполняемой операции\n");
+  return;
 }  
 
 #ifdef WIN32
@@ -93,6 +128,8 @@ if (!open_port(devname))  {
 #endif
    return; 
 }
+
+
 
 // настройка на альтернативную EFS
 if (altflag) {
