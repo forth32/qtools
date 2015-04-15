@@ -56,6 +56,7 @@ void disable_bam();
 void close_port();
 unsigned int is_arm_chipset();
 void define_chipset(char* arg);
+int test_zero(unsigned char* buf, int len);
 
 
 

@@ -16,75 +16,88 @@
 
 unsigned int altflag=0;   // флаг альтернативной EFS
 unsigned int fixname=0;   // индикатор явного уазания имени файла
+unsigned int zeroflag=0;  // флаг пропуска пустых записей nvram
 char filename[50];        // имя выходного файла
 
 
 
+//*******************************************
+//*   Получение раздела nvram из модема
+//*
+//*  0 -не прочитался
+//*  1 -прочитался
+//*******************************************
+int get_nvitem(int item, char* buf) {
 
-//****************************************************
-//* Чтение дампа EFS (efs.mbn)
-//****************************************************
+unsigned char iobuf[140];
+unsigned char cmd_rd[16]=  {0x26, 0,0};
+unsigned int iolen;
 
-void back_efs() {
+*((unsigned short*)&cmd_rd[1])=item;
+iolen=send_cmd_base(cmd_rd,3,iobuf,0);
+if (iolen != 136) return 0;
+memcpy(buf,iobuf+3,130);
+return 1;
+}
 
-unsigned char iobuf[14048];
-unsigned char cmd_efsh1[16]=  {0x4B, 0x13,0x19, 0};
-unsigned char cmd_efsopen[16]=  {0x4B, 0x13,0x16, 0};
-unsigned char cmd_efsdata[16]={0x4B, 0x13,0x17,0,0,0,0,0,0,0,0,0};
-unsigned char cmd_efsclose[16]=  {0x4B, 0x13,0x18, 0};
+//*******************************************
+//*  Дамп раздела nvram
+//*******************************************
+void nvdump(int item) {
+  
+char buf[130];
+int len;
 
-int iolen,i;
+if (!get_nvitem(item,buf)) {
+  printf("\n! Раздел %04x не читается\n",item);
+  return;
+}
+if (zeroflag && (test_zero(buf,128) == 0)) {
+  printf("\n! Раздел %04x пуст\n",item);
+  return;
+}  
+printf("\n *** NVRAM: Раздел %04x  атрибут %04x\n--------------------------------------------------\n",
+       item,*((unsigned short*)&buf[128]));
+
+// отрезаем хвостовые нули 
+if (zeroflag) {
+ for(len=127;len>=0;len--)
+   if (buf[len]!=0) break;
+ len++;  
+}
+else len=128;
+
+dump(buf,len,0);
+}
+
+//*******************************************
+//*  Чтение всех заисей NVRAM
+//*******************************************
+void read_all_nvram_items() {
+  
+char buf[130];
+unsigned int nv;
+char filename[50];
 FILE* out;
 
-// настройка на альтернативную EFS
-if (altflag) {
- cmd_efsh1[1]=0x3e;
- cmd_efsopen[1]=0x3e;
- cmd_efsdata[1]=0x3e;
- cmd_efsclose[1]=0x3e;
- if (!fixname) strcpy(filename,"efs_alt.mbn");
-}
-// настройка на стандартную EFS
-else strcpy(filename,"efs.mbn");
-   
-out=fopen(filename,"w");
-  
-iolen=send_cmd_base(cmd_efsh1, 4, iobuf, 0);
-if ((iolen != 11) || test_zero(iobuf+3,5)) {
-  printf("\n Неправильный ответ на команду 19\n");
-  dump(iobuf,iolen,0);
-  return;
-}
-
-iolen=send_cmd_base(cmd_efsopen, 4, iobuf, 0);
-if ((iolen != 11) || test_zero(iobuf+3,5)) {
-  printf("\n Неправильный ответ на команду открытия (16)\n");
-  dump(iobuf,iolen,0);
-  return;
-}
-printf("\n");
-
-// главный цикл получения efs.mbn
-while(1) {
-  iolen=send_cmd_base(cmd_efsdata, 12, iobuf, 0);
-  if (iolen != 532) {
-    printf("\n Неправильный ответ на команду 4b 13 17\n");
-    dump(iobuf,iolen,0);
+// Создаем каталог nv для сбора файлов
+if (mkdir("nv",0777) != 0) 
+  if (errno != EEXIST) {
+    printf("\n Невозможно создать каталог nv/");
     return;
-  }
-  printf("\r Читаем раздел: %i   блок: %08x",*((unsigned int*)&iobuf[8]),*((unsigned int*)&iobuf[12]));
-  fflush(stdout);
-  if (iobuf[8] == 0) break;
-  fwrite(iobuf+16,512,1,out);
-  memcpy(cmd_efsdata+4,iobuf+8,8);
-}
-// закрываем EFS
-iolen=send_cmd_base(cmd_efsclose,4,iobuf,0);
-if ((iolen != 11) || test_zero(iobuf+3,5)) {
-  printf("\n Неправильный ответ на команду закрытия (18)\n");
-  dump(iobuf,iolen,0);
-}
-}
+  }  
+
+printf("\n");  
+for(nv=0;nv<0x10000;nv++) {
+  printf("\r NV %04x",nv); fflush(stdout);
+  if (!get_nvitem(nv,buf)) continue;
+  if (zeroflag && (test_zero(buf,128) == 0)) continue;
+  sprintf(filename,"nv/%04x-%04x",nv,*((unsigned short*)&buf[128]));
+  out=fopen(filename,"w");
+  fwrite(buf,1,128,out);
+  fclose(out);
+}  
+}  
   
 //@@@@@@@@@@@@ Головная программа
 void main(int argc, char* argv[]) {
@@ -92,7 +105,9 @@ void main(int argc, char* argv[]) {
 unsigned int opt,i;
   
 enum{
-  MODE_BACK_EFS,
+  MODE_BACK_NVRAM,
+  MODE_READ_NVRAM,
+  MODE_SHOW_NVRAM
 }; 
 
 int mode=-1;
@@ -109,8 +124,10 @@ while ((opt = getopt(argc, argv, "hpo:ab:r:")) != -1) {
     printf("\n  Утилита предназначена для работы с разделом efs \n\
 %s [ключи] [параметр или имя файла]\n\
 Допустимы следующие ключи:\n\n\
-`Ключи, определяюще выполняемую операцию:\n\
--be       - дамп efs\n\
+Ключи, определяюще выполняемую операцию:\n\
+-bn       - дамп nvram\n\
+-rn[z]    - чтение всех записей nvram в отдельные файлы (z-пропускать пустые записи)\n\
+-rd[z]    - дамп указанного раздела nvram (z-отрезать хвостовые нули)\n\
 \n\
 Ключи-модификаторы:\n\
 -p <tty>  - указывает имя устройства диагностического порта модема\n\
@@ -130,8 +147,9 @@ while ((opt = getopt(argc, argv, "hpo:ab:r:")) != -1) {
        return;
      }  
      switch(*optarg) {
-       case 'e':
-         mode=MODE_BACK_EFS;
+     
+       case 'n':
+         mode=MODE_BACK_NVRAM;
          break;
 	 
        default:
@@ -147,6 +165,15 @@ while ((opt = getopt(argc, argv, "hpo:ab:r:")) != -1) {
        return;
      }  
      switch(*optarg) {
+       case 'n':
+         mode=MODE_READ_NVRAM;
+	 if (optarg[1] == 'z') zeroflag=1;
+         break;
+
+       case 'd':
+         mode=MODE_SHOW_NVRAM;
+	 if (optarg[1] == 'z') zeroflag=1;
+         break;
 	 
 	 
        default:
@@ -195,8 +222,18 @@ if (!open_port(devname))  {
 //////////////////
 
 switch (mode) {
-  case MODE_BACK_EFS:
-    back_efs();
+    
+  case MODE_READ_NVRAM:
+    read_all_nvram_items();
+    break;
+
+  case MODE_SHOW_NVRAM:
+    if (optind>=argc) {
+      printf("\n Не указан номер раздела nvram");
+      break;
+    }
+    sscanf(argv[optind],"%x",&i);
+    nvdump(i);
     break;
     
   default:
