@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <errno.h>
 #ifndef WIN32
@@ -17,9 +18,20 @@
 unsigned int altflag=0;   // флаг альтернативной EFS
 unsigned int fixname=0;   // индикатор явного уазания имени файла
 unsigned int zeroflag=0;  // флаг пропуска пустых записей nvram
+         int sysitem=-1;     // номер раздела nvram (-1 - все разделы)
 char filename[50];        // имя выходного файла
 
 
+//*******************************************
+//* Проверка границ номера раздела
+//*******************************************
+void verify_item(int item) {
+
+if (item>0xffff) {
+  printf("\n Неправильно указан номер раздела - %x\n",item);
+  exit(1);
+}
+}
 
 //*******************************************
 //*   Получение раздела nvram из модема
@@ -45,7 +57,7 @@ return 1;
 //*******************************************
 void nvdump(int item) {
   
-char buf[130];
+char buf[134];
 int len;
 
 if (!get_nvitem(item,buf)) {
@@ -79,6 +91,8 @@ char buf[130];
 unsigned int nv;
 char filename[50];
 FILE* out;
+unsigned int start=0;
+unsigned int end=0x10000;
 
 // Создаем каталог nv для сбора файлов
 if (mkdir("nv",0777) != 0) 
@@ -87,18 +101,64 @@ if (mkdir("nv",0777) != 0)
     return;
   }  
 
+// установка границ читаемых записей
+if (sysitem != -1) {
+  start=sysitem;
+  end=start+1;
+}  
+  
 printf("\n");  
-for(nv=0;nv<0x10000;nv++) {
-  printf("\r NV %04x",nv); fflush(stdout);
+for(nv=start;nv<end;nv++) {
+  printf("\r NV %04x:  ok",nv); fflush(stdout);
   if (!get_nvitem(nv,buf)) continue;
   if (zeroflag && (test_zero(buf,128) == 0)) continue;
-  sprintf(filename,"nv/%04x-%04x",nv,*((unsigned short*)&buf[128]));
+  sprintf(filename,"nv/%04x-%04x.bin",nv,*((unsigned short*)&buf[128]));
   out=fopen(filename,"w");
-  fwrite(buf,1,128,out);
+  fwrite(buf,1,130,out);
   fclose(out);
 }  
 }  
+
+//*******************************************
+//* Запись раздела nvram из буфера
+//*******************************************
+void write_item(int item, char*buf) {
   
+unsigned char cmdwrite[200]={0x27,0,0};
+unsigned char iobuf[200];
+int iolen;
+
+*((unsigned short*)&cmdwrite[1])=item;
+memcpy(cmdwrite+3,buf,130);
+iolen=send_cmd_base(cmdwrite,133,iobuf,0);
+if ((iolen != 136) || (iobuf[0] != 0x27)) {
+  printf("\n Ошибка записи раздела\n");
+  dump(iobuf,iolen,0);
+}  
+}
+
+//*******************************************
+//*  Запись раздела nvram из файла
+//*******************************************
+void write_nvram() {
+  
+FILE* in;
+char buf[135];
+
+in=fopen(filename,"r");
+if (in == 0) {
+  printf("\n Ошибка открытия файла %s\n",filename);
+  exit(1);
+}
+if (fread(buf,1,130,in) != 130) {
+  printf("\n Файл %s слишком мал\n",filename);
+  exit(1);
+}
+fclose (in);
+write_item(sysitem,buf);
+}
+
+
 //@@@@@@@@@@@@ Головная программа
 void main(int argc, char* argv[]) {
 
@@ -107,7 +167,8 @@ unsigned int opt,i;
 enum{
   MODE_BACK_NVRAM,
   MODE_READ_NVRAM,
-  MODE_SHOW_NVRAM
+  MODE_SHOW_NVRAM,
+  MODE_WRITE_NVRAM,
 }; 
 
 int mode=-1;
@@ -118,16 +179,17 @@ char devname[50]="/dev/ttyUSB0";
 char devname[50]="";
 #endif
 
-while ((opt = getopt(argc, argv, "hpo:ab:r:")) != -1) {
+while ((opt = getopt(argc, argv, "hpo:ab:r:w:")) != -1) {
   switch (opt) {
    case 'h': 
     printf("\n  Утилита предназначена для работы с разделом efs \n\
 %s [ключи] [параметр или имя файла]\n\
 Допустимы следующие ключи:\n\n\
 Ключи, определяюще выполняемую операцию:\n\
--bn       - дамп nvram\n\
--rn[z]    - чтение всех записей nvram в отдельные файлы (z-пропускать пустые записи)\n\
--rd[z]    - дамп указанного раздела nvram (z-отрезать хвостовые нули)\n\
+-bn           - дамп nvram\n\
+-ri[z] [item] - чтение всех или только указанной записей nvram в отдельные файлы (z-пропускать пустые записи)\n\
+-rd[z]        - дамп указанного раздела nvram (z-отрезать хвостовые нули)\n\
+-wi item file - запись раздела item из файла file\n\
 \n\
 Ключи-модификаторы:\n\
 -p <tty>  - указывает имя устройства диагностического порта модема\n\
@@ -140,6 +202,7 @@ while ((opt = getopt(argc, argv, "hpo:ab:r:")) != -1) {
      strcpy(filename,optarg);
      fixname=1;
      break;
+//----------------------------------------------	 
    //  === группа ключей backup ==
    case 'b':
      if (mode != -1) {
@@ -158,6 +221,7 @@ while ((opt = getopt(argc, argv, "hpo:ab:r:")) != -1) {
       }
       break;
 
+//----------------------------------------------	 
    //  === группа ключей read ==
    case 'r':
      if (mode != -1) {
@@ -165,7 +229,8 @@ while ((opt = getopt(argc, argv, "hpo:ab:r:")) != -1) {
        return;
      }  
      switch(*optarg) {
-       case 'n':
+       case 'i':
+	 // rn - чтение в файл одного или всех разделов
          mode=MODE_READ_NVRAM;
 	 if (optarg[1] == 'z') zeroflag=1;
          break;
@@ -174,13 +239,31 @@ while ((opt = getopt(argc, argv, "hpo:ab:r:")) != -1) {
          mode=MODE_SHOW_NVRAM;
 	 if (optarg[1] == 'z') zeroflag=1;
          break;
-	 
-	 
+
        default:
 	 printf("\n Неправильно задано значение ключа -r\n");
 	 return;
       }
       break;
+//----------------------------------------------	 
+    //  === группа ключей write ==
+    case 'w':
+     if (mode != -1) {
+       printf("\n В командной строке задано более 1 ключа режима работы");
+       return;
+     }  
+     switch(*optarg) {
+       case 'i':
+         mode=MODE_WRITE_NVRAM;
+	 break;
+
+       default:
+	 printf("\n Неправильно задано значение ключа -w\n");
+	 return;
+      }
+      break;
+	 
+//----------------------------------------------	 
       
    case 'p':
     strcpy(devname,optarg);
@@ -224,6 +307,11 @@ if (!open_port(devname))  {
 switch (mode) {
     
   case MODE_READ_NVRAM:
+    if (optind<argc) {
+      // указан номер раздела - выделяем его
+      sscanf(argv[optind],"%x",&sysitem);
+      verify_item(sysitem);
+    }  
     read_all_nvram_items();
     break;
 
@@ -232,8 +320,20 @@ switch (mode) {
       printf("\n Не указан номер раздела nvram");
       break;
     }
-    sscanf(argv[optind],"%x",&i);
-    nvdump(i);
+    sscanf(argv[optind],"%x",&sysitem);
+    verify_item(sysitem);
+    nvdump(sysitem);
+    break;
+
+  case MODE_WRITE_NVRAM:
+    if (optind != (argc-2)) {
+       printf("\n Неверное число параметров в командной строке\n");
+       exit(1);
+    }   
+    sscanf(argv[optind],"%x",&sysitem);
+    verify_item(sysitem);
+    strcpy(filename,argv[optind+1]);
+    write_nvram();
     break;
     
   default:
