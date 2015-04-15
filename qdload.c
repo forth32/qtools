@@ -260,19 +260,19 @@ usleep(delay);   // ждем инициализации загрузчика
 #else
 Sleep(delay/1000);   // ждем инициализации загрузчика
 #endif
-
-if (!open_port(devname))  {
-#ifndef WIN32
-   printf("\n - Последовательный порт %s не открывается\n", devname); 
-#else
-   printf("\n - Последовательный порт COM%s не открывается\n", devname); 
-#endif
-   return; 
-}
 printf("ok\n");
-
-if (helloflag) hello(1);
-if (!bad_loader && tflag) extract_ptable();  // вынимаем таблицы разделов
+if (helloflag) {
+  if (!open_port(devname))  {
+#ifndef WIN32
+     printf("\n - Последовательный порт %s не открывается\n", devname); 
+#else
+     printf("\n - Последовательный порт COM%s не открывается\n", devname); 
+#endif
+     return; 
+  }
+  hello(1);
+  if (!bad_loader && tflag) extract_ptable();  // вынимаем таблицы разделов
+}  
 printf("\n");
 
 }

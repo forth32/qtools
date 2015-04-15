@@ -65,11 +65,13 @@ unsigned char cmdbuf[8192]={0x19,0};
 int iolen;
   
 memcpy(cmdbuf+2,ptraw,len);
-printf("\n");
-dump(cmdbuf,len+2,0);
+//printf("\n");
+//dump(cmdbuf,len+2,0);
 
 iolen=send_cmd(cmdbuf,len+2,iobuf);
 
+printf("%02x ",iobuf[2]);
+dump(iobuf,iolen,0);
 if (iobuf[1] == 0x1a) return 1;
 show_errpacket("send_ptable()",iobuf,iolen);
 printf("\n iolen = %i",iolen);
@@ -205,7 +207,7 @@ if (!open_port(devname))  {
 #endif
    return; 
 }
-hello(0);
+//hello(0);
 // сохраняем конфигурацию контроллера
 cfg0=mempeek(nand_cfg0);
 cfg1=mempeek(nand_cfg1);
@@ -259,6 +261,7 @@ if (!secure_mode()) {
   restore_reg();
   return;
 }
+printf("ok");
 qclose(0);  //####################################################
 #ifndef WIN32
   usleep(50000);
@@ -271,7 +274,8 @@ if (!send_ptable(ptabraw,16+28*npart)) {
   printf("\n Ошибка отсылки таблицы разделов\n");
   restore_reg();
   return;
-}  
+}
+printf("ok");
 // главный цикл записи - по разделам:
 port_timeout(1000);
 for(i=0;i<npart;i++) {
