@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 #ifndef WIN32
 #include <unistd.h>
 #include <getopt.h>
@@ -58,24 +59,35 @@ return 0; // была ошибка
 //* Отсылка загрузчику таблицы разделов
 //*******************************************
 
-int send_ptable(char* ptraw, unsigned int len) {
+void send_ptable(char* ptraw, unsigned int len, unsigned int mode) {
   
 unsigned char iobuf[600];
 unsigned char cmdbuf[8192]={0x19,0};
 int iolen;
   
 memcpy(cmdbuf+2,ptraw,len);
+// режим прошивки: 0 - обноление, 1 - полная перепрошивка
+cmdbuf[1]=mode;
 //printf("\n");
 //dump(cmdbuf,len+2,0);
 
+printf("\n Отсылаем таблицу разделов...");
 iolen=send_cmd(cmdbuf,len+2,iobuf);
 
-printf("%02x ",iobuf[2]);
-dump(iobuf,iolen,0);
-if (iobuf[1] == 0x1a) return 1;
-show_errpacket("send_ptable()",iobuf,iolen);
-printf("\n iolen = %i",iolen);
-return 0; // была ошибка
+if (iobuf[1] != 0x1a) {
+  printf("\n ошибка!");
+  show_errpacket("send_ptable()",iobuf,iolen);
+  if (iolen == 0) {
+    printf("\n Требуется загрузчик в режиме тихого запуска\n");
+  }
+  exit(1);
+}  
+if (iobuf[2] == 0) {
+  printf("ok");
+  return;
+}  
+printf("\n Таблицы разделов не совпадают - требуется полная перепрошивка модема (ключ -f)\n");
+exit(1);
 }
 
 //*******************************************
@@ -107,8 +119,11 @@ FILE* part;
 int ptflag=0;
 int listmode=0;
 int wcount=0; 
-char wname[50][120]; // массив имен файлов для записи разделов
-char* sptr;
+
+char filename[50][120]; // массив имен файлов для записи разделов
+char partname[50][120]; // массив имен разделов
+
+char* fptr, *nptr;
 #ifndef WIN32
 char devname[50]="/dev/ttyUSB0";
 #else
@@ -118,13 +133,16 @@ unsigned int i,opt,iolen,j;
 unsigned int renameflag=0;
 unsigned int adr,len;
 unsigned int fsize;
+unsigned int forceflag=0;
+
+// очищаем массив имен файлов и разделов
+for(i=0;i<50;i++) {
+  filename[i][0]=0;
+  partname[i][0]=0;
+}  
 
 
-// очищаем массив имен файлов
-for(i=0;i<50;i++)  wname[i][0]=0;
-
-
-while ((opt = getopt(argc, argv, "hp:s:w:mrk:")) != -1) {
+while ((opt = getopt(argc, argv, "hp:s:w:mrk:f")) != -1) {
   switch (opt) {
    case 'h': 
     printf("\n  Утилита предназначена для записи разделов (по таблице) на флеш модема\n\
@@ -132,9 +150,10 @@ while ((opt = getopt(argc, argv, "hp:s:w:mrk:")) != -1) {
 -p <tty>  - указывает имя устройства последовательного порта для общения с загрузчиком\n\
 -k #      - код чипсета (-kl - получить список кодов)\n\
 -s <file> - взять карту разделов из указанного файла\n\
--s - - взять карту разделов из файла ptable/current-r.bin\n\
+-s -      - взять карту разделов из файла ptable/current-r.bin\n\
+-f        - полная перепрошивка модема с изменением карты разделов\n\
 -r        - переименовать разделы PAD в PADnn (дбавляется номер раздела\n\
--w #:file - записать раздел с номером # из файла file\n\
+-w #:file[:part] - записать раздел с номером # из файла file, можно указать имя раздела part\n\
 -m        - вывести на экран полную карту разделов\n");
     return;
     
@@ -153,19 +172,29 @@ while ((opt = getopt(argc, argv, "hp:s:w:mrk:")) != -1) {
    case 'w':
      // определение имени файла для раздела
      strcpy(iobuf,optarg);
-     sptr=strchr(iobuf,':');
-     if (sptr == 0) {
-       printf("\nОшибка в параметрах ключа -w\n");
+     
+     // выделяем имя файла
+     fptr=strchr(iobuf,':');
+     if (fptr == 0) {
+       printf("\nОшибка в параметрах ключа -w - не указано имя файла: %s\n",optarg);
        return;
      }
-     *sptr=0;
+     *fptr=0; // ограничитель номера раздела
      sscanf(iobuf,"%i",&i);  // номер раздела
      if (i>50) {
        printf("\nСлишком большой номер раздела - %i\n",i);
        return;
      }
-     strcpy(wname[i],sptr+1); // копируем имя файла
-//     printf("\n-- write # %i : %s",i,wname[i]);
+     fptr++;
+     // выделяем имя раздела
+     nptr=strchr(fptr,':');
+     if (nptr != 0) {
+       *nptr=0;
+       strcpy(partname[i],nptr+1);
+     }  
+     // копируем имя файла
+     strcpy(filename[i],fptr); 
+//     printf("\n-- write # %i : %s - %s",i,filename[i],partname[i]);
      break;
      
    case 's':
@@ -184,11 +213,20 @@ while ((opt = getopt(argc, argv, "hp:s:w:mrk:")) != -1) {
    case 'm':
      listmode=1;
      break;
+
+   case 'f':
+     forceflag=1;
+     break;
      
    case '?':
    case ':':  
      return;
   }
+}  
+
+if (!ptflag) {
+  printf("\n Не указана таблица разделов!\n");
+  return;
 }  
 
 #ifdef WIN32
@@ -215,25 +253,11 @@ cfg1=mempeek(nand_cfg1);
 
 // Загрузка и разбор таблицы разделов
 
-//if (!ptflag) load_ptable(ptabraw);  // Загрузка таблицы из модема
-if (!ptflag) {
- memset(ptabraw,0,1024); // обнуляем таблицу
- flash_read(2, 2, 0);  // блок 2 страница 1 - здесь лежит таблица разделов  
- memread(ptabraw,sector_buf, 512);
- flash_read(2, 2, 1);  // продолжение таблицы разделов
- memread(ptabraw+512,sector_buf, 512);
-}
-/*
-if (strncmp(ptabraw,"\x9A\x1b\x7d\xaa\xbc\x48\x7d\x1f",8) != 0) {
-   printf("\nТаблица разделов повреждена\n");
-   return;
-}
-*/
 npart=*((unsigned int*)&ptabraw[12]);
 for(i=0;i<npart;i++) {
     strncpy(ptable[i].name,ptabraw+16+28*i,16);       // имя
-    // заменяем MIBIB на SBL1
-    if (strcmp(ptable[i].name,"0:MIBIB") == 0) strcpy(ptable[i].name,"0:SBL1"); 
+    // заменяем имя раздела, если заказывали
+    if (partname[i][0] != 0) strcpy(ptable[i].name,partname[i]);
     // переименование разделов PAD
     if (renameflag && (strcmp(ptable[i].name,"0:PAD") == 0)) {
       sprintf(iobuf,"%02x",i);
@@ -248,9 +272,9 @@ for(i=0;i<npart;i++) {
 
 // режим вывода таблицы разделов
 if (listmode) {
-  printf("\n #  адрес    размер   атрибуты ------ Имя------\n");     
+  printf("\n #  размер1  размер2  атрибуты ------ Имя------  ------- Файл -----\n");     
   for(i=0;i<npart;i++) {
-    printf("\r%02i %08x  %08x  %08x  %s\n",i,ptable[i].start,ptable[i].len,ptable[i].attr,ptable[i].name);
+    printf("\r%02i %08x  %08x  %08x  %-15.15s   %s\n",i,ptable[i].start,ptable[i].len,ptable[i].attr,ptable[i].name,filename[i]);
   }
   restore_reg();
   return;
@@ -268,21 +292,15 @@ qclose(0);  //####################################################
 #else
   Sleep(50);
 #endif
-printf("\n Отсылаем таблицу разделов...");
 // отсылаем таблицу разделов
-if (!send_ptable(ptabraw,16+28*npart)) { 
-  printf("\n Ошибка отсылки таблицы разделов\n");
-  restore_reg();
-  return;
-}
-printf("ok");
+send_ptable(ptabraw,16+28*npart,forceflag);
 // главный цикл записи - по разделам:
 port_timeout(1000);
 for(i=0;i<npart;i++) {
-  if (wname[i][0] == 0) continue; // этот раздел записывать не надо
-  part=fopen(wname[i],"rb");
+  if (filename[i][0] == 0) continue; // этот раздел записывать не надо
+  part=fopen(filename[i],"rb");
   if (part == 0) {
-    printf("\n Раздел %i: ошибка открытия файла %s\n",i,wname[i]);
+    printf("\n Раздел %i: ошибка открытия файла %s\n",i,filename[i]);
     restore_reg();
     return;
   }
