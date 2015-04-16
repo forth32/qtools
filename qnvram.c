@@ -179,7 +179,7 @@ char devname[50]="/dev/ttyUSB0";
 char devname[50]="";
 #endif
 
-while ((opt = getopt(argc, argv, "hpo:ab:r:w:")) != -1) {
+while ((opt = getopt(argc, argv, "hp:o:ab:r:w:")) != -1) {
   switch (opt) {
    case 'h': 
     printf("\n  Утилита предназначена для работы с разделом efs \n\
