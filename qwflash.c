@@ -33,6 +33,7 @@ unsigned int cfg0,cfg1; // сохранение конфигурации кон�
 //*****************************************************
 void restore_reg() {
   
+return;  
 mempoke(nand_cfg0,cfg0);  
 mempoke(nand_cfg1,cfg1);  
 }
@@ -276,13 +277,13 @@ if (listmode) {
   for(i=0;i<npart;i++) {
     printf("\r%02i %08x  %08x  %08x  %-15.15s   %s\n",i,ptable[i].start,ptable[i].len,ptable[i].attr,ptable[i].name,filename[i]);
   }
-  restore_reg();
+//  restore_reg();
   return;
 }  
 printf("\n secure mode...");
 if (!secure_mode()) {
   printf("\n Ошибка входа в режим Secure mode\n");
-  restore_reg();
+//  restore_reg();
   return;
 }
 printf("ok");
@@ -301,7 +302,7 @@ for(i=0;i<npart;i++) {
   part=fopen(filename[i],"rb");
   if (part == 0) {
     printf("\n Раздел %i: ошибка открытия файла %s\n",i,filename[i]);
-    restore_reg();
+//    restore_reg();
     return;
   }
   
@@ -314,7 +315,7 @@ for(i=0;i<npart;i++) {
   // отсылаем заголовок
   if (!send_head(ptable[i].name)) {
     printf("\n! Модем отверг заголовок раздела\n");
-    restore_reg();
+ //   restore_reg();
     return;
   }  
   // цикл записи кусков раздела по 1К за команду
@@ -334,7 +335,7 @@ for(i=0;i<npart;i++) {
     if ((iolen == 0) || (iobuf[1] != 8)) {
       show_errpacket("Пакет данных ",iobuf,iolen);
       printf("\n Ошибка записи раздела %i (%s): адрес:%06x\n",i,ptable[i].name,adr);
-      restore_reg();
+ //     restore_reg();
       return;
     }
     if (feof(part)) break; // конец раздела и конец файла
@@ -342,7 +343,7 @@ for(i=0;i<npart;i++) {
   // Раздел передан полностью
   if (!qclose(1)) {
     printf("\n Ошибка закрытия потока даных\n");
-    restore_reg();
+//    restore_reg();
     return;
   }  
   printf(" ... запись завершена");
@@ -353,7 +354,7 @@ for(i=0;i<npart;i++) {
 #endif
 }
 printf("\n");
-restore_reg();
+//restore_reg();
 }
 
 
