@@ -15,7 +15,6 @@
 
 //%%%%%%%%%  Общие переменные %%%%%%%%%%%%%%%%55
 
-unsigned int altflag=0;   // флаг альтернативной EFS
 unsigned int fixname=0;   // индикатор явного уазания имени файла
 unsigned int zeroflag=0;  // флаг пропуска пустых записей nvram
          int sysitem=-1;     // номер раздела nvram (-1 - все разделы)
@@ -179,7 +178,7 @@ char devname[50]="/dev/ttyUSB0";
 char devname[50]="";
 #endif
 
-while ((opt = getopt(argc, argv, "hp:o:ab:r:w:")) != -1) {
+while ((opt = getopt(argc, argv, "hp:o:b:r:w:")) != -1) {
   switch (opt) {
    case 'h': 
     printf("\n  Утилита предназначена для работы с разделом efs \n\
@@ -193,7 +192,6 @@ while ((opt = getopt(argc, argv, "hp:o:ab:r:w:")) != -1) {
 \n\
 Ключи-модификаторы:\n\
 -p <tty>  - указывает имя устройства диагностического порта модема\n\
--a        - использовать альтернативную EFS\n\
 -o <file> - имя файла для сохранения efs\n\
 \n",argv[0]);
     return;
@@ -269,10 +267,6 @@ while ((opt = getopt(argc, argv, "hp:o:ab:r:w:")) != -1) {
     strcpy(devname,optarg);
     break;
 
-   case 'a':
-     altflag=1;
-     break;
-     
    case '?':
    case ':':  
      return;
