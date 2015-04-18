@@ -229,7 +229,11 @@ unsigned int send_unframed_buf(char* outcmdbuf, unsigned int outlen, int prefixf
 // сбрасываем недочитанный буфер ввода
 ttyflush();
 
-if (prefixflag) write(siofd,"\x7e",1);  // отсылаем префикс если надо
+if (prefixflag) { // вставляем префикс, если надо
+	memcpy(outcmdbuf+1,outcmdbuf,outlen);
+	outcmdbuf[0]=0x7e; 
+	outlen+=1;
+} 
 
 //if (outcmdbuf[0] == 7) dump(outcmdbuf,iolen,0);
 
