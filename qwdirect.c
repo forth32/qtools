@@ -78,6 +78,7 @@ unsigned int i,opt,iolen,j;
 unsigned int block,page,sector,len;
 unsigned int startblock=0;
 unsigned int chipset9x25=0;
+unsigned int bsize;
 int wmode=0; // режим записи
 
 #define w_standart 0
@@ -130,7 +131,7 @@ while ((opt = getopt(argc, argv, "hp:k:b:f:vc:z:l:")) != -1) {
      break;
      
    case 'l':
-     sscanf(optarg,"%i",&flen);
+     sscanf(optarg,"%x",&flen);
      break;
      
    case 'v':
@@ -251,8 +252,9 @@ else {
 fseek(in,0,SEEK_END);
 i=ftell(in);
 rewind(in);
-fsize=i/((pagesize+oobsize*spp)*ppb); // размер в блоках
-if (i%((pagesize+oobsize*spp)*ppb) != 0) fsize++; // округляем вверх до границы блока
+bsize=(pagesize+oobsize*spp)*ppb;  // размер в байтах полного блока флешки, с учетом ООВ
+fsize=i/bsize; // размер в блоках
+if ((i%bsize) != 0) fsize++; // округляем вверх до границы блока
 
 if (flen == 0) flen=fsize;
 else if (flen>fsize) {
