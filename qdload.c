@@ -112,13 +112,14 @@ unsigned int delay=2;
 
 
 
-while ((opt = getopt(argc, argv, "p:k:a:histd:")) != -1) {
+while ((opt = getopt(argc, argv, "p:k:a:histd:q")) != -1) {
   switch (opt) {
    case 'h': 
      printf("\n Утилита предназначена для загрузки программ-прошивальщика (E)NPRG в память модема\n\n\
 Допустимы следующие ключи:\n\n\
 -p <tty>  - указывает имя устройства последовательного порта, переведенного в download mode\n\
 -i        - запускает процедуру HELLO для инициализации загрузчика\n\
+-q        - запускает процедуру HELLO в упрощенном режиме без настройки регистров\n\
 -t        - вынимает из модема таблицы разделов в файлы ptable/current-r(w).bin\n\
 -s        - использовать протокол SAHARA\n\
 -k #      - код чипсета (-kl - получить список кодов)\n\
@@ -137,6 +138,10 @@ while ((opt = getopt(argc, argv, "p:k:a:histd:")) != -1) {
 
    case 'i':
     helloflag=1;
+    break;
+    
+   case 'q':
+    helloflag=2;
     break;
     
    case 's':
@@ -196,9 +201,9 @@ if (sahara_flag) {
 	#endif
 
 	if (helloflag) {
-		hello(1);
+		hello(helloflag);
 		printf("\n");
-		if (tflag) extract_ptable();  // вынимаем таблицы разделов
+		if (tflag && (helloflag != 2)) extract_ptable();  // вынимаем таблицы разделов
 	}
   }
   return;
@@ -270,8 +275,9 @@ if (helloflag) {
 #endif
      return; 
   }
-  hello(1);
-  if (!bad_loader && tflag) extract_ptable();  // вынимаем таблицы разделов
+  hello(helloflag);
+  if (helloflag != 2)
+     if (!bad_loader && tflag) extract_ptable();  // вынимаем таблицы разделов
 }  
 printf("\n");
 
