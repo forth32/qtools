@@ -163,8 +163,8 @@ while ((opt = getopt(argc, argv, "hp:s:w:mk:f")) != -1) {
        printf("\nОшибка в параметрах ключа -w - не указано имя раздела: %s\n",optarg);
        return;
      }
-     *fptr=0; // ограничитель номера раздела
-     strcpy(ptable[npart].filename,optarg); // копируем имя файла
+     *fptr=0; // ограничитель имени файла
+     strcpy(ptable[npart].filename,iobuf); // копируем имя файла
      fptr++;
      // копируем имя раздела
      strcpy(ptable[npart].partname,"0:");
@@ -233,6 +233,7 @@ printf("\n #  --Раздел--  ------- Файл -----");
 for(i=0;i<npart;i++) {
     printf("\n%02i  %-14.14s  %s",i,ptable[i].partname,ptable[i].filename);
 }
+printf("\n");
 if (listmode)  return; // ключ -m - на этом все.
   
 printf("\n secure mode...");
