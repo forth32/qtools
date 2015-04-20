@@ -74,7 +74,7 @@ printf("\n Отсылаем таблицу разделов...");
 iolen=send_cmd(cmdbuf,len+2,iobuf);
 
 if (iobuf[1] != 0x1a) {
-  printf("\n ошибка!");
+  printf(" ошибка!");
   show_errpacket("send_ptable()",iobuf,iolen);
   if (iolen == 0) {
     printf("\n Требуется загрузчик в режиме тихого запуска\n");

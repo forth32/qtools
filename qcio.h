@@ -31,6 +31,7 @@ extern unsigned int chip_type;
 
 void dump(unsigned char buffer[],unsigned int len,unsigned int base);
 int send_cmd(unsigned char* incmdbuf, int blen, unsigned char* iobuf);
+int send_cmd_np(unsigned char* incmdbuf, int blen, unsigned char* iobuf);
 int send_cmd_base(unsigned char* incmdbuf, int blen, unsigned char* iobuf, int prefixflag);
 int open_port(char* devname);
 int memread(char* membuf,int adr, int len);

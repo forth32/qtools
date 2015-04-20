@@ -226,16 +226,17 @@ PurgeComm(hSerial, PURGE_RXCLEAR);
 //*************************************************
 unsigned int send_unframed_buf(char* outcmdbuf, unsigned int outlen, int prefixflag) {
 
+unsigned char tmpbuf[4096];  
+  
 // сбрасываем недочитанный буфер ввода
 ttyflush();
 
 if (prefixflag) { // вставляем префикс, если надо
-	memcpy(outcmdbuf+1,outcmdbuf,outlen);
+	memcpy(tmpbuf,outcmdbuf,outlen);
+	memcpy(outcmdbuf+1,tmpbuf,outlen);
 	outcmdbuf[0]=0x7e; 
 	outlen+=1;
 } 
-
-//if (outcmdbuf[0] == 7) dump(outcmdbuf,iolen,0);
 
 if (write(siofd,outcmdbuf,outlen) == 0) {   printf("\n Ошибка записи команды");return 0;  }
 #ifndef WIN32
@@ -391,6 +392,13 @@ return receive_reply(iobuf,datalen);
 //*    Отсылка команды с префиксом
 //***************************************************
 int send_cmd(unsigned char* incmdbuf, int blen, unsigned char* iobuf) {
+   return send_cmd_base(incmdbuf, blen, iobuf,1);
+}
+
+//***************************************************
+//*    Отсылка команды без префикса
+//***************************************************
+int send_cmd_np(unsigned char* incmdbuf, int blen, unsigned char* iobuf) {
    return send_cmd_base(incmdbuf, blen, iobuf,0);
 }
 
