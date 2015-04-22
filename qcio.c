@@ -556,31 +556,51 @@ int i,iolen;
 iolen=send_cmd(cmdbuf,7,iobuf);
 return *((unsigned int*)&iobuf[6]);
 }  
+
+
+//******************************************
+//*  Запись массива в память
+//******************************************
+void memwrite(unsigned int adr, unsigned char* buf, unsigned int len) {
+
+// параметры апплета записи - смащения:  
+const int adroffset=0x32;  // адрес записи
+const int lenoffset=0x36;  // размер данных 
+const int dataoffset=0x3a; // начало данных
   
+char cmdbuf[1028]={
+  0x11,0x00,0x38,0x00,0x80,0xe2,0x24,0x30,0x9f,0xe5,0x24,0x40,0x9f,0xe5,0x04,0x40,
+  0x83,0xe0,0x04,0x20,0x90,0xe4,0x04,0x20,0x83,0xe4,0x04,0x00,0x53,0xe1,0xfb,0xff,
+  0xff,0x3a,0x12,0x00,0xa0,0xe3,0x00,0x00,0xc1,0xe5,0x01,0x40,0xa0,0xe3,0x1e,0xff,
+  0x2f,0xe1,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
+};
+
+unsigned char iobuf[1024];
+unsigned int iolen;
+  
+if (len>1000) exit(1);  //   ограничитель на размер буфера
+memcpy(cmdbuf+dataoffset,buf,len);
+*((unsigned int*)&cmdbuf[adroffset])=adr;
+*((unsigned int*)&cmdbuf[lenoffset])=len;
+iolen=send_cmd(cmdbuf,len+dataoffset,iobuf);
+if ((iolen != 4) || (iobuf[1] != 0x12)) {
+  printf("\n Ошибка команды 11\n");
+  dump(iobuf,iolen,0);
+  printf("\n Исходная команда\n");
+  dump(cmdbuf,len+dataoffset,0);
+}
+}
+
+
 //******************************************
 //*  Запись слова в память
 //******************************************
 int mempoke(int adr, int data) {
 
-unsigned char iobuf[300];
-unsigned char cmdbuf[]={5,0,0,0,0,0,0,0,0,0};
-int iolen;
-
-if (bad_loader) return 0;  // непатченный загрузчик - запись невозможна
-*((unsigned int*)&cmdbuf[2])=adr;  //вписываем адрес
-*((unsigned int*)&cmdbuf[6])=data;  //вписываем данные
-
-iolen=send_cmd(cmdbuf,10,iobuf);
-
-if (iobuf[2] != 06) {
-  printf("\n Загрузчик не поддерживает команду 05:\n");
-  printf("\n cmdbuf: "); dump(cmdbuf,10,0);
-  printf("\n ответ : "); dump(iobuf,iolen,0);
-  printf("\n");
-  exit(1);
-}  
-  return 1;
+unsigned int data1=data;  
+memwrite(adr,(unsigned char*)&data1,4);
 }
+
 
 
 //*************************************88
