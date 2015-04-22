@@ -375,10 +375,9 @@ for(block=startblock;block<(startblock+flen);block++) {
 	  break;
       }
       // пересылаем сектор в секторный буфер
-      iolen=send_cmd(datacmd,dataoffset+sectorsize+oobsize,iobuf); 
-      if (iobuf[1] != 0x12) {
-	printf("\n Зазрузчик не поддерживает команду 11 (exec)\n");
-	return;
+	  if (!memwrite(sector_buf,datacmd+dataoffset,sectorsize+oobsize)) {
+		printf("\n Ошибка передачи секторного буфера\n");
+		return;
       }	
       // выполняем команду записи и ждем ее завершения
       mempoke(nand_exec,0x1);
