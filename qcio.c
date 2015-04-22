@@ -492,20 +492,14 @@ SetCommTimeouts(hSerial,&ct);
 //*******************************************************
 //* Проверка работы патча загрузчика
 //*
-//* Возвращает 0 если кманда 05 не поддерживается
+//* Возвращает 0, если команда 11 не поддерживается
 //* и устанавливает глобальную переменную bad_loader=1
 //*******************************************************
 int test_loader() {
 
-unsigned char cmdbuf[]={5,0,0,0,0,0,0,0,0,0};
 unsigned char iobuf[1024];
-unsigned int iolen;		
 
-*((unsigned int*)&cmdbuf[2])=sector_buf;  //вписываем адрес
-*((unsigned int*)&cmdbuf[6])=mempeek(sector_buf);  //вписываем данные - те же что там и лежат, чтобы ничего не портить
-iolen=send_cmd(cmdbuf,10,iobuf);
-
-if (iobuf[2] != 06) {
+if (!memwrite(sector_buf,iobuf,4)) {
   bad_loader=1;
   return 0;
 }
@@ -561,7 +555,7 @@ return *((unsigned int*)&iobuf[6]);
 //******************************************
 //*  Запись массива в память
 //******************************************
-void memwrite(unsigned int adr, unsigned char* buf, unsigned int len) {
+int memwrite(unsigned int adr, unsigned char* buf, unsigned int len) {
 
 // параметры апплета записи - смащения:  
 const int adroffset=0x32;  // адрес записи
@@ -583,12 +577,14 @@ memcpy(cmdbuf+dataoffset,buf,len);
 *((unsigned int*)&cmdbuf[adroffset])=adr;
 *((unsigned int*)&cmdbuf[lenoffset])=len;
 iolen=send_cmd(cmdbuf,len+dataoffset,iobuf);
-if ((iolen != 4) || (iobuf[1] != 0x12)) {
+if ((iolen != 5) || (iobuf[1] != 0x12)) {
   printf("\n Ошибка команды 11\n");
   dump(iobuf,iolen,0);
   printf("\n Исходная команда\n");
   dump(cmdbuf,len+dataoffset,0);
+  return 0;
 }
+return 1;
 }
 
 
@@ -598,7 +594,7 @@ if ((iolen != 4) || (iobuf[1] != 0x12)) {
 int mempoke(int adr, int data) {
 
 unsigned int data1=data;  
-memwrite(adr,(unsigned char*)&data1,4);
+return (memwrite(adr,(unsigned char*)&data1,4));
 }
 
 
