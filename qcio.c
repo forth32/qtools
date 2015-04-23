@@ -512,27 +512,41 @@ return 1;
 //* Чтение области памяти
 //***********************************8
 
-
 int memread(char* membuf,int adr, int len) {
 char iobuf[11600];
-char cmdbuf[]={3,0,0,0,0,0,2};
-int i,iolen;
-int blklen=sectorsize;
 
-// Чтение блоками по 512 байт  
-for(i=0;i<len;i+=sectorsize)  {  
- *((unsigned int*)&cmdbuf[1])=i+adr;  //вписываем адрес
- if ((i+sectorsize) > len) {
+
+// параметры апплета чтения - смащения:  
+const int adroffset=0x2E;  // адрес записи
+const int lenoffset=0x32;  // размер данных 
+
+char cmdbuf[]={
+   0x11,0x00,0x24,0x30,0x9f,0xe5,0x24,0x40,0x9f,0xe5,0x12,0x00,0xa0,0xe3,0x00,0x00,
+   0xa1,0xe5,0x04,0x00,0x83,0xe0,0x04,0x20,0x93,0xe4,0x04,0x20,0x81,0xe4,0x04,0x00,
+   0x53,0xe1,0xfb,0xff,0xff,0x3a,0x04,0x40,0x84,0xe2,0x1e,0xff,0x2f,0xe1,0x00,0x00,
+   0x00,0x00,0x00,0x00,0x00,0x00
+};  
+  
+  
+int i,iolen;
+// начальная длина фрагмента
+int blklen=1000;
+*((unsigned int*)&cmdbuf[lenoffset])=blklen;  
+
+// Чтение блоками по 1000 байт  
+for(i=0;i<len;i+=1000)  {  
+ *((unsigned int*)&cmdbuf[adroffset])=i+adr;  //вписываем адрес
+ if ((i+1000) > len) {
    blklen=len-i;
-   *((unsigned short*)&cmdbuf[5])=blklen;  //вписываем длину
+   *((unsigned int*)&cmdbuf[lenoffset])=blklen;  //вписываем длину
  }  
- iolen=send_cmd_massdata(cmdbuf,7,iobuf,blklen+8);
- if (iolen <(blklen+8)) {
-   printf("\n Ошибка в процессе обработки команды 03, требуется %i байт, получено %i\n",blklen,iolen);
-   memcpy(membuf+i,iobuf+6,blklen);
+ iolen=send_cmd_massdata(cmdbuf,sizeof(cmdbuf),iobuf,blklen+4);
+ if (iolen <(blklen+4)) {
+   printf("\n Ошибка в процессе обработки команды чтения, требуется %i байт, получено %i\n",blklen,iolen);
+   memcpy(membuf+i,iobuf+4,blklen);
    return 0;
  }  
- memcpy(membuf+i,iobuf+6,blklen);
+ memcpy(membuf+i,iobuf+4,blklen);
 } 
 return 1;
 }
@@ -540,15 +554,11 @@ return 1;
 //***********************************8
 //* Чтение слова из памяти
 //***********************************8
-int mempeek(int adr) {
+unsigned int mempeek(int adr) {
 
-unsigned char iobuf[600];
-unsigned char cmdbuf[]={3,0,0,0,0,4,0};
-int i,iolen;
-
-*((unsigned int*)&cmdbuf[1])=adr;  //вписываем адрес
-iolen=send_cmd(cmdbuf,7,iobuf);
-return *((unsigned int*)&iobuf[6]);
+unsigned int data;
+memread ((unsigned char*)&data,adr,4);
+return data;
 }  
 
 

@@ -36,7 +36,7 @@ int send_cmd_base(unsigned char* incmdbuf, int blen, unsigned char* iobuf, int p
 int open_port(char* devname);
 int memread(char* membuf,int adr, int len);
 int memwrite(unsigned int adr, unsigned char* buf, unsigned int len);
-int mempeek(int adr);
+unsigned int mempeek(int adr);
 int mempoke(int adr, int data);
 int flash_read(int block, int page, int sect);
 void setaddr(int block, int page);
