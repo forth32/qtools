@@ -20,7 +20,7 @@ start:
 locloop:   
        LDR    R2,[R3],#4	  
        STR    R2,[R1],#4
-       CMP    R3,R4
+       CMP    R3,R0
        BCC    locloop
        ADD    R4,#4               @ размер ответа - 4 байта кода и данные
        BX     LR
