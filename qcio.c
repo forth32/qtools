@@ -587,6 +587,7 @@ memcpy(cmdbuf+dataoffset,buf,len);
 *((unsigned int*)&cmdbuf[adroffset])=adr;
 *((unsigned int*)&cmdbuf[lenoffset])=len;
 iolen=send_cmd(cmdbuf,len+dataoffset,iobuf);
+/*
 if ((iolen != 5) || (iobuf[1] != 0x12)) {
   printf("\n Ошибка команды 11\n");
   dump(iobuf,iolen,0);
@@ -594,6 +595,7 @@ if ((iolen != 5) || (iobuf[1] != 0x12)) {
   dump(cmdbuf,len+dataoffset,0);
   return 0;
 }
+*/
 return 1;
 }
 
