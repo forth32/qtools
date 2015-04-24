@@ -91,7 +91,7 @@ printf("\n - Таблица разделов режима записи не на
 void main(int argc, char* argv[]) {
 
 int opt,res;
-unsigned int start=0x41700000;
+unsigned int start=0;
 #ifndef WIN32
 char devname[50]="/dev/ttyUSB0";
 #else
@@ -102,6 +102,8 @@ struct stat fstatus;
 unsigned int i,partsize,iolen,adr,helloflag=0;
 unsigned int sahara_flag=0;
 unsigned int tflag=0;
+unsigned int ident_flag=0, iaddr,ichipset;
+unsigned int filesize;
 
 unsigned char iobuf[4096];
 unsigned char cmd1[]={0x06};
@@ -190,6 +192,7 @@ if (!open_port(devname))  {
 unlink("ptable/current-r.bin");
 unlink("ptable/current-w.bin");
 
+
 //----- Вариант загрузки через сахару -------
 
 if (sahara_flag) {
@@ -201,6 +204,7 @@ if (sahara_flag) {
 	#endif
 
 	if (helloflag) {
+	        set_chipset(3);    // все процедуры жестко завязаны на 9x25
 		hello(helloflag);
 		printf("\n");
 		if (tflag && (helloflag != 2)) extract_ptable();  // вынимаем таблицы разделов
@@ -209,6 +213,7 @@ if (sahara_flag) {
   return;
 }	
 
+// ---- открываем входной файл
 in=fopen(argv[optind],"rb");
 if (in == 0) {
   printf("\nОшибка открытия входного файла\n");
@@ -216,9 +221,34 @@ if (in == 0) {
 }
 
 
+// Ищем блок идентификации
+fseek(in,-12,SEEK_END);
+fread(&i,4,1,in);
+if (i == 0xdeadbeef) {
+  // нашли блок - разбираем
+  printf("\n Найден блок идентификации загрузчика");
+  fread(&ichipset,4,1,in);
+  fread(&iaddr,4,1,in);
+  ident_flag=1;
+  if (start == 0) start=iaddr;
+  if (chip_type == 0) set_chipset(ichipset);
+}
+rewind(in);
+
+// проверяем тип чипсета
+if (chip_type == 0) {
+  printf("\n Не указан тип чипсета\n");
+  return;
+}  
+
+printf("\n Чипсет: %s",get_chipname());
+if (start == 0) {
+  printf("\n Не указан адрес загрузки\n");
+  return;
+}  
 //------- Вариант загрузки через запись загрузчика в память ----------
 
-printf("\n Загрузка файла %s\n Адрес загрузки: %08x",argv[optind],start);
+printf("\n Файл загрузчика: %s\n Адрес загрузки: %08x",argv[optind],start);
 iolen=send_cmd_base(cmd1,1,iobuf,1);
 if (iolen != 5) {
    printf("\n Модем не находится в режиме загрузки\n");
@@ -231,12 +261,14 @@ fstat(fileno(in),&fstatus);
 #else
 fstat(_fileno(in),&fstatus);
 #endif
-printf("\n Размер файла: %i\n",(unsigned int)fstatus.st_size);
+filesize=fstatus.st_size;
+if (ident_flag) filesize-=12; // отрезаем хвост - блок идентификации
+printf("\n Размер файла: %i\n",(unsigned int)filesize);
 partsize=dlblock;
 
 // Цикл поблочной загрузки 
-for(i=0;i<fstatus.st_size;i+=dlblock) {  
- if ((fstatus.st_size-i) < dlblock) partsize=fstatus.st_size-i;
+for(i=0;i<filesize;i+=dlblock) {  
+ if ((filesize-i) < dlblock) partsize=filesize-i;
  fread(cmddl+7,1,partsize,in);          // читаем блок прямо в командный буфер
  adr=start+i;                           // адрес загрузки этого блока
    // Как обычно у убогих китайцев, числа вписываются через жопу - в формате Big Endian
