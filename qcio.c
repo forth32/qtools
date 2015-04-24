@@ -688,14 +688,18 @@ if (mode == 0) {
      get_flash_config();
      return;
   }  
+  read(siofd,rbuf,1024);   // вычищаем хвост буера с сообщением об ошибке
 }  
 
 printf(" Отсылка hello...");
 i=send_cmd(hellocmd,strlen(hellocmd),rbuf);
 if (rbuf[1] != 2) {
-   printf(" hello возвратил ошибку!\n");
-   dump(rbuf,i,0);
-   return;
+   i=send_cmd(hellocmd,strlen(hellocmd),rbuf);
+   if (rbuf[1] != 2) {
+     printf(" повторный hello возвратил ошибку!\n");
+     dump(rbuf,i,0);
+     return;
+   }  
 }  
  printf("ok");
  if (mode == 2) {
@@ -703,7 +707,7 @@ if (rbuf[1] != 2) {
    printf("\n");
    return; 
  }  
-//dump(rbuf,i,0);
+ttyflush(); 
 if (!test_loader()) {
   printf("\n Используется непатченный загрузчик - продолжение работы невозможно\n");
   exit(1);
@@ -1178,6 +1182,8 @@ char cmdbuf[]={
 unsigned char iobuf[1024];
 int iolen;
 iolen=send_cmd(cmdbuf,sizeof(cmdbuf),iobuf);
+printf("\n--ident--\n");
+dump(iobuf,iolen,0);
 if (iobuf[1] != 0xaa) return -1;
 return iobuf[2];
 }
@@ -1193,6 +1199,7 @@ int test_loader() {
 int i;
 
 i=identify_chipset();
+printf("\n ident = %i\n",i);
 if (i<=0) {
   bad_loader=1;
   return 0;
