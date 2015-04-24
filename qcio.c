@@ -38,7 +38,7 @@ struct {
   unsigned char name[20];  // имя чипсета
 }  chipset[]= {
 //  адрес NAND   ARM  UDflag  имя           ##
-  { 0x1b400000,   1,    0, "MDM9x15"},  //  0
+  { 0xffffffff,   1,    0, "Unknown"},  //  0
   { 0xA0A00000,   0,    0, "MDM8200"},  //  1
   { 0x81200000,   0,    0, "MDM9x00"},  //  2
   { 0xf9af0000,   1,    1, "MDM9x25"},  //  3
@@ -63,9 +63,9 @@ void list_chipset() {
   
 int i;
 printf("\n Код     Имя    Адрес NAND\n-----------------------------------");
-for(i=0;chipset[i].nandbase != 0 ;i++) {
+for(i=1;chipset[i].nandbase != 0 ;i++) {
+//  if (i == 0)  printf("\n  0 (по умолчанию) автоопределение чипсета");
   printf("\n %2i  %9.9s    %08x",i,chipset[i].name,chipset[i].nandbase);
-  if (i == 0)  printf(" (по умолчанию)");
 }
 printf("\n\n");
 exit(0);
@@ -672,6 +672,8 @@ void hello(int mode) {
 int i;  
 unsigned char rbuf[1024];
 char hellocmd[]="\x01QCOM fast download protocol host\x03### ";
+
+// апплет проверки работоспособности загрузчика
 unsigned char cmdbuf[]={
   0x11,0x00,0x12,0x00,0xa0,0xe3,0x00,0x00,
   0xc1,0xe5,0x01,0x40,0xa0,0xe3,0x1e,0xff,
@@ -679,12 +681,18 @@ unsigned char cmdbuf[]={
 };
 unsigned int cfg1,ecccfg;
 
+// режим тихой инициализации
 if (mode == 0) {
   i=send_cmd(cmdbuf,sizeof(cmdbuf),rbuf);
   ttyflush(); 
   i=rbuf[1];
   // Проверяем, не инициализировался ли загрузчик ранее
   if (i == 0x12) {
+     if (!test_loader()) {
+       printf("\n Используется непатченный загрузчик - продолжение работы невозможно\n");
+        exit(1);
+     }  
+//     printf("\n chipset = %i  base = %i",chip_type,nand_cmd);
      get_flash_config();
      return;
   }  
@@ -712,14 +720,14 @@ if (!test_loader()) {
   printf("\n Используется непатченный загрузчик - продолжение работы невозможно\n");
   exit(1);
 }  
-
-if (nand_cmd == 0xf9af0000) disable_bam(); // отключаем NANDc BAM, если работаем с 9x25
+set_chipset(chip_type);
+printf("\n Чипсет: %s  (%08x)",get_chipname(),nand_cmd);
+if (chip_type == 3) disable_bam(); // отключаем NANDc BAM, если работаем с 9x25
 cfg1=mempeek(nand_cfg1);
 ecccfg=mempeek(nand_ecc_cfg);
 get_flash_config();
 i=rbuf[0x2c];
 rbuf[0x2d+i]=0;
-printf("\n Чипсет: %s",get_chipname());
 printf("\n Флеш-память: %s %s, %s",flash_mfr,rbuf+0x2d,flash_descr);
 printf("\n Версия протокола: %i",rbuf[0x22]);
 printf("\n Максимальный размер пакета: %i байта",*((unsigned int*)&rbuf[0x24]));
@@ -1204,7 +1212,7 @@ if (i<=0) {
   bad_loader=1;
   return 0;
 }
-if (chip_type == 0) chip_type=i; // если чипсет не был явно задан
+if (chip_type == 0) set_chipset(i); // если чипсет не был явно задан
 return 1;
 }
 

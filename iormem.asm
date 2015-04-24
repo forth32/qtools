@@ -22,7 +22,7 @@ locloop:
        STR    R2,[R1],#4
        CMP    R3,R0
        BCC    locloop
-       ADD    R4,#8               @ размер ответа - 4 байта кода и данные
+       ADD    R4,#4               @ размер ответа - 4 байта кода и данные
        BX     LR
 
 srcadr:.word  0
