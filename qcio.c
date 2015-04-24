@@ -1182,8 +1182,8 @@ char cmdbuf[]={
 unsigned char iobuf[1024];
 int iolen;
 iolen=send_cmd(cmdbuf,sizeof(cmdbuf),iobuf);
-printf("\n--ident--\n");
-dump(iobuf,iolen,0);
+//printf("\n--ident--\n");
+//dump(iobuf,iolen,0);
 if (iobuf[1] != 0xaa) return -1;
 return iobuf[2];
 }
@@ -1199,7 +1199,7 @@ int test_loader() {
 int i;
 
 i=identify_chipset();
-printf("\n ident = %i\n",i);
+//printf("\n ident = %i\n",i);
 if (i<=0) {
   bad_loader=1;
   return 0;
