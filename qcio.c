@@ -508,25 +508,6 @@ SetCommTimeouts(hSerial,&ct);
 }
 
 
-//*******************************************************
-//* Проверка работы патча загрузчика
-//*
-//* Возвращает 0, если команда 11 не поддерживается
-//* и устанавливает глобальную переменную bad_loader=1
-//*******************************************************
-int test_loader() {
-
-unsigned char iobuf[1024];
-
-if (!memwrite(sector_buf,iobuf,4)) {
-  bad_loader=1;
-  return 0;
-}
-return 1;
-}
-
-
-
 //***********************************8
 //* Чтение области памяти
 //***********************************8
@@ -691,17 +672,19 @@ void hello(int mode) {
 int i;  
 unsigned char rbuf[1024];
 char hellocmd[]="\x01QCOM fast download protocol host\x03### ";
-unsigned char cmdbuf[]={3,0,0,0,0,4,0};
+unsigned char cmdbuf[]={
+  0x11,0x00,0x12,0x00,0xa0,0xe3,0x00,0x00,
+  0xc1,0xe5,0x01,0x40,0xa0,0xe3,0x1e,0xff,
+  0x2f,0xe1
+};
 unsigned int cfg1,ecccfg;
 
-*((unsigned int*)&cmdbuf[1])=sector_buf;  //вписываем адрес секторного буфера - он безопасный.
-
 if (mode == 0) {
-  i=send_cmd(cmdbuf,7,rbuf);
+  i=send_cmd(cmdbuf,sizeof(cmdbuf),rbuf);
   ttyflush(); 
-
+  i=rbuf[1];
   // Проверяем, не инициализировался ли загрузчик ранее
-  if (i == 13) {
+  if (i == 0x12) {
      get_flash_config();
      return;
   }  
@@ -721,11 +704,10 @@ if (rbuf[1] != 2) {
    return; 
  }  
 //dump(rbuf,i,0);
-
 if (!test_loader()) {
-  printf("\n ! ** Загрузчик не поддерживает команду 05 - загрузчик не содержит патча!!!! **\n");
-  return;
-}
+  printf("\n Используется непатченный загрузчик - продолжение работы невозможно\n");
+  exit(1);
+}  
 
 if (nand_cmd == 0xf9af0000) disable_bam(); // отключаем NANDc BAM, если работаем с 9x25
 cfg1=mempeek(nand_cfg1);
@@ -733,6 +715,7 @@ ecccfg=mempeek(nand_ecc_cfg);
 get_flash_config();
 i=rbuf[0x2c];
 rbuf[0x2d+i]=0;
+printf("\n Чипсет: %s",get_chipname());
 printf("\n Флеш-память: %s %s, %s",flash_mfr,rbuf+0x2d,flash_descr);
 printf("\n Версия протокола: %i",rbuf[0x22]);
 printf("\n Максимальный размер пакета: %i байта",*((unsigned int*)&rbuf[0x24]));
@@ -1173,5 +1156,48 @@ int i;
 for (i=0;i<len;i++)
   if (buf[i] != 0) return 1;
 return 0;
+}
+
+//***************************************************************
+//* Идентификация чипсета через апплет по сигнатуре загрузчика
+//*
+//* return -1 - загрузчик не поддерживает команду 11
+//*         0 - в загрузчике не найдена сигнатура идентификации чипсета
+//*         остальное - код чипсета из загрузчика 
+//***************************************************************
+int identify_chipset() {
+
+char cmdbuf[]={ 
+  0x11,0x00,0x04,0x10,0x2d,0xe5,0x0e,0x00,0xa0,0xe1,0x03,0x00,0xc0,0xe3,0xff,0x30,
+  0x80,0xe2,0x34,0x10,0x9f,0xe5,0x04,0x20,0x90,0xe4,0x01,0x00,0x52,0xe1,0x03,0x00,
+  0x00,0x0a,0x03,0x00,0x50,0xe1,0xfa,0xff,0xff,0x3a,0x00,0x00,0xa0,0xe3,0x00,0x00,
+  0x00,0xea,0x00,0x00,0x90,0xe5,0x04,0x10,0x9d,0xe4,0x01,0x00,0xc1,0xe5,0xaa,0x00,
+  0xa0,0xe3,0x00,0x00,0xc1,0xe5,0x02,0x40,0xa0,0xe3,0x1e,0xff,0x2f,0xe1,0xef,0xbe,
+  0xad,0xde
+};
+unsigned char iobuf[1024];
+int iolen;
+iolen=send_cmd(cmdbuf,sizeof(cmdbuf),iobuf);
+if (iobuf[1] != 0xaa) return -1;
+return iobuf[2];
+}
+
+//*******************************************************
+//* Проверка работы патча загрузчика
+//*
+//* Возвращает 0, если команда 11 не поддерживается
+//* и устанавливает глобальную переменную bad_loader=1
+//*******************************************************
+int test_loader() {
+
+int i;
+
+i=identify_chipset();
+if (i<=0) {
+  bad_loader=1;
+  return 0;
+}
+if (chip_type == 0) chip_type=i; // если чипсет не был явно задан
+return 1;
 }
 

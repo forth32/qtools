@@ -61,5 +61,6 @@ void define_chipset(char* arg);
 int test_zero(unsigned char* buf, int len);
 void set_chipset(unsigned int c);
 unsigned char* get_chipname();
-
+int identify_chipset();
+int test_loader();
 
