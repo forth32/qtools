@@ -21,7 +21,7 @@ while [ ! -c $PORT ]
 
 # команда переключения в download mode
 echo entering download mode...
-./qcommand -p $PORT -c "c 3a" >/dev/null
+./qcommand -p $PORT -e -c "c 3a" >/dev/null
 
 # Ждем пропадания порта из системы
 while [ -c $PORT ]
