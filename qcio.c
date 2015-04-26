@@ -1082,11 +1082,11 @@ printf("\n Идентификатор образа для загрузки: %08x
 switch (imgid) {
 
 	case 0x07:
-	infilename="loaders/NPRG9x25p.bin";
+	infilename="nloader/NPRG9x25p.bin";
 	break;
 
 	case 0x0d:
-	infilename="loaders/ENPRG9x25p.bin";
+	infilename="nloader/ENPRG9x25p.bin";
 	break;
 
 	default:
