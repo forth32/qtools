@@ -17,12 +17,42 @@
 
 // флаг посылки префикса 7E
 int prefixflag=1;
+// флаг HDLC-режима
+int hdlcflag=1; 
 
 
 //@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 //* Интерактивная оболочка для ввода команд в загрузчик
 //@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
+
+//*******************************************************************
+//* Отправка командного буфера в модем и размор результата
+//*******************************************************************
+void iocmd(char* cmdbuf, int cmdlen) {
+
+unsigned char iobuf[2048];
+unsigned int iolen;
+  
+if (hdlcflag) {
+  // Команда HDLC-режима
+  iolen=send_cmd_base(cmdbuf,cmdlen,iobuf,prefixflag);
+  if (iobuf[1] == 0x0e) {
+    show_errpacket ("[ERR] ", iobuf, iolen);
+    return;
+  }  
+}
+else  {
+  write(siofd,cmdbuf,cmdlen);
+  iolen=read(siofd,iobuf,1024);
+}  
+  
+if (iolen != 0) {
+  printf("\n ---- ответ --- \n");
+  dump(iobuf,iolen,0);
+}  
+printf("\n");
+}
 
 //*******************************************************************
 //* Разбор введенной командной последовательности и ее запуск
@@ -44,17 +74,58 @@ do {
   cmdbuf[bcnt++]=i;
   sptr=strtok(0," ");
 } while (sptr != 0);
-iolen=send_cmd_base(cmdbuf,bcnt,iobuf,prefixflag);
-if (iobuf[1] == 0x0e) {
-  show_errpacket ("[ERR] ", iobuf, iolen);
+iocmd(cmdbuf,bcnt);
+}
+
+//*******************************************************************
+//*  Отправка в модем содержимого файла в качестве команды 
+//*******************************************************************
+void binary_cmd(char* line) {
+  
+unsigned char cmdbuf[2048],iobuf[2048];
+FILE* fcmd;
+unsigned int i,iolen;
+
+char* sptr;
+sptr=strtok(line," "); // выделяем имя файла
+if (sptr == 0) {
+  printf(" Не указано имя файла\n");
   return;
 }  
-printf("\n ---- ответ --- \n");
-dump(iobuf,iolen,0);
-printf("\n");
+fcmd=fopen(sptr,"r");
+if (fcmd == 0) {
+  printf(" Ошибка открытия файла %s\n",sptr);
+  return;
+}
+fseek(fcmd,0,SEEK_END);
+i=ftell(fcmd);
+if (i>1024) {
+  printf(" Слишком большой файл - %i байт\n",i);
+  fclose(fcmd);
+  return;
+}
+rewind(fcmd);
+fread(cmdbuf,i,1,fcmd);
+fclose(fcmd);
+iocmd(cmdbuf,i);
 }
 
 
+//*******************************************************************
+//*   Переключение hdlc-режима
+//*******************************************************************
+void hdlcswitch(char* line) {
+
+char* sptr;
+unsigned int mode;
+sptr=strtok(line," "); // выделяем параметр
+
+if (sptr != 0) {  // режим указан - устанавливаем его
+  sscanf(sptr,"%i",&mode);
+  hdlcflag=mode?1:0;
+}
+printf(" HDLC %s\n",hdlcflag?"On":"Off");
+}
 
 //*********************************************8
 //  Передача загрузчика в модем
@@ -124,20 +195,31 @@ switch (cmdline[0]) {
   case 'h':
     printf("\n Доступны следующие команды:\n\n\
 c nn nn nn nn.... - формирование и запуск командного пакета из перечисленных байтов\n\
+@ file            - запуск командного пакета из указанного файла\n\
 d adr [len]       - прсмотр дампа адресного пространства системы\n\
 m adr word ...    - записать слова по указанному адресу\n\
 r block page sect - чтение блока флешки в секторный буфер \n\
 s                 - прсмотр дампа сектороного буфера NAND-контроллера\n\
 n                 - просмотр содежримого регистров NAND-контроллера\n\
 k                 - разбор содержимого конфигурационных регистров\n\
+i [s]             - запуск процедуры HELLO, s - без настройки конфигурации\n\
+f [n]             - включение(1)/отключение(0)/просмотр состояния HDLC-режима\n\
 x                 - выход из программы\n\
-i [s]             - запуск процедуры HELLO, s - без настройки конфигурации\n");
+\n");
     break;
   // обработка командного пакета
   case 'c':  
    ascii_cmd(cmdline+1);
    break;
  
+  case '@':  
+   binary_cmd(cmdline+1);
+   break;
+
+  case 'f':
+    hdlcswitch(cmdline+1);
+    break;
+    
   // активация загрузчика 
   case 'i':
     sptr=strtok(cmdline+1," "); // адрес
