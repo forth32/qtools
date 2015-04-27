@@ -79,6 +79,7 @@ unsigned int block,page,sector,len;
 unsigned int startblock=0;
 unsigned int chipset9x25=0;
 unsigned int bsize;
+unsigned int fileoffset=0;
 int wmode=0; // режим записи
 
 #define w_standart 0
@@ -86,7 +87,7 @@ int wmode=0; // режим записи
 #define w_yaffs    2
 #define w_image    3
 
-while ((opt = getopt(argc, argv, "hp:k:b:f:vc:z:l:")) != -1) {
+while ((opt = getopt(argc, argv, "hp:k:b:f:vc:z:l:o:")) != -1) {
   switch (opt) {
    case 'h': 
     printf("\n  Утилита предназначена для записи сырого образа flash через регистры контроллера\n\
@@ -101,6 +102,7 @@ while ((opt = getopt(argc, argv, "hp:k:b:f:vc:z:l:")) != -1) {
         -fi - запись сырого образа данные+OOB, как есть, без пересчета ЕСС\n\
 -z #      - размер OOB на одну страницу, в байтах (перекрывает автоопределенный размер)\n\
 -l #      - число записываемых блоков, по умолчанию - до конца входного файла\n\
+-o #      - смещение в блоках в исходном файле до начала записываемого участка\n\
 -v        - проверка записанных данных после записи\n\
 -c n      - только стереть n блоков, начиная от начального.\n\
 \n");
@@ -132,6 +134,10 @@ while ((opt = getopt(argc, argv, "hp:k:b:f:vc:z:l:")) != -1) {
      
    case 'l':
      sscanf(optarg,"%x",&flen);
+     break;
+     
+   case 'o':
+     sscanf(optarg,"%x",&fileoffset);
      break;
      
    case 'v':
@@ -249,10 +255,16 @@ else {
 }
   
 // Определяем размер файла
+bsize=(pagesize+oobsize*spp)*ppb;  // размер в байтах полного блока флешки, с учетом ООВ
+fileoffset*=bsize; // переводим смещение из байтов в блоки
 fseek(in,0,SEEK_END);
 i=ftell(in);
-rewind(in);
-bsize=(pagesize+oobsize*spp)*ppb;  // размер в байтах полного блока флешки, с учетом ООВ
+if (i>=fileoffset) {
+  printf("\n Смещение %i выходит за границу файла\n",fileoffset/bsize);
+  return;
+}
+i=-fileoffset; // отрезаем от длины файла размер пропускаемого участка
+fseek(in,fileoffset,SEEK_SET); // встаем на начало записываемого участка
 fsize=i/bsize; // размер в блоках
 if ((i%bsize) != 0) fsize++; // округляем вверх до границы блока
 
