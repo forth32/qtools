@@ -350,7 +350,7 @@ char devname[50]="";
 #endif
 int opt,helloflag=0;
 
-while ((opt = getopt(argc, argv, "p:ic:hek:")) != -1) {
+while ((opt = getopt(argc, argv, "p:ic:hek:f")) != -1) {
   switch (opt) {
    case 'h': 
      printf("\nИнтерактивная оболочка для ввода команд в загрузчик\n\n\
@@ -358,6 +358,7 @@ while ((opt = getopt(argc, argv, "p:ic:hek:")) != -1) {
 -p <tty>       - указывает имя устройства последовательного порта для общения с загрузчиком\n\
 -i             - запускает процедуру HELLO для инициализации загрузчика\n\
 -e             - запрещает передачу префикса 7E перед командой\n\
+-f             - отключает HDLC-форматирование командных пакетов\n\
 -k #           - код чипсета (-kl - получить список кодов)\n\
 -c \"<команда>\" - запускает указанную команду и завершает работу\n");
     return;
@@ -365,7 +366,11 @@ while ((opt = getopt(argc, argv, "p:ic:hek:")) != -1) {
    case 'p':
     strcpy(devname,optarg);
     break;
-     
+
+   case 'f':
+     hdlcflag=0;
+     break;
+    
    case 'k':
     define_chipset(optarg);
     break;
