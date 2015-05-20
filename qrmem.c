@@ -98,21 +98,13 @@ hello(2);
 endadr=adr+len;
 printf("\n Чтение области %08x - %08x\n",adr,endadr);
 cmdbuf[0]=3; // команда чтения
-*((unsigned short*)&cmdbuf[5])=blklen; // длина блока
 
 for(i=adr;i<endadr;i+=512)  {
-  
  printf("\r %08x",i); 
- *((unsigned int*)&cmdbuf[1])=i;
  if ((i+512) > endadr) {
    blklen=endadr-adr;
-   *((unsigned short*)&cmdbuf[5])=blklen;  
- }  
- iolen=send_cmd(cmdbuf,7,iobuf);
- if (iolen == 0) {
-   printf("\n Ошибка в процессе обработки команды\n");
-   return;
- }  
+ }
+ memread(iobuf,adr,blklen);
  fwrite(iobuf+6,1,blklen,out);
 } 
 printf("\n"); 
