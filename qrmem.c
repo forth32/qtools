@@ -22,7 +22,7 @@
 
 void main(int argc, char* argv[]) {
   
-unsigned char cmdbuf[2048],iobuf[2048];
+unsigned char iobuf[2048];
 unsigned char filename[300]="qmem.bin";
 int i,bcnt,iolen;
 unsigned char* sptr;
@@ -41,6 +41,7 @@ while ((opt = getopt(argc, argv, "p:a:l:o:h")) != -1) {
    case 'h': 
      printf("\n Утилита предназначена для чтения адресного пространства модема\n\n\
 Допустимы следующие ключи:\n\n\
+-i        - запускает процедуру HELLO для инициализации загрузчика\n\
 -p <tty>  - указывает имя устройства последовательного порта для общения с загрузчиком\n\
 -o <file> - имя выходного файла (по умолчанию qmem.bin)\n\n\
 -a <adr>  - начальный адрес\n\
@@ -93,19 +94,18 @@ if (!open_port(devname))  {
 
 out=fopen(filename,"wb");
 
-hello(2);
+if (helloflag) hello(2);
 
 endadr=adr+len;
-printf("\n Чтение области %08x - %08x\n",adr,endadr);
-cmdbuf[0]=3; // команда чтения
+printf("\n Чтение области %08x - %08x\n",adr,endadr-1);
 
 for(i=adr;i<endadr;i+=512)  {
  printf("\r %08x",i); 
  if ((i+512) > endadr) {
    blklen=endadr-adr;
  }
- memread(iobuf,adr,blklen);
- fwrite(iobuf+6,1,blklen,out);
+ memread(iobuf,i,blklen);
+ fwrite(iobuf,1,blklen,out);
 } 
 printf("\n"); 
 } 
