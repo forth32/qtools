@@ -259,7 +259,7 @@ bsize=(pagesize+oobsize*spp)*ppb;  // размер в байтах полног�
 fileoffset*=bsize; // переводим смещение из байтов в блоки
 fseek(in,0,SEEK_END);
 i=ftell(in);
-if (i>=fileoffset) {
+if (i<=fileoffset) {
   printf("\n Смещение %i выходит за границу файла\n",fileoffset/bsize);
   return;
 }
