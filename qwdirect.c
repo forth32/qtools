@@ -263,14 +263,14 @@ if (i<=fileoffset) {
   printf("\n Смещение %i выходит за границу файла\n",fileoffset/bsize);
   return;
 }
-i=-fileoffset; // отрезаем от длины файла размер пропускаемого участка
+i-=fileoffset; // отрезаем от длины файла размер пропускаемого участка
 fseek(in,fileoffset,SEEK_SET); // встаем на начало записываемого участка
 fsize=i/bsize; // размер в блоках
 if ((i%bsize) != 0) fsize++; // округляем вверх до границы блока
 
 if (flen == 0) flen=fsize;
 else if (flen>fsize) {
-  printf("\n Указанная длина превосходит размер файла\n");
+  printf("\n Указанная длина %i превосходит размер файла %i\n",flen,fsize);
   return;
 }  
   
