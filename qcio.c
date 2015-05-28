@@ -44,6 +44,7 @@ struct {
   { 0x1b400000,   0, "MDM9x15"},  //  4
   { 0x70000000,   0, "MDM6600"},  //  5
   { 0x60000300,   0, "MDM6800"},  //  6
+  { 0x60000000,   0, "QSC6246"},  //  7
   { 0,0,0 }
 };
   
@@ -699,10 +700,12 @@ if (rbuf[1] != 2) {
      return;
    }  
 }  
- printf("ok");
- if (mode == 2) {
+i=rbuf[0x2c];
+rbuf[0x2d+i]=0;
+printf("ok");
+if (mode == 2) {
    // тихий запуск - обходим настройку чипсета
-   printf("\n");
+   printf(", флеш-память: %s\n",rbuf+0x2d);
    return; 
  }  
 ttyflush(); 
@@ -711,22 +714,20 @@ if (!test_loader()) {
   exit(1);
 }  
 set_chipset(chip_type);
-printf("\n Чипсет: %s  (%08x)",get_chipname(),nand_cmd);
+printf("\n Чипсет: %s  (%08x)",get_chipname(),nand_cmd); fflush(stdout);
 if (chip_type == 3) disable_bam(); // отключаем NANDc BAM, если работаем с 9x25
 cfg1=mempeek(nand_cfg1);
 ecccfg=mempeek(nand_ecc_cfg);
 get_flash_config();
-i=rbuf[0x2c];
-rbuf[0x2d+i]=0;
-printf("\n Флеш-память: %s %s, %s",flash_mfr,rbuf+0x2d,flash_descr);
-printf("\n Версия протокола: %i",rbuf[0x22]);
-printf("\n Максимальный размер пакета: %i байта",*((unsigned int*)&rbuf[0x24]));
-printf("\n Размер сектора: %i байт",sectorsize);
-printf("\n Размер страницы: %i байт (%i секторов)",pagesize,spp);
-printf("\n Размер OOB: %i байт",oobsize);
-printf("\n Тип ECC: %s",(cfg1&(1<<27))?"BCH":"R-S");
-printf(", %i бит",(cfg1&(1<<27))?(((ecccfg>>4)&3)?(((ecccfg>>4)&3)+1)*4:4):4);
-printf("\n Общий размер флеш-памяти = %i блоков (%i MB)",maxblock,maxblock*ppb/1024*pagesize/1024);
+printf("\n Флеш-память: %s %s, %s",flash_mfr,rbuf+0x2d,flash_descr); fflush(stdout);
+printf("\n Версия протокола: %i",rbuf[0x22]); fflush(stdout);
+printf("\n Максимальный размер пакета: %i байта",*((unsigned int*)&rbuf[0x24]));fflush(stdout);
+printf("\n Размер сектора: %i байт",sectorsize);fflush(stdout);
+printf("\n Размер страницы: %i байт (%i секторов)",pagesize,spp);fflush(stdout);
+printf("\n Размер OOB: %i байт",oobsize); fflush(stdout);
+printf("\n Тип ECC: %s",(cfg1&(1<<27))?"BCH":"R-S"); fflush(stdout);
+printf(", %i бит",(cfg1&(1<<27))?(((ecccfg>>4)&3)?(((ecccfg>>4)&3)+1)*4:4):4);fflush(stdout);
+printf("\n Общий размер флеш-памяти = %i блоков (%i MB)",maxblock,maxblock*ppb/1024*pagesize/1024);fflush(stdout);
 printf("\n");
 }
 
