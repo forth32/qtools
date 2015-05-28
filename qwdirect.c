@@ -36,25 +36,8 @@ mempoke(nand_cfg0,cfg0);
 void main(int argc, char* argv[]) {
   
 
-// ARM-программа для переноса данных в секторный буфер
-//   Для Thuimb-2 режима  
-unsigned char datacmd_t[8192]={0x11,0x00,0x01,0xf1,0x1f,0x01,0x05,0x4a,
-                             0x4f,0xf0,0x00,0x03,0x51,0xf8,0x23,0x00,
-			     0x42,0xf8,0x23,0x00,0x01,0x33,0x8f,0x2b,
-			     0xf8,0xd3,0x70,0x47,0x00,0x00,0x00,0x01,
-			     0xaf,0xf9}; // байты 32-33 - старшие байты адреса контроллера
-
-//   Для ARM-32 режима  
-unsigned char datacmd_a[8192]={
-  0x11, 0x00, 0x28, 0x10, 0x81, 0xe2, 0x18, 0x20,   // 0
-  0x9f, 0xe5, 0x00, 0x30, 0xa0, 0xe3, 0x03, 0x01,   // 8
-  0x91, 0xe7, 0x03, 0x01, 0x82, 0xe7, 0x01, 0x30,   // 16
-  0x93, 0xe2, 0x8f, 0x00, 0x53, 0xe3, 0xfa, 0xff,   // 24
-  0xff, 0x3a, 0x1e, 0xff, 0x2f, 0xe1, 0x00, 0x01,   // 32
-  0xaf, 0xf9}; // 40    40-41 - старшие байты адреса контроллера 
 			     
-unsigned char* datacmd; // указатель на совместимую с данным контроллером программу
-unsigned int dataoffset;       // смещение до буфера данных в рабочей программе			     
+unsigned char datacmd[1024]; // секторный буфер
 			     
 unsigned char iobuf[2048]; // буфер ответа команд
 unsigned char srcbuf[8192]; // буфер страницы 
@@ -174,20 +157,6 @@ while ((opt = getopt(argc, argv, "hp:k:b:f:vc:z:l:o:")) != -1) {
   }
 }  
 
-
-// определяем параметры программы заполнения буфера
-if (is_arm_chipset() == 0) {
-  // ARM-режим
-  datacmd=datacmd_a;
-  *((unsigned short*)&datacmd_a[40])=nand_cmd>>16;
-  dataoffset=42;
-} 
-else {
-  // Thumb2- режим
-  datacmd=datacmd_t;
-  *((unsigned short*)&datacmd_t[32])=nand_cmd>>16;
-  dataoffset=34;
-}  
 
 #ifdef WIN32
 if (*devname == '\0')
@@ -347,7 +316,7 @@ for(block=startblock;block<(startblock+flen);block++) {
     }
     // цикл по секторам
     for(sector=0;sector<spp;sector++) {
-      memset(datacmd+dataoffset,0xff,sectorsize+64); // заполняем секторный буфер FF - значения по умолчанию
+      memset(datacmd,0xff,sectorsize+64); // заполняем секторный буфер FF - значения по умолчанию
       
       // заполняем секторный буфер данными
       switch (wmode) {
@@ -355,21 +324,21 @@ for(block=startblock;block<(startblock+flen);block++) {
 	// линуксовый (китайский извратный) вариант раскладки данных, запись без OOB
           if (sector < (spp-1))  
 	 //первые n секторов
-             memcpy(datacmd+dataoffset,databuf+sector*(sectorsize+4),sectorsize+4); 
+             memcpy(datacmd,databuf+sector*(sectorsize+4),sectorsize+4); 
           else 
 	 // последний сектор
-             memcpy(datacmd+dataoffset,databuf+(spp-1)*(sectorsize+4),sectorsize-4*(spp-1)); // данные последнего сектора - укорачиваем
+             memcpy(datacmd,databuf+(spp-1)*(sectorsize+4),sectorsize-4*(spp-1)); // данные последнего сектора - укорачиваем
 	  break;
 	  
 	case w_standart:
 	 // стандартный формат - только сектора по 512 байт, без ООВ
-          memcpy(datacmd+dataoffset,databuf+sector*sectorsize,sectorsize); 
+          memcpy(datacmd,databuf+sector*sectorsize,sectorsize); 
 	  break;
 	  
 	case w_image:
 	 // сырой образ - data+oob, ECC не вычисляется
-          memcpy(datacmd+dataoffset,databuf+sector*sectorsize,sectorsize);       // data
-          memcpy(datacmd+dataoffset+sectorsize,oobuf+sector*oobsize,oobsize);    // oob
+          memcpy(datacmd,databuf+sector*sectorsize,sectorsize);       // data
+          memcpy(datacmd+sectorsize,oobuf+sector*oobsize,oobsize);    // oob
           break;
 
 	case w_yaffs:
@@ -378,16 +347,16 @@ for(block=startblock;block<(startblock+flen);block++) {
 	 // входной файл имеет формат page+oob, но при этом тег лежит с позиции 0 OOB 
           if (sector < (spp-1))  
 	 //первые n секторов
-             memcpy(datacmd+dataoffset,databuf+sector*(sectorsize+4),sectorsize+4); 
+             memcpy(datacmd,databuf+sector*(sectorsize+4),sectorsize+4); 
           else  {
 	 // последний сектор
-             memcpy(datacmd+dataoffset,databuf+(spp-1)*(sectorsize+4),sectorsize-4*(spp-1)); // данные последнего сектора - укорачиваем
-             memcpy(datacmd+dataoffset+sectorsize-4*(spp-1),oobuf,16 );    // тег yaffs присоединяем к нему
+             memcpy(datacmd,databuf+(spp-1)*(sectorsize+4),sectorsize-4*(spp-1)); // данные последнего сектора - укорачиваем
+             memcpy(datacmd+sectorsize-4*(spp-1),oobuf,16 );    // тег yaffs присоединяем к нему
 	  }
 	  break;
       }
       // пересылаем сектор в секторный буфер
-	  if (!memwrite(sector_buf,datacmd+dataoffset,sectorsize+oobsize)) {
+	  if (!memwrite(sector_buf,datacmd,sectorsize+oobsize)) {
 		printf("\n Ошибка передачи секторного буфера\n");
 		return;
       }	

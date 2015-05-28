@@ -14,34 +14,36 @@ clean:
 #	$(CC) -o $@ $(LIBS) $^ qcio.o
 
 qcio.o: qcio.c
-	$(CC) -c qcio.c
+#	$(CC) -c qcio.c
 
 qcommand: qcommand.o qcio.o
-	@gcc $^ -o $@ $(LIBS)
+	gcc $^ -o $@ $(LIBS)
+
+qcommand.o: qcommand.c
 
 qrmem: qrmem.o qcio.o
-	@gcc $^ -o $@ $(LIBS)
+	gcc $^ -o $@ $(LIBS)
 
 qrflash: qrflash.o qcio.o
-	@gcc $^ -o $@ $(LIBS)
+	gcc $^ -o $@ $(LIBS)
 
 qwflash: qwflash.o qcio.o
-	@gcc $^ -o $@ $(LIBS)
+	gcc $^ -o $@ $(LIBS)
 
 qwimage: qwimage.o qcio.o
-	@gcc $^ -o $@ $(LIBS)
+	gcc $^ -o $@ $(LIBS)
 
 qdload: qdload.o qcio.o
-	@gcc $^ -o $@ $(LIBS)
+	gcc $^ -o $@ $(LIBS)
 
 qwdirect: qwdirect.o qcio.o
-	@gcc $^ -o $@ $(LIBS)
+	gcc $^ -o $@ $(LIBS)
 	
 qefs  : qefs.o qcio.o
-	@gcc $^ -o $@ $(LIBS)
+	gcc $^ -o $@ $(LIBS)
 
 qnvram  : qnvram.o qcio.o
-	@gcc $^ -o $@ $(LIBS)
+	gcc $^ -o $@ $(LIBS)
 	
 mibibsplit: mibibsplit.o qcio.o
-	@gcc $^ -o $@ $(LIBS)
+	gcc $^ -o $@ $(LIBS)

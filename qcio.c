@@ -33,18 +33,17 @@ unsigned int maxchip=0;
 // описатели чипсетов
 struct {
   unsigned int nandbase;   // адрес контроллера
-  unsigned char armflag;   // тип исполняемого кода: 0-ARM, 1-Thumb-2
   unsigned char udflag;    // udsize таблицы разделов, 0-512, 1-516
   unsigned char name[20];  // имя чипсета
 }  chipset[]= {
-//  адрес NAND   ARM  UDflag  имя           ##
-  { 0xffffffff,   1,    0, "Unknown"},  //  0
-  { 0xA0A00000,   0,    0, "MDM8200"},  //  1
-  { 0x81200000,   0,    0, "MDM9x00"},  //  2
-  { 0xf9af0000,   1,    1, "MDM9x25"},  //  3
-  { 0x1b400000,   1,    0, "MDM9x15"},  //  4
-  { 0x70000000,   0,    0, "MDM6600"},  //  5
-  { 0x60000300,   0,    0, "MDM6800"},  //  6
+//  адрес NAND  UDflag  имя           ##
+  { 0xffffffff,   0, "Unknown"},  //  0
+  { 0xA0A00000,   0, "MDM8200"},  //  1
+  { 0x81200000,   0, "MDM9x00"},  //  2
+  { 0xf9af0000,   1, "MDM9x25"},  //  3
+  { 0x1b400000,   0, "MDM9x15"},  //  4
+  { 0x70000000,   0, "MDM6600"},  //  5
+  { 0x60000300,   0, "MDM6800"},  //  6
   { 0,0,0 }
 };
   
@@ -111,16 +110,6 @@ nand_cmd=chipset[chip_type].nandbase;
 //**************************************************************
 unsigned char* get_chipname() {
   return chipset[chip_type].name;
-}  
-
-//**************************************************************
-//*  Проверяет, требуется ли текущему чипсету ARM или Thumb-2 код
-//*
-//*   0 - arm
-//*   1 - Thumb-2
-//***********************************************
-unsigned int is_arm_chipset() {
-  return chipset[chip_type].armflag;
 }  
 
 
