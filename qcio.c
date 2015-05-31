@@ -16,6 +16,8 @@
 
 #include "qcio.h"
 
+// Глбальные переменные - собираем их здесь
+
 unsigned int nand_cmd=0x1b400000;
 unsigned int spp=0;
 unsigned int pagesize=0;
@@ -35,19 +37,51 @@ struct {
   unsigned int nandbase;   // адрес контроллера
   unsigned char udflag;    // udsize таблицы разделов, 0-512, 1-516
   unsigned char name[20];  // имя чипсета
+  unsigned int ctrl_type;  // схема расположения регистров NAND-контроллера
 }  chipset[]= {
-//  адрес NAND  UDflag  имя           ##
-  { 0xffffffff,   0, "Unknown"},  //  0
-  { 0xA0A00000,   0, "MDM8200"},  //  1
-  { 0x81200000,   0, "MDM9x00"},  //  2
-  { 0xf9af0000,   1, "MDM9x25"},  //  3
-  { 0x1b400000,   0, "MDM9x15"},  //  4
-  { 0x70000000,   0, "MDM6600"},  //  5
-  { 0x60000300,   0, "MDM6800"},  //  6
-  { 0x60000000,   0, "QSC6246"},  //  7
+//  адрес NAND  UDflag  имя    ctrl      ##
+  { 0xffffffff,   0, "Unknown", 0},  //  0
+  { 0xA0A00000,   0, "MDM8200", 0},  //  1
+  { 0x81200000,   0, "MDM9x00", 0},  //  2
+  { 0xf9af0000,   1, "MDM9x25", 0},  //  3
+  { 0x1b400000,   0, "MDM9x15", 0},  //  4
+  { 0x70000000,   0, "MDM6600", 0},  //  5
+  { 0x60000300,   0, "MDM6800", 0},  //  6
+  { 0x60000300,   0, "QSC6246", 1},  //  7
   { 0,0,0 }
 };
+
+// Адреса регистров чипcета (смещения относительно базы)
+struct {
+  unsigned int nand_cmd;
+  unsigned int nand_addr0;
+  unsigned int nand_addr1;
+  unsigned int nand_cs;   
+  unsigned int nand_exec; 
+  unsigned int nand_status;
+  unsigned int nand_cfg0;  
+  unsigned int nand_cfg1;  
+  unsigned int nand_ecc_cfg;
+  unsigned int NAND_FLASH_READ_ID; 
+  unsigned int sector_buf;
+} nandreg[]={
+// cmd  adr0 adr1  cs  exec  stat cfg0    cfg1 ecc     id   sbuf 
+  { 0,   4,   8,  0xc, 0x10 , 0x14,0x20  ,0x24,0x28,  0x40,0x100 }, // Тип 0 - MDM 
+  { 4,   0,0xffff,0xc,0xffff, 0x08,0xffff,0x28,0xffff,0x20,0xffff}  // Тип 1 - QSC
+};  
   
+
+unsigned int nand_addr0;
+unsigned int nand_addr1;
+unsigned int nand_cs;   
+unsigned int nand_exec; 
+unsigned int nand_status;
+unsigned int nand_cfg0;  
+unsigned int nand_cfg1;  
+unsigned int nand_ecc_cfg;
+unsigned int NAND_FLASH_READ_ID; 
+unsigned int sector_buf;
+
   
 #ifndef WIN32
 struct termios sioparm;
@@ -84,7 +118,7 @@ unsigned int c;
 // проверяем на -kl
 if (optarg[0]=='l') list_chipset();
 
-// получаем кд чипсета из аргумента
+// получаем код чипсета из аргумента
 sscanf(arg,"%i",&c);
 set_chipset(c);
 }
@@ -103,7 +137,19 @@ if (chip_type>=maxchip) {
   printf("\n - Неверный код чипсета - %i",chip_type);
   exit(1);
 }
-nand_cmd=chipset[chip_type].nandbase;
+// устанавливаем адреса регистров чипсета
+#define setnandreg(name) name=chipset[chip_type].nandbase+nandreg[chipset[chip_type].ctrl_type].name;
+setnandreg(nand_cmd)
+setnandreg(nand_addr0)
+setnandreg(nand_addr1)
+setnandreg(nand_cs)   
+setnandreg(nand_exec)
+setnandreg(nand_status)
+setnandreg(nand_cfg0)  
+setnandreg(nand_cfg1)  
+setnandreg(nand_ecc_cfg)
+setnandreg(NAND_FLASH_READ_ID)
+setnandreg(sector_buf)
 }
 
 //**************************************************************
@@ -683,7 +729,7 @@ if (mode == 0) {
        printf("\n Используется непатченный загрузчик - продолжение работы невозможно\n");
         exit(1);
      }  
-//     printf("\n chipset = %i  base = %i",chip_type,nand_cmd);
+//     printf("\n chipset = %i  base = %i",chip_type,name);
      get_flash_config();
      return;
   }  
@@ -717,7 +763,8 @@ set_chipset(chip_type);
 printf("\n Чипсет: %s  (%08x)",get_chipname(),nand_cmd); fflush(stdout);
 if (chip_type == 3) disable_bam(); // отключаем NANDc BAM, если работаем с 9x25
 cfg1=mempeek(nand_cfg1);
-ecccfg=mempeek(nand_ecc_cfg);
+if (nand_ecc_cfg != 0xffff) ecccfg=mempeek(nand_ecc_cfg);
+else ecccfg=0;
 get_flash_config();
 printf("\n Флеш-память: %s %s, %s",flash_mfr,rbuf+0x2d,flash_descr); fflush(stdout);
 printf("\n Версия протокола: %i",rbuf[0x22]); fflush(stdout);
@@ -726,7 +773,7 @@ printf("\n Размер сектора: %i байт",sectorsize);fflush(stdout);
 printf("\n Размер страницы: %i байт (%i секторов)",pagesize,spp);fflush(stdout);
 printf("\n Размер OOB: %i байт",oobsize); fflush(stdout);
 printf("\n Тип ECC: %s",(cfg1&(1<<27))?"BCH":"R-S"); fflush(stdout);
-printf(", %i бит",(cfg1&(1<<27))?(((ecccfg>>4)&3)?(((ecccfg>>4)&3)+1)*4:4):4);fflush(stdout);
+if (nand_ecc_cfg != 0xffff) printf(", %i бит",(cfg1&(1<<27))?(((ecccfg>>4)&3)?(((ecccfg>>4)&3)+1)*4:4):4);fflush(stdout);
 printf("\n Общий размер флеш-памяти = %i блоков (%i MB)",maxblock,maxblock*ppb/1024*pagesize/1024);fflush(stdout);
 printf("\n");
 }

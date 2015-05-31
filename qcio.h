@@ -16,16 +16,29 @@ extern unsigned int bad_loader;
 extern unsigned int chip_type; 
 
 
-#define nand_addr0 nand_cmd+4
-#define nand_addr1 nand_cmd+8
-#define nand_cs    nand_cmd+0xc
-#define nand_exec  nand_cmd+0x10
-#define nand_status nand_cmd+0x14
-#define nand_cfg0  nand_cmd+0x20
-#define nand_cfg1  nand_cmd+0x24
-#define nand_ecc_cfg  nand_cmd+0x28
-#define NAND_FLASH_READ_ID nand_cmd+0x40
-#define sector_buf nand_cmd+0x100
+// #define nand_addr0 nand_cmd+4
+// #define nand_addr1 nand_cmd+8
+// #define nand_cs    nand_cmd+0xc
+// #define nand_exec  nand_cmd+0x10
+// #define nand_status nand_cmd+0x14
+// #define nand_cfg0  nand_cmd+0x20
+// #define nand_cfg1  nand_cmd+0x24
+// #define nand_ecc_cfg  nand_cmd+0x28
+// #define NAND_FLASH_READ_ID nand_cmd+0x40
+// #define sector_buf nand_cmd+0x100
+
+extern unsigned int nand_addr0;
+extern unsigned int nand_addr1;
+extern unsigned int nand_cs;   
+extern unsigned int nand_exec; 
+extern unsigned int nand_status;
+extern unsigned int nand_cfg0;  
+extern unsigned int nand_cfg1;  
+extern unsigned int nand_ecc_cfg;
+extern unsigned int NAND_FLASH_READ_ID; 
+extern unsigned int sector_buf;
+
+
 
 #define ppb 64             // число страниц в 1 блоке
 
