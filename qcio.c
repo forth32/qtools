@@ -47,7 +47,7 @@ struct {
   { 0x1b400000,   0, "MDM9x15", 0},  //  4
   { 0x70000000,   0, "MDM6600", 0},  //  5
   { 0x60000300,   0, "MDM6800", 0},  //  6
-  { 0x60000300,   0, "QSC6246", 1},  //  7
+  { 0x60000000,   0, "MSM6246", 1},  //  7
   { 0,0,0 }
 };
 
@@ -65,9 +65,9 @@ struct {
   unsigned int NAND_FLASH_READ_ID; 
   unsigned int sector_buf;
 } nandreg[]={
-// cmd  adr0 adr1  cs  exec  stat cfg0    cfg1 ecc     id   sbuf 
-  { 0,   4,   8,  0xc, 0x10 , 0x14,0x20  ,0x24,0x28,  0x40,0x100 }, // Тип 0 - MDM 
-  { 4,   0,0xffff,0xc,0xffff, 0x08,0xffff,0x28,0xffff,0x20,0xffff}  // Тип 1 - QSC
+// cmd  adr0   adr1    cs    exec  stat   cfg0   cfg1   ecc     id   sbuf 
+  { 0,   4,     8,    0xc,   0x10 , 0x14, 0x20  ,0x24,  0x28,  0x40, 0x100 }, // Тип 0 - MDM 
+   0x304,0x300,0xffff,0x30c,0xffff,0x308, 0xffff,0x328,0xffff, 0x320,0     }  // Тип 1 - MSM6246 и подобные
 };  
   
 
