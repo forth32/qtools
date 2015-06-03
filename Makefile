@@ -2,6 +2,8 @@ CC       = gcc
 LIBS     = -lreadline
 CFLAGS   = -O2 -g -Wno-unused-result
 
+OBJS     = qcio.o hdlc.o memio.o
+
 .PHONY: all clean
 
 all:    qcommand qrmem qrflash qdload mibibsplit qwflash qwimage qwdirect qefs qnvram
@@ -14,36 +16,36 @@ clean:
 #	$(CC) -o $@ $(LIBS) $^ qcio.o
 
 qcio.o: qcio.c
+hdlc.o: hdlc.c
+memio.o: memio.c
 #	$(CC) -c qcio.c
 
-qcommand: qcommand.o qcio.o
+qcommand: qcommand.o  $(OBJS)
 	gcc $^ -o $@ $(LIBS)
 
-qcommand.o: qcommand.c
-
-qrmem: qrmem.o qcio.o
+qrmem: qrmem.o $(OBJS)
 	gcc $^ -o $@ $(LIBS)
 
-qrflash: qrflash.o qcio.o
+qrflash: qrflash.o $(OBJS)
 	gcc $^ -o $@ $(LIBS)
 
-qwflash: qwflash.o qcio.o
+qwflash: qwflash.o $(OBJS)
 	gcc $^ -o $@ $(LIBS)
 
-qwimage: qwimage.o qcio.o
+qwimage: qwimage.o $(OBJS)
 	gcc $^ -o $@ $(LIBS)
 
-qdload: qdload.o qcio.o
+qdload: qdload.o $(OBJS)
 	gcc $^ -o $@ $(LIBS)
 
-qwdirect: qwdirect.o qcio.o
+qwdirect: qwdirect.o $(OBJS)
 	gcc $^ -o $@ $(LIBS)
 	
-qefs  : qefs.o qcio.o
+qefs  : qefs.o $(OBJS)
 	gcc $^ -o $@ $(LIBS)
 
-qnvram  : qnvram.o qcio.o
+qnvram  : qnvram.o $(OBJS)
 	gcc $^ -o $@ $(LIBS)
 	
-mibibsplit: mibibsplit.o qcio.o
+mibibsplit: mibibsplit.o $(OBJS)
 	gcc $^ -o $@ $(LIBS)

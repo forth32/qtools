@@ -75,4 +75,5 @@ void set_chipset(unsigned int c);
 unsigned char* get_chipname();
 int identify_chipset();
 int test_loader();
+void exec_nand(int cmd);
 
