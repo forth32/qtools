@@ -72,7 +72,22 @@ struct {
   { 0,   4,     8,    0xc,   0x10 , 0x14, 0x20  ,0x24,  0x28,  0x40, 0x100 }, // Тип 0 - MDM 
   {0x304,0x300,0xffff,0x30c,0xffff,0x308, 0xffff,0x328,0xffff, 0x320,0     }  // Тип 1 - MSM6246 и подобные
 };  
-  
+
+// Команды контроллера
+struct {
+  unsigned int stop;      // Остановка операций кнтроллера
+  unsigned int read;      // только данные
+  unsigned int readall;   // данные+ECC+spare
+  unsigned int program;    // только данные
+  unsigned int programall; // данные+ECC+spare
+  unsigned int erase;
+  unsigned int identify;
+} nandopcodes[] = {
+//  stop   read  readall  program  programall erase  indetify
+  { 0x01,  0x32,  0x34,    0x36,     0x39,     0x3a,   0x0b },   // MDM
+  { 0x07,  0x01,  0xffff,  0x03,   0xffff,     0x04,   0x05 }
+};  
+
 
 unsigned int nand_addr0;
 unsigned int nand_addr1;
@@ -198,7 +213,7 @@ else {
 //***************************************************************
 void exec_nand(int cmd) {
 
-if (get_controller == 0) {
+if (get_controller() == 0) {
   // MDM  
   mempoke(nand_cmd,cmd); // Сброс всех операций контроллера
   mempoke(nand_exec,0x1);
@@ -231,18 +246,25 @@ unsigned char iobuf[300];
 int iolen;
 int i;
 
-//mempoke(nand_cfg1,0x6745d); // ECC off
-//mempoke(nand_cs,0); // data mover
 nand_reset();
 // адрес
 setaddr(block,page);
-// устанавливаем код команды
-mempoke(nand_cmd,0x34); // чтение data+ecc+spare
-for(i=0;i<(sect+1);i++) {
-  mempoke(nand_exec,0x1);
-  nandwait();
+if (get_controller() == 0) {
+  // MDM - устанавливаем код команды один раз
+  mempoke(nand_cmd,0x34); // чтение data+ecc+spare
+  // цикл чтения сектров до нужного нам
+  for(i=0;i<(sect+1);i++) {
+    mempoke(nand_exec,0x1);
+    nandwait();
+  }  
+}
+else {
+  // MSM - код команды в регистр команд вводится каждый раз
+  for(i=0;i<(sect+1);i++) {
+    mempoke(nand_cmd,0x34); // чтение data+ecc+spare
+    nandwait();
+  }  
 }  
-
 return 1;
 }
 
