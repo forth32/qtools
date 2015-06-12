@@ -85,9 +85,10 @@ struct {
 } nandopcodes[] = {
 //  stop   read  readall  program  programall erase  indetify
   { 0x01,  0x32,  0x34,    0x36,     0x39,     0x3a,   0x0b },   // MDM
-  { 0x07,  0x01,  0xffff,  0x03,   0xffff,     0x04,   0x05 }
+  { 0x07,  0x01,  0xffff,  0x03,   0xffff,     0x04,   0x05 }    // MSM
 };  
 
+// глобальные хранилища адресов кнтроллера
 
 unsigned int nand_addr0;
 unsigned int nand_addr1;
@@ -99,6 +100,10 @@ unsigned int nand_cfg1;
 unsigned int nand_ecc_cfg;
 unsigned int NAND_FLASH_READ_ID; 
 unsigned int sector_buf;
+
+// глобальные хранилища кодов команд
+
+unsigned int nc_stop,nc_read,nc_readall,nc_program,nc_programall,nc_erase,nc_identify;
 
 //************************************************
 //* Печать списка поддерживаемых чипсетов

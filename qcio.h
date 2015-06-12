@@ -38,6 +38,7 @@ extern unsigned int nand_ecc_cfg;
 extern unsigned int NAND_FLASH_READ_ID; 
 extern unsigned int sector_buf;
 
+extern unsigned int nc_stop,nc_read,nc_readall,nc_program,nc_programall,nc_erase,nc_identify;
 
 
 #define ppb 64             // число страниц в 1 блоке

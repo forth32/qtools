@@ -6,7 +6,7 @@ OBJS     = qcio.o hdlc.o memio.o
 
 .PHONY: all clean
 
-all:    qcommand qrmem qrflash qdload mibibsplit qwflash qwimage qwdirect qefs qnvram
+all:    qcommand qrmem qrflash qdload mibibsplit qwflash qwimage qwdirect qefs qnvram qblinfo
 
 clean: 
 	rm *.o
@@ -49,3 +49,6 @@ qnvram  : qnvram.o $(OBJS)
 	
 mibibsplit: mibibsplit.o $(OBJS)
 	gcc $^ -o $@ $(LIBS)
+
+qblinfo:    qblinfo.o
+	gcc $^ -o $@ 
