@@ -35,5 +35,11 @@
     <ClCompile Include="..\..\qrmem.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\hdlc.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\memio.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
