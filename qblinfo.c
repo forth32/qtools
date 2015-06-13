@@ -27,7 +27,7 @@ for (i=0;i<fl;i++) {
 		hwidfound=1; // и больше не ищем
 	}
  }
- if ((i%4 == 0) && (tablefound == 0)) { // таблица выровнена по границе слова и ещё не обработана
+ if ((i >= 0x3000) && (i%4 == 0) && (tablefound == 0)) { // таблица выровнена по границе слова и ещё не обработана
 	daddr=*((unsigned int*)&buf[i]); // адрес заглушки
 	if ((daddr<0x10000) || (daddr>0xffff0000)) continue;
 	if ( (daddr != *((unsigned int*)&buf[i-4])) && (daddr == *((unsigned int*)&buf[i+8])) && (daddr == *((unsigned int*)&buf[i+16])) && (daddr == *((unsigned int*)&buf[i+24])) && (daddr == *((unsigned int*)&buf[i+32])) && (daddr == *((unsigned int*)&buf[i+40]))) {
