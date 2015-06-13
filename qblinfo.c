@@ -19,9 +19,9 @@ fl=fread(&buf,1,sizeof(buf),in);
 //laddr=buf[3]&0xffff0000;
 printf("\n** %s: %i bytes\n",argv[1],fl);
 
-for (i=0x4000;i<fl;i++) {
+for (i=0;i<fl;i++) {
  if (hwidfound == 0) {
-	if ((memcmp(buf+i,hwidstr,6)) == 0) { // ищем строку "HW_ID" в сертификате
+	if (((memcmp(buf+i,hwidstr,6)) == 0) && (buf[i-17] == 0x30)) { // ищем строку "HW_ID" в сертификате
 		memcpy(hwid,buf+i-17,16); // нашли, сохраняем значение
 		hwid[16]=0;
 		hwidfound=1; // и больше не ищем
