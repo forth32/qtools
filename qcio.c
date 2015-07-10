@@ -408,7 +408,7 @@ return 0;
 //* Стирание блока флешки  
 //************************
 
-int block_erase(int block) {
+void block_erase(int block) {
   
 int oldcfg;  
   

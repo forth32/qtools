@@ -45,7 +45,7 @@ for(page=0;page<ppb;page++)  {
 //****************************************************************
 //* Чтение блока данных с восстановлением китайского изврата
 //****************************************************************
-read_block_resequence(int block, FILE* out) {
+void read_block_resequence(int block, FILE* out) {
 unsigned char iobuf[4096];  
 int page,sec;
  // цикл по страницам
