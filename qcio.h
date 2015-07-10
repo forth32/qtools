@@ -64,7 +64,7 @@ unsigned int send_unframed_buf(char* outcmdbuf, unsigned int outlen, int prefixf
 unsigned int receive_reply(char* iobuf, int masslen);
 void show_errpacket(char* descr, char* pktbuf, int len);
 int qclose(int errmode);
-int block_erase(int block);
+void block_erase(int block);
 void get_flash_config();
 void nand_reset();
 int dload_sahara();
