@@ -18,7 +18,7 @@
     <ClInclude Include="..\..\printf.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\wingetopt.h">
+    <ClInclude Include="..\..\getopt.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\qcio.h">
@@ -32,7 +32,7 @@
     <ClCompile Include="..\..\qwflash.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\wingetopt.c">
+    <ClCompile Include="..\..\getopt.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\hdlc.c">

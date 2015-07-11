@@ -6,7 +6,7 @@
 #include <termios.h>
 #else
 #include <windows.h>
-#include "wingetopt.h"
+#include "getopt.h"
 #include "printf.h"
 #endif
 #include "qcio.h"

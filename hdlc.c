@@ -14,7 +14,7 @@
 #else
 #include <windows.h>
 #include "printf.h"
-#include "wingetopt.h"
+#include "getopt.h"
 #endif
 
 #include "qcio.h"

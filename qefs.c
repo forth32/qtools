@@ -7,7 +7,7 @@
 #else
 #include <windows.h>
 //#include <io.h>
-#include "wingetopt.h"
+#include "getopt.h"
 #include "printf.h"
 #endif
 #include "qcio.h"

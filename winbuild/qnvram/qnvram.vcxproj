@@ -85,12 +85,12 @@
     <ClCompile Include="..\..\memio.c" />
     <ClCompile Include="..\..\qcio.c" />
     <ClCompile Include="..\..\qnvram.c" />
-    <ClCompile Include="..\..\wingetopt.c" />
+    <ClCompile Include="..\..\getopt.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\printf.h" />
     <ClInclude Include="..\..\qcio.h" />
-    <ClInclude Include="..\..\wingetopt.h" />
+    <ClInclude Include="..\..\getopt.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -24,7 +24,7 @@
     <ClCompile Include="..\..\qnvram.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\wingetopt.c">
+    <ClCompile Include="..\..\getopt.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\hdlc.c">
@@ -41,7 +41,7 @@
     <ClInclude Include="..\..\qcio.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\wingetopt.h">
+    <ClInclude Include="..\..\getopt.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
