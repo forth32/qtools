@@ -9,7 +9,7 @@ unsigned char hwidstr[7]="HW_ID1";
 unsigned char hwid[17];
 
 if (argv[1] == NULL) {
-  printf("\nНе указан файл");
+  printf("\nНе указан файл\n");
   return;
 }
 in = fopen(argv[1],"rb");
