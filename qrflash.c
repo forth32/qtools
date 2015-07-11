@@ -289,7 +289,7 @@ if (strncmp(ptable,"\xAA\x73\xEE\x55\xDB\xBD\x5E\xE3",8) != 0) {
 npar=*((unsigned int*)&ptable[12]);
 printf("\n Версия таблицы разделов: %i",*((unsigned int*)&ptable[8]));
 if ((partnumber != -1) && (partnumber>=npar)) {
-  printf("\nНедопустимый номер раздела: %i, всего разделов %i\n",partnumber,npar);
+  printf("\nНедопустимый номер раздела: %i, всего разделов %u\n",partnumber,npar);
   return;
 }  
 printf("\n #  адрес    размер   атрибуты ------ Имя------\n");     
