@@ -43,6 +43,7 @@ extern unsigned int nc_stop,nc_read,nc_readall,nc_program,nc_programall,nc_erase
 
 #define ppb 64             // число страниц в 1 блоке
 
+void ttyflush();
 void dump(unsigned char buffer[],unsigned int len,unsigned int base);
 int send_cmd(unsigned char* incmdbuf, int blen, unsigned char* iobuf);
 int send_cmd_np(unsigned char* incmdbuf, int blen, unsigned char* iobuf);
