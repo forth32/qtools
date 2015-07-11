@@ -421,7 +421,7 @@ for(;;)  {
  line=readline(">");
 #else
  printf(">");
- gets(line);
+ fgets(line, sizeof(line), stdin);
 #endif
  if (line == 0) {
     printf("\n");
