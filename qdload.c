@@ -20,7 +20,7 @@
 //****************************************************
 void extract_ptable() {
   
-unsigned int addr,blk,pg,udsize,ptlen,npar;
+unsigned int addr,blk,pg,udsize,npar;
 unsigned char buf[4096];
 FILE* out;
 
@@ -90,7 +90,7 @@ printf("\n - Таблица разделов режима записи не на
 //@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@2
 void main(int argc, char* argv[]) {
 
-int opt,res;
+int opt;
 unsigned int start=0;
 #ifndef WIN32
 char devname[50]="/dev/ttyUSB0";
