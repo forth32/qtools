@@ -87,7 +87,7 @@
     <ClCompile Include="..\..\memio.c" />
     <ClCompile Include="..\..\qcio.c" />
     <ClCompile Include="..\..\qcommand.c" />
-    <ClCompile Include="..\..\wingetopt.c" />
+    <ClCompile Include="..\..\getopt.c" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
