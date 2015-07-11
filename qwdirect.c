@@ -1,15 +1,4 @@
-#include <stdio.h>
-#include <string.h>
-#ifndef WIN32
-#include <unistd.h>
-#include <getopt.h>
-#include <termios.h>
-#else
-#include <windows.h>
-#include "getopt.h"
-#include "printf.h"
-#endif
-#include "qcio.h"
+#include "include.h"
 
 //**********************************************************
 //*  Установка формата сектора в конфигурации контроллера

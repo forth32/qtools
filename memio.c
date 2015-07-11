@@ -1,23 +1,7 @@
 //
 //  Процедуры работы с адресным пространоством модема через загрузчик
 //
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#ifndef WIN32
-#include <strings.h>
-#include <termios.h>
-#include <unistd.h>
-#else
-#include <windows.h>
-#include "printf.h"
-#include "getopt.h"
-#endif
-
-#include "qcio.h"
+#include "include.h"
 
 
 

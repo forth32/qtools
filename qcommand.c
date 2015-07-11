@@ -1,20 +1,4 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#ifndef WIN32
-#include <readline/readline.h>
-#include <readline/history.h>
-#include <unistd.h>
-#else
-#include <io.h>
-#include <windows.h>
-#include "getopt.h"
-#include "printf.h"
-#endif
-#include "qcio.h"
+#include "include.h"
 
 // флаг посылки префикса 7E
 int prefixflag=1;

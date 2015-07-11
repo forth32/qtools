@@ -1,24 +1,7 @@
 //
 //  Драйверы для работы с Flash модема через обращения к NAND-контроллеру и процедурам загрузчика
 //
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#ifndef WIN32
-#include <strings.h>
-#include <termios.h>
-#include <unistd.h>
-#else
-#include <io.h>
-#include <windows.h>
-#include "printf.h"
-#include "getopt.h"
-#endif
-
-#include "qcio.h"
+#include "include.h"
 
 // Глбальные переменные - собираем их здесь
 

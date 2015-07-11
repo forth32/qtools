@@ -21,7 +21,7 @@
     <ClInclude Include="..\..\getopt.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\qcio.h">
+    <ClInclude Include="..\..\include.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -1,16 +1,4 @@
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#ifndef WIN32
-#include <unistd.h>
-#else
-#include <windows.h>
-#include "getopt.h"
-#include "printf.h"
-#endif
-#include "qcio.h"
+#include "include.h"
 
 // Размер блока загрузки
 #define dlblock 1017

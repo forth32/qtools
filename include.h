@@ -1,3 +1,41 @@
+#ifndef __QCIO_H__
+#define __QCIO_H__
+
+#include <errno.h>
+#include <fcntl.h>
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+
+#ifdef WIN32
+    #include "getopt.h"
+    #ifndef NO_IO
+        #include <io.h>
+    #endif
+    #include <windows.h>
+#else
+    #include <getopt.h>
+    #include <termios.h>
+    #include <unistd.h>
+    #include <readline/readline.h>
+    #include <readline/history.h>
+#endif
+
+static int printf(const char* format, ...)
+{
+    static char ostr[2048];
+    static wchar_t wstr[2048];
+    va_list args;
+
+    va_start(args, format);
+    vsprintf(ostr, format, args);
+    va_end(args);
+    MultiByteToWideChar(CP_UTF8, 0, ostr, -1, wstr, 2048);
+    WideCharToMultiByte(CP_OEMCP, 0, wstr, -1, ostr, 2048, NULL, NULL);
+    return printf_s("%s", ostr);
+}
 
 extern unsigned int nand_cmd;    // 0x1b400000
 extern unsigned int spp;
@@ -78,4 +116,4 @@ unsigned char* get_chipname();
 int identify_chipset();
 int test_loader();
 void exec_nand(int cmd);
-
+#endif

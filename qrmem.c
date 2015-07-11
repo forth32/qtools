@@ -1,17 +1,4 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#ifndef WIN32
-#include <unistd.h>
-#else
-#include <windows.h>
-#include "getopt.h"
-#include "printf.h"
-#endif
-#include "qcio.h"
+#include "include.h"
 
 //@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 //* Чтение участка памяти модема в файл qmem.bin

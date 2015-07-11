@@ -80,7 +80,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\printf.h" />
-    <ClInclude Include="..\..\qcio.h" />
+    <ClInclude Include="..\..\include.h" />
     <ClInclude Include="..\..\getopt.h" />
   </ItemGroup>
   <ItemGroup>

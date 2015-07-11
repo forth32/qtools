@@ -1,9 +1,4 @@
-#include <stdio.h>
-#include <string.h>
-#ifdef WIN32
-#include <windows.h>
-#include "printf.h"
-#endif
+#include "include.h"
 
 void main(int argc, char* argv[]) {
   

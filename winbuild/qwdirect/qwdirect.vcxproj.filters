@@ -18,7 +18,7 @@
     <Text Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\qcio.h">
+    <ClInclude Include="..\..\include.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\printf.h">

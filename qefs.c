@@ -1,16 +1,4 @@
-#include <stdio.h>
-#include <string.h>
-#include <errno.h>
-#ifndef WIN32
-#include <unistd.h>
-#include <getopt.h>
-#else
-#include <windows.h>
-//#include <io.h>
-#include "getopt.h"
-#include "printf.h"
-#endif
-#include "qcio.h"
+#include "include.h"
 
 //%%%%%%%%%  Общие переменные %%%%%%%%%%%%%%%%55
 
