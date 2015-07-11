@@ -9,6 +9,7 @@
 #include <readline/history.h>
 #include <unistd.h>
 #else
+#include <io.h>
 #include <windows.h>
 #include "getopt.h"
 #include "printf.h"
