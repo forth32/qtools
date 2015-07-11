@@ -1,5 +1,9 @@
- #include <stdio.h>
+#include <stdio.h>
 #include <string.h>
+#ifdef WIN32
+#include <windows.h>
+#include "printf.h"
+#endif
 
 void main(int argc, char* argv[]) {
   
@@ -9,6 +13,10 @@ unsigned char buf[1024*512];
 unsigned char hwidstr[7]="HW_ID1";
 unsigned char hwid[17];
 
+if (argv[1] == NULL) {
+  printf("\nНе указан файл");
+  return;
+}
 in = fopen(argv[1],"rb");
 if (in == NULL) {
   printf("\n Cannot open file %s\n",argv[1]);
