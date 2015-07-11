@@ -247,8 +247,6 @@ exec_nand(1);
 
 int flash_read(int block, int page, int sect) {
   
-unsigned char iobuf[300];
-int iolen;
 int i;
 
 nand_reset();

@@ -93,13 +93,10 @@ printf("\n");
 //@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 void main(int argc, char* argv[]) {
   
-unsigned char iobuf[2048];
 unsigned char partname[17]={0}; // имя раздела
 unsigned char filename[300]="qflash.bin";
-unsigned int i,sec,bcnt,iolen,page,block,filepos,lastpos;
-int res;
+unsigned int i,block,filepos,lastpos;
 unsigned char c;
-unsigned char* sptr;
 unsigned int start=0,len=1,opt;
 unsigned int cwsize;
 unsigned int partlist[60]; // список разделов, разрешенных для чтения

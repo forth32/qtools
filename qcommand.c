@@ -63,8 +63,6 @@ char* sptr;
 unsigned char cmdbuf[2048];
 int bcnt=0;
 int i;
-unsigned char iobuf[8192];
-unsigned int iolen;
 
 sptr=strtok(line," "); // разбор командных байтов, разделенных пробелами
 if (sptr == 0) return;
@@ -82,9 +80,9 @@ iocmd(cmdbuf,bcnt);
 //*******************************************************************
 void binary_cmd(char* line) {
   
-unsigned char cmdbuf[2048],iobuf[2048];
+unsigned char cmdbuf[2048];
 FILE* fcmd;
-unsigned int i,iolen;
+unsigned int i;
 
 char* sptr;
 sptr=strtok(line," "); // выделяем имя файла
@@ -132,8 +130,6 @@ printf(" HDLC %s\n",hdlcflag?"On":"Off");
 //*********************************************8
 void send_loader(char* filename) {
   
-int adr;
-FILE* loader;
 char cmd06[]={6,0,0,0};
 char cmd07[]={7,0,0,0};
 //char cmdsend[1024]={
@@ -342,7 +338,6 @@ char oldcmdline[200]="";
 char line[200];
 #endif
 char scmdline[200]={0};
-int i,iolen;
 #ifndef WIN32
 char devname[50]="/dev/ttyUSB0";
 #else

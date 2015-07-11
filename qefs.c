@@ -33,7 +33,7 @@ unsigned char cmd_efsopen[16]=  {0x4B, 0x13,0x16, 0};
 unsigned char cmd_efsdata[16]={0x4B, 0x13,0x17,0,0,0,0,0,0,0,0,0};
 unsigned char cmd_efsclose[16]=  {0x4B, 0x13,0x18, 0};
 
-int iolen,i;
+int iolen;
 FILE* out;
 
 // настройка на альтернативную EFS
@@ -89,7 +89,7 @@ if ((iolen != 11) || test_zero(iobuf+3,5)) {
 //@@@@@@@@@@@@ Головная программа
 void main(int argc, char* argv[]) {
 
-unsigned int opt,i;
+unsigned int opt;
   
 enum{
   MODE_BACK_EFS,
