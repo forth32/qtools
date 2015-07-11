@@ -112,7 +112,6 @@ void main(int argc, char* argv[]) {
   
 unsigned char iobuf[14048];
 unsigned char scmd[13068]={0x7,0,0,0};
-int res;
 char ptabraw[4048];
 int ptablen;
 FILE* part;
@@ -120,13 +119,13 @@ int ptflag=0;
 int listmode=0;
 int wcount=0; 
 
-char* fptr, *nptr;
+char* fptr;
 #ifndef WIN32
 char devname[50]="/dev/ttyUSB0";
 #else
 char devname[50]="";
 #endif
-unsigned int i,opt,iolen,j;
+unsigned int i,opt,iolen;
 unsigned int adr,len;
 unsigned int fsize;
 unsigned int forceflag=0;

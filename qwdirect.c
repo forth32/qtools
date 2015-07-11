@@ -39,26 +39,22 @@ void main(int argc, char* argv[]) {
 			     
 unsigned char datacmd[1024]; // секторный буфер
 			     
-unsigned char iobuf[2048]; // буфер ответа команд
 unsigned char srcbuf[8192]; // буфер страницы 
 unsigned char membuf[1024]; // буфер верификации
 unsigned char databuf[8192], oobuf[8192]; // буферы сектора данных и ООВ
-unsigned char vbuf[2048];
 unsigned int fsize;
-int res;
 FILE* in;
 int vflag=0;
 int cflag=0;
 unsigned int flen=0;
-char* sptr;
 #ifndef WIN32
 char devname[]="/dev/ttyUSB0";
 #else
 char devname[20]="";
 #endif
 unsigned int cfg0bak,cfg1bak,cfgeccbak;
-unsigned int i,opt,iolen,j;
-unsigned int block,page,sector,len;
+unsigned int i,opt;
+unsigned int block,page,sector;
 unsigned int startblock=0;
 unsigned int chipset9x25=0;
 unsigned int bsize;

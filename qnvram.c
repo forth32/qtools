@@ -161,7 +161,7 @@ write_item(sysitem,buf);
 //@@@@@@@@@@@@ Головная программа
 void main(int argc, char* argv[]) {
 
-unsigned int opt,i;
+unsigned int opt;
   
 enum{
   MODE_BACK_NVRAM,
