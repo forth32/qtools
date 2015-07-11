@@ -78,7 +78,7 @@ void read_raw(int start,int len,int cwsize,FILE* out, unsigned int rflag) {
 int block;  
 
 printf("\n Чтение блоков %08x - %08x",start,start+len-1);
-printf("\n Формат данных: %i+%i\n",sectorsize,cwsize-sectorsize);
+printf("\n Формат данных: %u+%i\n",sectorsize,cwsize-sectorsize);
 // главыный цикл
 // по блокам
 for (block=start;block<(start+len);block++) {
@@ -175,7 +175,7 @@ printf("\n Утилита предназначена для чтения обр�
      break;
 
    case 'z':
-     sscanf(optarg,"%i",&oobsize);
+     sscanf(optarg,"%u",&oobsize);
      break;
      
    case 'r':
@@ -221,7 +221,7 @@ printf("\n Утилита предназначена для чтения обр�
      
    case 'f':
      partnumber=1;
-     sscanf(optarg,"%i",&i);
+     sscanf(optarg,"%u",&i);
      partlist[i]=1;
      break;
      
@@ -315,14 +315,14 @@ for(i=0;i<npar;i++) {
       attr=*((unsigned int*)&ptable[40+28*i]);    // атрибуты
       if (((start+len) >maxblock)||(len == 0xffffffff)) len=maxblock-start; // если длина - FFFF, или выходит за пределы флешки
   // Выводим описание раздела - для всех разделов или для конкретного заказанного
-    if ((partnumber == -1) || (partlist[i]==1))  printf("\r%02i %08x  %08x  %08x  %s\n",i,start,len,attr,partname);
+    if ((partnumber == -1) || (partlist[i]==1))  printf("\r%02u %08x  %08x  %08x  %s\n",i,start,len,attr,partname);
   // Читаем раздел - если не указан просто вывод карты. 
     if (listmode == 0) 
       // Все разделы или один конкретный  
       if ((partnumber == -1) || (partlist[i]==1)) {
         // формируем имя файла
-        if (cwsize == sectorsize) sprintf(filename,"%02i-%s.bin",i,partname); 
-        else                   sprintf(filename,"%02i-%s.oob",i,partname);  
+        if (cwsize == sectorsize) sprintf(filename,"%02u-%s.bin",i,partname); 
+        else                   sprintf(filename,"%02u-%s.oob",i,partname);  
         if (filename[4] == ':') filename[4]='-';    // заменяем : на -
         out=fopen(filename,"wb");  // открываем выходной файл
         for(block=start;block<(start+len);block++) {

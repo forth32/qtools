@@ -159,7 +159,7 @@ while ((opt = getopt(argc, argv, "p:k:a:histd:q")) != -1) {
      break;
 
    case 'd':
-     sscanf(optarg,"%i",&delay);
+     sscanf(optarg,"%u",&delay);
      break;
   }     
 }

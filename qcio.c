@@ -134,7 +134,7 @@ unsigned int c;
 if (optarg[0]=='l') list_chipset();
 
 // получаем код чипсета из аргумента
-sscanf(arg,"%i",&c);
+sscanf(arg,"%u",&c);
 set_chipset(c);
 }
 
@@ -149,7 +149,7 @@ chip_type=c;
 for(maxchip=0;chipset[maxchip].nandbase != 0 ;maxchip++);  
 // проверяем наш номер
 if (chip_type>=maxchip) {
-  printf("\n - Неверный код чипсета - %i",chip_type);
+  printf("\n - Неверный код чипсета - %u",chip_type);
   exit(1);
 }
 // устанавливаем адреса регистров чипсета
@@ -344,12 +344,12 @@ get_flash_config();
 printf("\n Флеш-память: %s %s, %s",flash_mfr,rbuf+0x2d,flash_descr); fflush(stdout);
 printf("\n Версия протокола: %i",rbuf[0x22]); fflush(stdout);
 printf("\n Максимальный размер пакета: %i байта",*((unsigned int*)&rbuf[0x24]));fflush(stdout);
-printf("\n Размер сектора: %i байт",sectorsize);fflush(stdout);
-printf("\n Размер страницы: %i байт (%i секторов)",pagesize,spp);fflush(stdout);
-printf("\n Размер OOB: %i байт",oobsize); fflush(stdout);
+printf("\n Размер сектора: %u байт",sectorsize);fflush(stdout);
+printf("\n Размер страницы: %u байт (%u секторов)",pagesize,spp);fflush(stdout);
+printf("\n Размер OOB: %u байт",oobsize); fflush(stdout);
 printf("\n Тип ECC: %s",(cfg1&(1<<27))?"BCH":"R-S"); fflush(stdout);
 if (nand_ecc_cfg != 0xffff) printf(", %i бит",(cfg1&(1<<27))?(((ecccfg>>4)&3)?(((ecccfg>>4)&3)+1)*4:4):4);fflush(stdout);
-printf("\n Общий размер флеш-памяти = %i блоков (%i MB)",maxblock,maxblock*ppb/1024*pagesize/1024);fflush(stdout);
+printf("\n Общий размер флеш-памяти = %u блоков (%i MB)",maxblock,maxblock*ppb/1024*pagesize/1024);fflush(stdout);
 printf("\n");
 }
 

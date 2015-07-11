@@ -99,7 +99,7 @@ if (fcmd == 0) {
 fseek(fcmd,0,SEEK_END);
 i=ftell(fcmd);
 if (i>1024) {
-  printf(" Слишком большой файл - %i байт\n",i);
+  printf(" Слишком большой файл - %u байт\n",i);
   fclose(fcmd);
   return;
 }
@@ -120,7 +120,7 @@ unsigned int mode;
 sptr=strtok(line," "); // выделяем параметр
 
 if (sptr != 0) {  // режим указан - устанавливаем его
-  sscanf(sptr,"%i",&mode);
+  sscanf(sptr,"%u",&mode);
   hdlcflag=mode?1:0;
 }
 printf(" HDLC %s\n",hdlcflag?"On":"Off");

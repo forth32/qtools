@@ -26,7 +26,7 @@ if (in == NULL) {
 fl = fread(&buf,1,sizeof(buf),in);
 fclose(in);
 //laddr=buf[3]&0xffff0000;
-printf("\n** %s: %i bytes\n",argv[1],fl);
+printf("\n** %s: %u bytes\n",argv[1],fl);
 
 for (i=0;i<fl;i++) {
  if (hwidfound == 0) {
