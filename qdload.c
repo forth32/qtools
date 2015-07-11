@@ -245,6 +245,7 @@ if ((helloflag == 0)&& (chip_type != 0))  printf("\n Чипсет: %s",get_chipn
 
 if (start == 0) {
   printf("\n Не указан адрес загрузки\n");
+  fclose(in);
   return;
 }  
 //------- Вариант загрузки через запись загрузчика в память ----------
@@ -254,6 +255,7 @@ iolen=send_cmd_base(cmd1,1,iobuf,1);
 if (iolen != 5) {
    printf("\n Модем не находится в режиме загрузки\n");
 //   dump(iobuf,iolen,0);
+   fclose(in);
    return;
 }   
 iolen=send_cmd_base(cmd2,1,iobuf,1);
@@ -306,6 +308,7 @@ if (helloflag) {
 #else
      printf("\n - Последовательный порт COM%s не открывается\n", devname); 
 #endif
+     fclose(in);
      return; 
   }
   hello(helloflag);
@@ -313,6 +316,6 @@ if (helloflag) {
      if (!bad_loader && tflag) extract_ptable();  // вынимаем таблицы разделов
 }  
 printf("\n");
-
+fclose(in);
 }
 

@@ -107,4 +107,5 @@ for(i=adr;i<endadr;i+=512)  {
  fwrite(iobuf,1,blklen,out);
 } 
 printf("\n"); 
+fclose(out);
 } 

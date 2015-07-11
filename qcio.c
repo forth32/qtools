@@ -690,6 +690,7 @@ while(replybuf[0] != 4) { // сообщение EOIT
  if (replybuf[0] != 3) { // сообщение Read Data
     printf("\n Пакет с недопустимым кодом - прерываем загрузку!");
     dump(replybuf,iolen,0);
+    fclose(in);
     return 1;
  }
   // выделяем параметры фрагмента файла
@@ -704,6 +705,7 @@ while(replybuf[0] != 4) { // сообщение EOIT
   iolen=read(siofd,replybuf,20);      // ответный пакет
   if (iolen == 0) {
     printf("\n Нет ответа от устройства\n");
+    fclose(in);
     return 1;
   }  
 }
@@ -712,6 +714,7 @@ write(siofd,donemes,8);   // отправляем пакет Done
 iolen=read(siofd,replybuf,12); // ожидаем Done Response
 if (iolen == 0) {
   printf("\n Нет ответа от устройства\n");
+  fclose(in);
   return 1;
 } 
 // получаем статус
@@ -721,6 +724,8 @@ if (donestat == 0) {
 } else {
   printf("\n Ошибка запуска загрузчика\n");
 }
+fclose(in);
+
 return donestat;
 
 }
