@@ -12,7 +12,7 @@
 void read_block(int block,int cwsize,FILE* out) {
 
 unsigned char iobuf[14096];  
-int page,sec;
+unsigned int page,sec;
  // цикл по страницам
 for(page=0;page<ppb;page++)  {
 
@@ -33,7 +33,7 @@ for(page=0;page<ppb;page++)  {
 //****************************************************************
 void read_block_resequence(int block, FILE* out) {
 unsigned char iobuf[4096];  
-int page,sec;
+unsigned int page,sec;
  // цикл по страницам
 for(page=0;page<ppb;page++)  {
 
@@ -98,7 +98,7 @@ int truncflag=0;  //  1 - отрезать все FF от конца разде�
 int xflag=0;
 
 int attr; // арибуты
-int npar; // число разедлов в таблице
+unsigned int npar; // число разедлов в таблице
 
 
 #ifndef WIN32

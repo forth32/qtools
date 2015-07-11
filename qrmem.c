@@ -11,7 +11,7 @@ void main(int argc, char* argv[]) {
   
 unsigned char iobuf[2048];
 unsigned char filename[300]="qmem.bin";
-int i;
+unsigned int i;
 unsigned int adr=0,len=0x200,endadr,blklen=512,helloflag=0,opt;
 FILE* out;
 

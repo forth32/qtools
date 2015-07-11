@@ -10,7 +10,7 @@ struct  {
   char partname[16];
 } ptable[30];
 
-int npart=0;    // число разделов в таблице
+unsigned int npart=0;    // число разделов в таблице
 
 unsigned int cfg0,cfg1; // сохранение конфигурации контроллера
 
