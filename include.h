@@ -1,5 +1,5 @@
-#ifndef __QCIO_H__
-#define __QCIO_H__
+#ifndef __INCLUDE_H__
+#define __INCLUDE_H__
 
 #include <errno.h>
 #include <fcntl.h>
@@ -23,6 +23,7 @@
     #include <readline/history.h>
 #endif
 
+#ifdef WIN32
 static int printf(const char* format, ...)
 {
     static char ostr[2048];
@@ -36,6 +37,7 @@ static int printf(const char* format, ...)
     WideCharToMultiByte(CP_OEMCP, 0, wstr, -1, ostr, 2048, NULL, NULL);
     return printf_s("%s", ostr);
 }
+#endif
 
 extern unsigned int nand_cmd;    // 0x1b400000
 extern unsigned int spp;
