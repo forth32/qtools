@@ -12,6 +12,7 @@
 #include <termios.h>
 #include <unistd.h>
 #else
+#include <io.h>
 #include <windows.h>
 #include "printf.h"
 #include "wingetopt.h"
