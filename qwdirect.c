@@ -1,15 +1,4 @@
-#include <stdio.h>
-#include <string.h>
-#ifndef WIN32
-#include <unistd.h>
-#include <getopt.h>
-#include <termios.h>
-#else
-#include <windows.h>
-#include "wingetopt.h"
-#include "printf.h"
-#endif
-#include "qcio.h"
+#include "include.h"
 
 //**********************************************************
 //*  Установка формата сектора в конфигурации контроллера
@@ -108,7 +97,7 @@ while ((opt = getopt(argc, argv, "hp:k:b:f:vc:z:l:o:")) != -1) {
      break;
      
    case 'z':
-     sscanf(optarg,"%i",&oobsize);
+     sscanf(optarg,"%u",&oobsize);
      break;
      
    case 'l':
@@ -235,7 +224,7 @@ if ((i%bsize) != 0) fsize++; // округляем вверх до границ�
 
 if (flen == 0) flen=fsize;
 else if (flen>fsize) {
-  printf("\n Указанная длина %i превосходит размер файла %i\n",flen,fsize);
+  printf("\n Указанная длина %u превосходит размер файла %u\n",flen,fsize);
   return;
 }  
   
@@ -251,7 +240,7 @@ switch (wmode) {
     
   case w_image: 
     printf("сырой образ без расчета ЕСС\n");
-	printf(" Формат данных: %i+%i\n",sectorsize,oobsize); 
+	printf(" Формат данных: %u+%u\n",sectorsize,oobsize); 
     break;
     
   case w_yaffs: 
@@ -381,14 +370,14 @@ for(block=startblock;block<(startblock+flen);block++) {
 	    // все сектора кроме последнего
 	    for (i=0;i<sectorsize+4;i++) 
 	      if (membuf[i] != databuf[sector*(sectorsize+4)+i])
-                 printf("! block: %04x  page:%02x  sector:%i  byte: %03x  %02x != %02x\n",
+                 printf("! block: %04x  page:%02x  sector:%u  byte: %03x  %02x != %02x\n",
 			block,page,sector,i,membuf[i],databuf[sector*(sectorsize+4)+i]); 
 	  }  
 	  else {
 	      // последний сектор
 	    for (i=0;i<sectorsize-4*(spp-1);i++) 
 	      if (membuf[i] != databuf[(spp-1)*(sectorsize+4)+i])
-                 printf("! block: %04x  page:%02x  sector:%i  byte: %03x  %02x != %02x\n",
+                 printf("! block: %04x  page:%02x  sector:%u  byte: %03x  %02x != %02x\n",
 			block,page,sector,i,membuf[i],databuf[(spp-1)*(sectorsize+4)+i]); 
 	  }    
 	  break; 
@@ -399,7 +388,7 @@ for(block=startblock;block<(startblock+flen);block++) {
           // верификация в стандартном формате
 	  for (i=0;i<sectorsize;i++) 
 	      if (membuf[i] != databuf[sector*sectorsize+i])
-                 printf("! block: %04x  page:%02x  sector:%i  byte: %03x  %02x != %02x\n",
+                 printf("! block: %04x  page:%02x  sector:%u  byte: %03x  %02x != %02x\n",
 			block,page,sector,i,membuf[i],databuf[sector*sectorsize+i]); 
 	  break;   
       }  // switch(wmode)

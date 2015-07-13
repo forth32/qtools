@@ -1,18 +1,4 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#ifndef WIN32
-#include <unistd.h>
-#else
-#include <windows.h>
-#include <io.h>
-#include "wingetopt.h"
-#include "printf.h"
-#endif
-#include "qcio.h"
+#include "include.h"
 
 //@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 //* Чтение флеша модема в файл 
@@ -26,7 +12,7 @@
 void read_block(int block,int cwsize,FILE* out) {
 
 unsigned char iobuf[14096];  
-int page,sec;
+unsigned int page,sec;
  // цикл по страницам
 for(page=0;page<ppb;page++)  {
 
@@ -47,7 +33,7 @@ for(page=0;page<ppb;page++)  {
 //****************************************************************
 read_block_resequence(int block, FILE* out) {
 unsigned char iobuf[4096];  
-int page,sec;
+unsigned int page,sec;
  // цикл по страницам
 for(page=0;page<ppb;page++)  {
 
@@ -78,7 +64,7 @@ void read_raw(int start,int len,int cwsize,FILE* out, unsigned int rflag) {
 int block;  
 
 printf("\n Чтение блоков %08x - %08x",start,start+len-1);
-printf("\n Формат данных: %i+%i\n",sectorsize,cwsize-sectorsize);
+printf("\n Формат данных: %u+%i\n",sectorsize,cwsize-sectorsize);
 // главыный цикл
 // по блокам
 for (block=start;block<(start+len);block++) {
@@ -115,7 +101,7 @@ int truncflag=0;  //  1 - отрезать все FF от конца разде�
 int xflag=0;
 
 int attr; // арибуты
-int npar; // число разедлов в таблице
+unsigned int npar; // число разедлов в таблице
 
 
 #ifndef WIN32
@@ -178,7 +164,7 @@ printf("\n Утилита предназначена для чтения обр�
      break;
 
    case 'z':
-     sscanf(optarg,"%i",&oobsize);
+     sscanf(optarg,"%u",&oobsize);
      break;
      
    case 'r':
@@ -224,7 +210,7 @@ printf("\n Утилита предназначена для чтения обр�
      
    case 'f':
      partnumber=1;
-     sscanf(optarg,"%i",&i);
+     sscanf(optarg,"%u",&i);
      partlist[i]=1;
      break;
      
@@ -289,6 +275,7 @@ if (len == 0) len=maxblock-start; //  до конца флешки
 if (partflag == 0) { 
   out=fopen(filename,"wb");
   read_raw(start,len,cwsize,out,rflag);
+  fclose(out);
   return;
 }  
 
@@ -305,7 +292,7 @@ if (strncmp(ptable,"\xAA\x73\xEE\x55\xDB\xBD\x5E\xE3",8) != 0) {
 npar=*((unsigned int*)&ptable[12]);
 printf("\n Версия таблицы разделов: %i",*((unsigned int*)&ptable[8]));
 if ((partnumber != -1) && (partnumber>=npar)) {
-  printf("\nНедопустимый номер раздела: %i, всего разделов %i\n",partnumber,npar);
+  printf("\nНедопустимый номер раздела: %i, всего разделов %u\n",partnumber,npar);
   return;
 }  
 printf("\n #  адрес    размер   атрибуты ------ Имя------\n");     
@@ -317,14 +304,14 @@ for(i=0;i<npar;i++) {
       attr=*((unsigned int*)&ptable[40+28*i]);    // атрибуты
       if (((start+len) >maxblock)||(len == 0xffffffff)) len=maxblock-start; // если длина - FFFF, или выходит за пределы флешки
   // Выводим описание раздела - для всех разделов или для конкретного заказанного
-    if ((partnumber == -1) || (partlist[i]==1))  printf("\r%02i %08x  %08x  %08x  %s\n",i,start,len,attr,partname);
+    if ((partnumber == -1) || (partlist[i]==1))  printf("\r%02u %08x  %08x  %08x  %s\n",i,start,len,attr,partname);
   // Читаем раздел - если не указан просто вывод карты. 
     if (listmode == 0) 
       // Все разделы или один конкретный  
       if ((partnumber == -1) || (partlist[i]==1)) {
         // формируем имя файла
-        if (cwsize == sectorsize) sprintf(filename,"%02i-%s.bin",i,partname); 
-        else                   sprintf(filename,"%02i-%s.oob",i,partname);  
+        if (cwsize == sectorsize) sprintf(filename,"%02u-%s.bin",i,partname); 
+        else                   sprintf(filename,"%02u-%s.oob",i,partname);  
         if (filename[4] == ':') filename[4]='-';    // заменяем : на -
         out=fopen(filename,"wb");  // открываем выходной файл
         for(block=start;block<(start+len);block++) {

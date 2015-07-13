@@ -1,16 +1,4 @@
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#ifndef WIN32
-#include <unistd.h>
-#include <getopt.h>
-#else
-#include <windows.h>
-//#include <io.h>
-#include "wingetopt.h"
-#include "printf.h"
-#endif
-#include "qcio.h"
+#include "include.h"
 
 // Размер блока записи
 #define wbsize 1024
@@ -22,7 +10,7 @@ struct  {
   char partname[16];
 } ptable[30];
 
-int npart=0;    // число разделов в таблице
+unsigned int npart=0;    // число разделов в таблице
 
 unsigned int cfg0,cfg1; // сохранение конфигурации контроллера
 
@@ -230,7 +218,7 @@ hello(0);
 
 printf("\n #  --Раздел--  ------- Файл -----");     
 for(i=0;i<npart;i++) {
-    printf("\n%02i  %-14.14s  %s",i,ptable[i].partname,ptable[i].filename);
+    printf("\n%02u  %-14.14s  %s",i,ptable[i].partname,ptable[i].filename);
 }
 printf("\n");
 if (listmode)  return; // ключ -m - на этом все.
@@ -256,7 +244,7 @@ port_timeout(1000);
 for(i=0;i<npart;i++) {
   part=fopen(ptable[i].filename,"rb");
   if (part == 0) {
-    printf("\n Раздел %i: ошибка открытия файла %s\n",i,ptable[i].filename);
+    printf("\n Раздел %u: ошибка открытия файла %s\n",i,ptable[i].filename);
     return;
   }
   
@@ -265,10 +253,11 @@ for(i=0;i<npart;i++) {
   fsize=ftell(part);
   rewind(part);
 
-  printf("\n Запись раздела %i (%s)",i,ptable[i].partname); fflush(stdout);
+  printf("\n Запись раздела %u (%s)",i,ptable[i].partname); fflush(stdout);
   // отсылаем заголовок
   if (!send_head(ptable[i].partname)) {
     printf("\n! Модем отверг заголовок раздела\n");
+    fclose(part);
     return;
   }  
   // цикл записи кусков раздела по 1К за команду
@@ -281,11 +270,12 @@ for(i=0;i<npart;i++) {
     scmd[4]=(adr>>24)&0xff;
     memset(scmd+5,0xff,wbsize+1);   // заполняем буфер данных FF
     len=fread(scmd+5,1,wbsize,part);
-    printf("\r Запись раздела %i (%s): байт %i из %i (%i%%) ",i,ptable[i].partname,adr,fsize,(adr+1)*100/fsize); fflush(stdout);
+    printf("\r Запись раздела %u (%s): байт %u из %u (%i%%) ",i,ptable[i].partname,adr,fsize,(adr+1)*100/fsize); fflush(stdout);
     iolen=send_cmd_base(scmd,len+5,iobuf,0);
     if ((iolen == 0) || (iobuf[1] != 8)) {
       show_errpacket("Пакет данных ",iobuf,iolen);
-      printf("\n Ошибка записи раздела %i (%s): адрес:%06x\n",i,ptable[i].partname,adr);
+      printf("\n Ошибка записи раздела %u (%s): адрес:%06x\n",i,ptable[i].partname,adr);
+      fclose(part);
       return;
     }
     if (feof(part)) break; // конец раздела и конец файла
@@ -293,6 +283,7 @@ for(i=0;i<npart;i++) {
   // Раздел передан полностью
   if (!qclose(1)) {
     printf("\n Ошибка закрытия потока даных\n");
+    fclose(part);
     return;
   }  
   printf(" ... запись завершена");
@@ -303,6 +294,7 @@ for(i=0;i<npart;i++) {
 #endif
 }
 printf("\n");
+fclose(part);
 }
 
 

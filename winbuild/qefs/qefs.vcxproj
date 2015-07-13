@@ -68,7 +68,7 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_CRT_SECURE_NO_WARNINGS;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -82,15 +82,15 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\printf.h" />
-    <ClInclude Include="..\..\qcio.h" />
-    <ClInclude Include="..\..\wingetopt.h" />
+    <ClInclude Include="..\..\include.h" />
+    <ClInclude Include="..\..\getopt.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\hdlc.c" />
     <ClCompile Include="..\..\memio.c" />
     <ClCompile Include="..\..\qcio.c" />
     <ClCompile Include="..\..\qefs.c" />
-    <ClCompile Include="..\..\wingetopt.c" />
+    <ClCompile Include="..\..\getopt.c" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

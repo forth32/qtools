@@ -1,8 +1,4 @@
-#include <stdio.h>
-#ifdef WIN32
-#include <windows.h>
-#include "printf.h"
-#endif
+#include "include.h"
 
 void main(int argc, char* argv[]) {
   
@@ -35,6 +31,7 @@ while (!feof(in)) {
 } 
 if (feof(in)) {
    printf("\n Сигнатура блока таблиц разделов не найдена\n");
+   fclose(in);
    return;
 }
 // теперь padr - адрес блока разделов внутри файла
@@ -78,10 +75,14 @@ while(!feof(in)) {
    wflag=1;  // таблица чтения у нас есть
    continue; // пропускаем дальнейшую обработку сектора
  }
- if (rflag && wflag) return;   // найдены обе таблицы
+ if (rflag && wflag)
+ {
+     fclose(in);
+     return;   // найдены обе таблицы
+ }
  fseek(in,504,SEEK_CUR);  // пропускаем остаток сектора
 }  
 if (!rflag) printf("\n Таблица чтения не найдена\n");
 if (!wflag) printf("\n Таблица записи не найдена\n");
-
+    fclose(in);
 }

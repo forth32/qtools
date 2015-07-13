@@ -1,19 +1,4 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#ifndef WIN32
-#include <readline/readline.h>
-#include <readline/history.h>
-#include <unistd.h>
-#else
-#include <windows.h>
-#include "wingetopt.h"
-#include "printf.h"
-#endif
-#include "qcio.h"
+#include "include.h"
 
 // флаг посылки префикса 7E
 int prefixflag=1;
@@ -98,7 +83,7 @@ if (fcmd == 0) {
 fseek(fcmd,0,SEEK_END);
 i=ftell(fcmd);
 if (i>1024) {
-  printf(" Слишком большой файл - %i байт\n",i);
+  printf(" Слишком большой файл - %u байт\n",i);
   fclose(fcmd);
   return;
 }
@@ -119,7 +104,7 @@ unsigned int mode;
 sptr=strtok(line," "); // выделяем параметр
 
 if (sptr != 0) {  // режим указан - устанавливаем его
-  sscanf(sptr,"%i",&mode);
+  sscanf(sptr,"%u",&mode);
   hdlcflag=mode?1:0;
 }
 printf(" HDLC %s\n",hdlcflag?"On":"Off");
@@ -421,7 +406,7 @@ for(;;)  {
  line=readline(">");
 #else
  printf(">");
- gets(line);
+ fgets(line, sizeof(line), stdin);
 #endif
  if (line == 0) {
     printf("\n");

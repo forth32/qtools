@@ -31,10 +31,12 @@ if (argc == 2) {
   fread(&i,1,4,ldr);
   if (i != 0xdeadbeef) {
      printf("\n Загрузчик не содержит в себе блок идентификации\n");
+     fclose(ldr);
      return;
    }
   fread(&code,4,1,ldr);
   fread(&adr,4,1,ldr);
+  fclose(ldr);
   printf("\n Параметры идентификации загрузчика %s:",argv[1]);
   printf("\n * Код чипсета = 0x%x",code);
   printf("\n * Адрес загрузки = 0x%08x\n\n",adr);
@@ -46,12 +48,14 @@ if (argc == 2) {
 sscanf(argv[2],"%x",&code);
 if (code == 0) {
   printf("\n Неправильный код чипсета>\n");
+  fclose(ldr);
   return;
 }
 
 sscanf(argv[3],"%x",&adr);
 if (adr == 0) {
   printf("\n Неправильный код чипсета>\n");
+  fclose(ldr);
   return;
 }
 
@@ -69,5 +73,6 @@ else {
 }  
 fwrite(&code,4,1,ldr);
 fwrite(&adr,4,1,ldr);
+fclose(ldr);
 }
 

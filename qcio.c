@@ -1,23 +1,7 @@
 //
 //  Драйверы для работы с Flash модема через обращения к NAND-контроллеру и процедурам загрузчика
 //
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#ifndef WIN32
-#include <strings.h>
-#include <termios.h>
-#include <unistd.h>
-#else
-#include <windows.h>
-#include "printf.h"
-#include "wingetopt.h"
-#endif
-
-#include "qcio.h"
+#include "include.h"
 
 // Глбальные переменные - собираем их здесь
 
@@ -133,7 +117,7 @@ unsigned int c;
 if (optarg[0]=='l') list_chipset();
 
 // получаем код чипсета из аргумента
-sscanf(arg,"%i",&c);
+sscanf(arg,"%u",&c);
 set_chipset(c);
 }
 
@@ -148,7 +132,7 @@ chip_type=c;
 for(maxchip=0;chipset[maxchip].nandbase != 0 ;maxchip++);  
 // проверяем наш номер
 if (chip_type>=maxchip) {
-  printf("\n - Неверный код чипсета - %i",chip_type);
+  printf("\n - Неверный код чипсета - %u",chip_type);
   exit(1);
 }
 // устанавливаем адреса регистров чипсета
@@ -343,12 +327,12 @@ get_flash_config();
 printf("\n Флеш-память: %s %s, %s",flash_mfr,rbuf+0x2d,flash_descr); fflush(stdout);
 printf("\n Версия протокола: %i",rbuf[0x22]); fflush(stdout);
 printf("\n Максимальный размер пакета: %i байта",*((unsigned int*)&rbuf[0x24]));fflush(stdout);
-printf("\n Размер сектора: %i байт",sectorsize);fflush(stdout);
-printf("\n Размер страницы: %i байт (%i секторов)",pagesize,spp);fflush(stdout);
-printf("\n Размер OOB: %i байт",oobsize); fflush(stdout);
+printf("\n Размер сектора: %u байт",sectorsize);fflush(stdout);
+printf("\n Размер страницы: %u байт (%u секторов)",pagesize,spp);fflush(stdout);
+printf("\n Размер OOB: %u байт",oobsize); fflush(stdout);
 printf("\n Тип ECC: %s",(cfg1&(1<<27))?"BCH":"R-S"); fflush(stdout);
 if (nand_ecc_cfg != 0xffff) printf(", %i бит",(cfg1&(1<<27))?(((ecccfg>>4)&3)?(((ecccfg>>4)&3)+1)*4:4):4);fflush(stdout);
-printf("\n Общий размер флеш-памяти = %i блоков (%i MB)",maxblock,maxblock*ppb/1024*pagesize/1024);fflush(stdout);
+printf("\n Общий размер флеш-памяти = %u блоков (%i MB)",maxblock,maxblock*ppb/1024*pagesize/1024);fflush(stdout);
 printf("\n");
 }
 
@@ -690,6 +674,7 @@ while(replybuf[0] != 4) { // сообщение EOIT
  if (replybuf[0] != 3) { // сообщение Read Data
     printf("\n Пакет с недопустимым кодом - прерываем загрузку!");
     dump(replybuf,iolen,0);
+    fclose(in);
     return 1;
  }
   // выделяем параметры фрагмента файла
@@ -704,6 +689,7 @@ while(replybuf[0] != 4) { // сообщение EOIT
   iolen=read(siofd,replybuf,20);      // ответный пакет
   if (iolen == 0) {
     printf("\n Нет ответа от устройства\n");
+    fclose(in);
     return 1;
   }  
 }
@@ -712,6 +698,7 @@ write(siofd,donemes,8);   // отправляем пакет Done
 iolen=read(siofd,replybuf,12); // ожидаем Done Response
 if (iolen == 0) {
   printf("\n Нет ответа от устройства\n");
+  fclose(in);
   return 1;
 } 
 // получаем статус
@@ -721,6 +708,8 @@ if (donestat == 0) {
 } else {
   printf("\n Ошибка запуска загрузчика\n");
 }
+fclose(in);
+
 return donestat;
 
 }

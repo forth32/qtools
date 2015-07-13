@@ -1,17 +1,4 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#ifndef WIN32
-#include <unistd.h>
-#else
-#include <windows.h>
-#include "wingetopt.h"
-#include "printf.h"
-#endif
-#include "qcio.h"
+#include "include.h"
 
 //@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 //* Чтение участка памяти модема в файл qmem.bin
@@ -24,7 +11,7 @@ void main(int argc, char* argv[]) {
   
 unsigned char iobuf[2048];
 unsigned char filename[300]="qmem.bin";
-int i;
+unsigned int i;
 unsigned int adr=0,len=0x200,endadr,blklen=512,helloflag=0,opt;
 FILE* out;
 
@@ -35,7 +22,7 @@ char devname[20]="/dev/ttyUSB0";
 char devname[20]="";
 #endif
 
-while ((opt = getopt(argc, argv, "p:a:l:o:h")) != -1) {
+while ((opt = getopt(argc, argv, "p:a:l:o:h:i")) != -1) {
   switch (opt) {
    case 'h': 
      printf("\n Утилита предназначена для чтения адресного пространства модема\n\n\
@@ -107,4 +94,5 @@ for(i=adr;i<endadr;i+=512)  {
  fwrite(iobuf,1,blklen,out);
 } 
 printf("\n"); 
+fclose(out);
 } 

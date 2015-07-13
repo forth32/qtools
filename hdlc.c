@@ -1,23 +1,8 @@
 //
 //  Процедуры для рабты с последовательным портом и HDLC-командами
 //
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#ifndef WIN32
-#include <strings.h>
-#include <termios.h>
-#include <unistd.h>
-#else
-#include <windows.h>
-#include "printf.h"
-#include "wingetopt.h"
-#endif
-
-#include "qcio.h"
+#define NO_IO
+#include "include.h"
 
 
   

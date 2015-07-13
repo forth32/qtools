@@ -1,16 +1,4 @@
-#include <stdio.h>
-#include <string.h>
-#include <errno.h>
-#ifndef WIN32
-#include <unistd.h>
-#include <getopt.h>
-#else
-#include <windows.h>
-//#include <io.h>
-#include "wingetopt.h"
-#include "printf.h"
-#endif
-#include "qcio.h"
+#include "include.h"
 
 //%%%%%%%%%  Общие переменные %%%%%%%%%%%%%%%%55
 
@@ -53,6 +41,7 @@ iolen=send_cmd_base(cmd_efsh1, 4, iobuf, 0);
 if ((iolen != 11) || test_zero(iobuf+3,5)) {
   printf("\n Неправильный ответ на команду 19\n");
   dump(iobuf,iolen,0);
+  fclose(out);
   return;
 }
 
@@ -60,6 +49,7 @@ iolen=send_cmd_base(cmd_efsopen, 4, iobuf, 0);
 if ((iolen != 11) || test_zero(iobuf+3,5)) {
   printf("\n Неправильный ответ на команду открытия (16)\n");
   dump(iobuf,iolen,0);
+  fclose(out);
   return;
 }
 printf("\n");
@@ -83,6 +73,8 @@ iolen=send_cmd_base(cmd_efsclose,4,iobuf,0);
 if ((iolen != 11) || test_zero(iobuf+3,5)) {
   printf("\n Неправильный ответ на команду закрытия (18)\n");
   dump(iobuf,iolen,0);
+  fclose(out);
+
 }
 }
   

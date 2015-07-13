@@ -1,5 +1,4 @@
- #include <stdio.h>
-#include <string.h>
+#include "include.h"
 
 void main(int argc, char* argv[]) {
   
@@ -9,15 +8,20 @@ unsigned char buf[1024*512];
 unsigned char hwidstr[7]="HW_ID1";
 unsigned char hwid[17];
 
-in=fopen(argv[1],"rb");
-if (in == 0) {
+if (argv[1] == NULL) {
+  printf("\nНе указан файл\n");
+  return;
+}
+in = fopen(argv[1],"rb");
+if (in == NULL) {
   printf("\n Cannot open file %s\n",argv[1]);
   return;
 }
 
-fl=fread(&buf,1,sizeof(buf),in);
+fl = fread(&buf,1,sizeof(buf),in);
+fclose(in);
 //laddr=buf[3]&0xffff0000;
-printf("\n** %s: %i bytes\n",argv[1],fl);
+printf("\n** %s: %u bytes\n",argv[1],fl);
 
 for (i=0;i<fl;i++) {
  if (hwidfound == 0) {

@@ -1,16 +1,4 @@
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#ifndef WIN32
-#include <unistd.h>
-#else
-#include <windows.h>
-#include "wingetopt.h"
-#include "printf.h"
-#endif
-#include "qcio.h"
+#include "include.h"
 
 // Размер блока загрузки
 #define dlblock 1017
@@ -20,7 +8,7 @@
 //****************************************************
 void extract_ptable() {
   
-unsigned int addr,blk,pg,udsize,ptlen,npar;
+unsigned int addr,blk,pg,udsize,npar;
 unsigned char buf[4096];
 FILE* out;
 
@@ -90,7 +78,7 @@ printf("\n - Таблица разделов режима записи не на
 //@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@2
 void main(int argc, char* argv[]) {
 
-int opt,res;
+int opt;
 unsigned int start=0;
 #ifndef WIN32
 char devname[50]="/dev/ttyUSB0";
@@ -159,7 +147,7 @@ while ((opt = getopt(argc, argv, "p:k:a:histd:q")) != -1) {
      break;
 
    case 'd':
-     sscanf(optarg,"%i",&delay);
+     sscanf(optarg,"%u",&delay);
      break;
   }     
 }
@@ -245,6 +233,7 @@ if ((helloflag == 0)&& (chip_type != 0))  printf("\n Чипсет: %s",get_chipn
 
 if (start == 0) {
   printf("\n Не указан адрес загрузки\n");
+  fclose(in);
   return;
 }  
 //------- Вариант загрузки через запись загрузчика в память ----------
@@ -254,6 +243,7 @@ iolen=send_cmd_base(cmd1,1,iobuf,1);
 if (iolen != 5) {
    printf("\n Модем не находится в режиме загрузки\n");
 //   dump(iobuf,iolen,0);
+   fclose(in);
    return;
 }   
 iolen=send_cmd_base(cmd2,1,iobuf,1);
@@ -306,6 +296,7 @@ if (helloflag) {
 #else
      printf("\n - Последовательный порт COM%s не открывается\n", devname); 
 #endif
+     fclose(in);
      return; 
   }
   hello(helloflag);
@@ -313,6 +304,6 @@ if (helloflag) {
      if (!bad_loader && tflag) extract_ptable();  // вынимаем таблицы разделов
 }  
 printf("\n");
-
+fclose(in);
 }
 
