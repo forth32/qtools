@@ -269,6 +269,7 @@ for(i=0;i<npart;i++) {
   // отсылаем заголовок
   if (!send_head(ptable[i].partname)) {
     printf("\n! Модем отверг заголовок раздела\n");
+    fclose(part);
     return;
   }  
   // цикл записи кусков раздела по 1К за команду
@@ -286,6 +287,7 @@ for(i=0;i<npart;i++) {
     if ((iolen == 0) || (iobuf[1] != 8)) {
       show_errpacket("Пакет данных ",iobuf,iolen);
       printf("\n Ошибка записи раздела %i (%s): адрес:%06x\n",i,ptable[i].partname,adr);
+      fclose(part);
       return;
     }
     if (feof(part)) break; // конец раздела и конец файла
@@ -293,6 +295,7 @@ for(i=0;i<npart;i++) {
   // Раздел передан полностью
   if (!qclose(1)) {
     printf("\n Ошибка закрытия потока даных\n");
+    fclose(part);
     return;
   }  
   printf(" ... запись завершена");
@@ -303,6 +306,7 @@ for(i=0;i<npart;i++) {
 #endif
 }
 printf("\n");
+fclose(part);
 }
 
 

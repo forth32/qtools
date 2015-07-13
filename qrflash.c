@@ -289,6 +289,7 @@ if (len == 0) len=maxblock-start; //  до конца флешки
 if (partflag == 0) { 
   out=fopen(filename,"wb");
   read_raw(start,len,cwsize,out,rflag);
+  fclose(out);
   return;
 }  
 

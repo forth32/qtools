@@ -9,13 +9,14 @@ unsigned char buf[1024*512];
 unsigned char hwidstr[7]="HW_ID1";
 unsigned char hwid[17];
 
-in=fopen(argv[1],"rb");
-if (in == 0) {
+in = fopen(argv[1],"rb");
+if (in == NULL) {
   printf("\n Cannot open file %s\n",argv[1]);
   return;
 }
 
-fl=fread(&buf,1,sizeof(buf),in);
+fl = fread(&buf,1,sizeof(buf),in);
+fclose(in);
 //laddr=buf[3]&0xffff0000;
 printf("\n** %s: %i bytes\n",argv[1],fl);
 
