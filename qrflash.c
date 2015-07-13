@@ -45,7 +45,7 @@ for(page=0;page<ppb;page++)  {
 //****************************************************************
 //* Чтение блока данных с восстановлением китайского изврата
 //****************************************************************
-void read_block_resequence(int block, FILE* out) {
+read_block_resequence(int block, FILE* out) {
 unsigned char iobuf[4096];  
 int page,sec;
  // цикл по страницам
@@ -93,10 +93,13 @@ printf("\n");
 //@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 void main(int argc, char* argv[]) {
   
+unsigned char iobuf[2048];
 unsigned char partname[17]={0}; // имя раздела
 unsigned char filename[300]="qflash.bin";
-unsigned int i,block,filepos,lastpos;
+unsigned int i,sec,bcnt,iolen,page,block,filepos,lastpos;
+int res;
 unsigned char c;
+unsigned char* sptr;
 unsigned int start=0,len=1,opt;
 unsigned int cwsize;
 unsigned int partlist[60]; // список разделов, разрешенных для чтения
@@ -250,7 +253,7 @@ if (!open_port(devname))  {
    return; 
 }
 
-if ((truncflag == 1)&&(cwsize>sectorsize)) {
+if ((truncflag == 1)&&(xflag == 1)) {
   printf("\nКлючи -t и -x несовместимы\n");
   return;
 }  
