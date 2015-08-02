@@ -2,7 +2,7 @@ CC       = gcc
 LIBS     = -lreadline
 CFLAGS   = -O2 -g -Wno-unused-result
 
-OBJS     = qcio.o hdlc.o memio.o
+OBJS     = hdlc.o  qcio.o memio.o
 
 .PHONY: all clean
 
