@@ -63,7 +63,7 @@ return (~crc)&0xffff;
 
 #ifdef WIN32
 
-static int read(int siofd, unsigned char* buf, int len)
+int read(int siofd, unsigned char* buf, int len)
 {
     DWORD bytes_read = 0;
     DWORD t = GetTickCount();
@@ -75,7 +75,7 @@ static int read(int siofd, unsigned char* buf, int len)
     return bytes_read;
 }
 
-static int write(int siofd, unsigned char* buf, int len)
+int write(int siofd, unsigned char* buf, int len)
 {
     DWORD bytes_written = 0;
 
