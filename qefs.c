@@ -385,6 +385,26 @@ else dump(fbuf,flen,0);
 free(fbuf);
 }
 
+//******************************************************
+//*  Чтение единичного файла из EFS в текущий каталог
+//******************************************************
+void get_file(char* name) {
+  
+unsigned int flen;
+char* fnpos;
+FILE* out;
+
+flen=readfile(name);
+if (flen == 0) return;
+// выделяем имя файла из полного пути
+fnpos=strrchr(name,'/');
+if (fnpos == 0) fnpos=name;
+else fnpos++;
+out=fopen(fnpos,"w");
+fwrite(fbuf,1,flen,out);
+fclose(out);
+}
+
 
 
 //@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
@@ -397,7 +417,8 @@ struct fileinfo fi;
 enum{
   MODE_BACK_EFS,
   MODE_FILELIST,
-  MODE_TYPE
+  MODE_TYPE,
+  MODE_GETFILE
 }; 
 
 
@@ -406,9 +427,15 @@ enum {
   T_DUMP
 };  
 
+enum {
+  G_FILE,
+  G_ALL
+};  
+
 int mode=-1;
 int lmode=-1;
 int tmode=-1;
+int gmode=-1;
 
 #ifndef WIN32
 char devname[50]="/dev/ttyUSB0";
@@ -430,6 +457,7 @@ while ((opt = getopt(argc, argv, "hp:o:ab:g:l:rt:")) != -1) {
 -lf       - показать полный список файлов EFS\n  (Для всех -l ключей можео указать начальный путь к каталогу)\n\n\
 -tt       - просмотр файла в текстовом виде\n\
 -td       - просмотр файла в виде дампа\n\n\
+-gf       - читает указанный файл из EFS в текущий каталог\n\n\
 * Ключи-модификаторы:\n\
 -r        - обработка всех подкаталогов при выводе листинга\n\
 -p <tty>  - указывает имя устройства диагностического порта модема\n\
@@ -507,14 +535,18 @@ while ((opt = getopt(argc, argv, "hp:o:ab:g:l:rt:")) != -1) {
 	 return;
       }
      break; 
-   //  === группа ключей get ==
+
+  //  === группа ключей чтения файла (get) ==
    case 'g':
      if (mode != -1) {
        printf("\n В командной строке задано более 1 ключа режима работы\n");
        return;
      }  
+     mode=MODE_GETFILE;
      switch(*optarg) {
-	 
+       case 'f':
+	 gmode=G_FILE;
+	 break;
 	 
        default:
 	 printf("\n Неправильно задано значение ключа -g\n");
@@ -603,6 +635,10 @@ switch (mode) {
       break;
     }  
     list_file(argv[optind],tmode);
+    break;
+
+  case MODE_GETFILE:
+    get_file(argv[optind]);
     break;
     
   default:
