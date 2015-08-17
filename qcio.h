@@ -77,3 +77,4 @@ unsigned char* get_chipname();
 int identify_chipset();
 int test_loader();
 void exec_nand(int cmd);
+int find_chipset(unsigned short chip_code);

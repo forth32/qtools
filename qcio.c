@@ -25,17 +25,18 @@ struct {
   unsigned char udflag;    // udsize таблицы разделов, 0-512, 1-516
   unsigned char name[20];  // имя чипсета
   unsigned int ctrl_type;  // схема расположения регистров NAND-контроллера
+  unsigned short chip_code;  // код идентификации чипсета
 }  chipset[]= {
-//  адрес NAND  UDflag  имя    ctrl      ##
-  { 0xffffffff,   0, "Unknown", 0},  //  0
-  { 0xA0A00000,   0, "MDM8200", 0},  //  1
-  { 0x81200000,   0, "MDM9x00", 0},  //  2
-  { 0xf9af0000,   1, "MDM9x25", 0},  //  3
-  { 0x1b400000,   0, "MDM9x15", 0},  //  4
-  { 0x70000000,   0, "MDM6600", 0},  //  5
-  { 0x60000300,   0, "MDM6800", 0},  //  6
-  { 0x60000000,   0, "MSM6246", 1},  //  7
-  { 0xA0A00000,   0, "MSM7x27", 0},  //  8
+//  адрес NAND  UDflag  имя    ctrl  msm_id        ##
+  { 0xffffffff,   0, "Unknown", 0,   0xffff},  //  0
+  { 0xA0A00000,   0, "MDM8200", 0,   0xffff},  //  1
+  { 0x81200000,   0, "MDM9x00", 0,   0x03f1},  //  2
+  { 0xf9af0000,   1, "MDM9x25", 0,   0x07f1},  //  3
+  { 0x1b400000,   0, "MDM9x15", 0,   0x0740},  //  4
+  { 0x70000000,   0, "MDM6600", 0,   0xffff},  //  5
+  { 0x60000300,   0, "MDM6800", 0,   0xffff},  //  6
+  { 0x60000000,   0, "MSM6246", 1,   0xffff},  //  7
+  { 0xA0A00000,   0, "MSM7x27", 0,   0xffff},  //  8
   { 0,0,0 }
 };
 
@@ -89,6 +90,19 @@ unsigned int sector_buf;
 // глобальные хранилища кодов команд
 
 unsigned int nc_stop,nc_read,nc_readall,nc_program,nc_programall,nc_erase,nc_identify;
+
+//************************************************
+//*   Поиск чипсета по msm_id
+//************************************************
+int find_chipset(unsigned short chip_code) {
+int i;
+
+for(i=1;chipset[i].nandbase != 0 ;i++) {
+  if (chipset[i].chip_code == chip_code) return i;
+}
+// не найдено
+return -1;
+}  
 
 //************************************************
 //* Печать списка поддерживаемых чипсетов
