@@ -29,7 +29,7 @@ struct {
 }  chipset[]= {
 //  адрес NAND  UDflag  имя    ctrl  msm_id        ##
   { 0xffffffff,   0, "Unknown", 0,   0xffff},  //  0
-  { 0xA0A00000,   0, "MDM8200", 0,   0xffff},  //  1
+  { 0xA0A00000,   0, "MDM8200", 0,   0x04e0},  //  1
   { 0x81200000,   0, "MDM9x00", 0,   0x03f1},  //  2
   { 0xf9af0000,   1, "MDM9x25", 0,   0x07f1},  //  3
   { 0x1b400000,   0, "MDM9x15", 0,   0x0740},  //  4

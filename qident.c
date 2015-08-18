@@ -75,7 +75,7 @@ chip_code=( ((chip_code&0xff)<<8) | ((chip_code&0xff00)>>8) );
 // получаем ID чипсета по коду
 chip_id=find_chipset(chip_code);
 if (chip_id == -1) {	
-  printf("\n Чипсет не опознан, код чипсета - %04x",chip_id);
+  printf("\n Чипсет не опознан, код чипсета - %04x\n",chip_code);
   return;
 }
 // чипсет найден
