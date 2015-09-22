@@ -41,10 +41,11 @@ char devname[]="/dev/ttyUSB0";
 #else
 char devname[20]="";
 #endif
-unsigned int cfg0bak,cfg1bak,cfgeccbak,cfgecctemp;
+unsigned int cfg0bak,cfg1bak,cfgeccbak;
 unsigned int i,opt;
 unsigned int block,page,sector;
 unsigned int startblock=0;
+unsigned int chipset9x25=0;
 unsigned int bsize;
 unsigned int fileoffset=0;
 int wmode=0; // режим записи
@@ -53,7 +54,6 @@ int wmode=0; // режим записи
 #define w_linux    1
 #define w_yaffs    2
 #define w_image    3
-#define w_linout   4
 
 while ((opt = getopt(argc, argv, "hp:k:b:f:vc:z:l:o:")) != -1) {
   switch (opt) {
@@ -67,8 +67,7 @@ while ((opt = getopt(argc, argv, "hp:k:b:f:vc:z:l:o:")) != -1) {
         -fs (по умолчанию) - запись только секторов данных\n\
         -fl - запись только секторов данных в линуксовом формате\n\
         -fy - запись yaffs2-образов\n\
-	-fi - запись сырого образа данные+OOB, как есть, без пересчета ЕСС\n\
-	-fo - на входе - только данные, на флешке - линуксовый формат\n\
+        -fi - запись сырого образа данные+OOB, как есть, без пересчета ЕСС\n\
 -z #      - размер OOB на одну страницу, в байтах (перекрывает автоопределенный размер)\n\
 -l #      - число записываемых блоков, по умолчанию - до конца входного файла\n\
 -o #      - смещение в блоках в исходном файле до начала записываемого участка\n\
@@ -129,10 +128,6 @@ while ((opt = getopt(argc, argv, "hp:k:b:f:vc:z:l:o:")) != -1) {
 	
        case 'i':
         wmode=w_image;
-	break;
-
-       case 'o':
-        wmode=w_linout;
 	break;
 	
        default:
@@ -214,9 +209,8 @@ else {
 }
   
 // Определяем размер файла
-if (wmode == w_linout) bsize=pagesize*ppb; // для этого режима файл не содержит данных OOB, но требуется запись в OOB
-else bsize=(pagesize+oobsize*spp)*ppb;  // размер в байтах полного блока флешки, с учетом ООВ
-fileoffset*=bsize; // переводим смещение из блоков в байты
+bsize=(pagesize+oobsize*spp)*ppb;  // размер в байтах полного блока флешки, с учетом ООВ
+fileoffset*=bsize; // переводим смещение из байтов в блоки
 fseek(in,0,SEEK_END);
 i=ftell(in);
 if (i<=fileoffset) {
@@ -232,7 +226,7 @@ if (flen == 0) flen=fsize;
 else if (flen>fsize) {
   printf("\n Указанная длина %u превосходит размер файла %u\n",flen,fsize);
   return;
-} 
+}  
   
 printf("\n Запись из файла %s, стартовый блок %03x, размер %03x\n Режим записи: ",argv[optind],startblock,flen);
 switch (wmode) {
@@ -241,7 +235,7 @@ switch (wmode) {
     break;
     
   case w_linux: 
-    printf("только данные, линуксовый формат на входе\n");
+    printf("только данные, линуксовый формат\n");
     break;
     
   case w_image: 
@@ -251,14 +245,8 @@ switch (wmode) {
     
   case w_yaffs: 
     printf("образ yaffs2\n");
-    if ((chip_type != 3) && (chip_type != 8)) set_blocksize(516,1,10); // data - 516, spare - 1 (чего-то), ecc - 10
-    else set_blocksize(516,2,0); // data - 516, spare - 2 (чего-то), ecc - 0
-    break;
-
-  case w_linout: 
-    printf("линуксовый формат на флешке\n");
-    if ((chip_type != 3) && (chip_type != 8)) set_blocksize(516,1,10); // data - 516, spare - 1 (чего-то), ecc - 10
-    else set_blocksize(516,2,0); // data - 516, spare - 2 (чего-то), ecc - 0
+    if (!chipset9x25) set_blocksize(516,1,10); // data - 516, spare - 1 (чего-то), ecc - 0
+    else              set_blocksize(516,2,0); // data - 516, spare - 2 (чего-то), ecc - 10
     break;
 }   
     
@@ -269,46 +257,28 @@ port_timeout(1000);
 for(block=startblock;block<(startblock+flen);block++) {
   // стираем блок
   block_erase(block);
-  if ((chip_type == 3) || (chip_type == 8)) { // 9x25 или 9x3x
-	cfgecctemp=mempeek(nand_ecc_cfg); // конфигурация с учётом включения/отключения ECC
+  if (chipset9x25) {
     mempoke(nand_ecc_cfg,(mempeek(nand_ecc_cfg))|2); // сброс движка BCH
-    mempoke(nand_ecc_cfg,cfgecctemp); // восстановление конфигурации BCH
+    mempoke(nand_ecc_cfg,cfgeccbak); // восстановление конфигурации BCH
   } 
 
   // цикл по страницам
   for(page=0;page<ppb;page++) {
-
-	memset(oobuf,0xff,sizeof(oobuf));
     
     // читаем весь дамп страницы
-    if (wmode == w_linout) { 
-	if (fread(srcbuf,1,pagesize,in) < pagesize) goto endpage;  
-	} else {
-	    if (fread(srcbuf,1,pagesize+(spp*oobsize),in) < (pagesize+(spp*oobsize))) goto endpage; // образ страницы - page+oob
-	}
+    if (fread(srcbuf,1,pagesize+(spp*oobsize),in) < (pagesize+(spp*oobsize))) goto endpage;  // образ страницы - page+oob
     // разбираем дамп по буферам
-	switch (wmode) {
-      case w_standart:
-      case w_linux:
-      case w_image:
-      // для всех режимов, кроме yaffs и linout - формат входного файла 512+obb
-      for (i=0;i<spp;i++) {
-		memcpy(databuf+sectorsize*i,srcbuf+(sectorsize+oobsize)*i,sectorsize);
-		if (oobsize != 0) memcpy(oobuf+oobsize*i,srcbuf+(sectorsize+oobsize)*i+sectorsize,oobsize);
+    if (wmode != w_yaffs) 
+      // для всех режимов кроме yaffs - формат входного файла 512+obb
+     for (i=0;i<spp;i++) {
+       memcpy(databuf+sectorsize*i,srcbuf+(sectorsize+oobsize)*i,sectorsize);
+       if (oobsize != 0) memcpy(oobuf+oobsize*i,srcbuf+(sectorsize+oobsize)*i+sectorsize,oobsize);
      }  
-	break;
-	 
-      case w_yaffs:
+     else {
       // для режима yaffs - формат входного файла pagesize+obb 
-		memcpy(databuf,srcbuf,sectorsize*spp);
-		memcpy(oobuf,srcbuf+sectorsize*spp,oobsize*spp);
-	break;
-
-      case w_linout:
-      // для этого режима - во входном файле только данные с размером pagesize 
-		memcpy(databuf,srcbuf,pagesize);
-	break;
-    }
+       memcpy(databuf,srcbuf,sectorsize*spp);
+       memcpy(oobuf,srcbuf+sectorsize*spp,oobsize*spp);
+     }  
     
     // устанавливаем адрес флешки
     printf("\r Блок: %04x   Страница: %02x",block,page); fflush(stdout);
@@ -316,21 +286,19 @@ for(block=startblock;block<(startblock+flen);block++) {
 
     // устанавливаем код команды записи
     switch (wmode) {
-	case w_standart:
+      case w_standart:
 	mempoke(nand_cmd,0x36); // page program
-    break;
+	break;
 
-	case w_linux:
-	case w_yaffs:
-	case w_linout:
+      case w_linux:
+      case w_yaffs:
         mempoke(nand_cmd,0x39); // запись data+spare
-    break;
+	break;
 	 
-	case w_image:
+      case w_image:
         mempoke(nand_cmd,0x37); // запись data+spare+ecc
-    break;
+	break;
     }
-
     // цикл по секторам
     for(sector=0;sector<spp;sector++) {
       memset(datacmd,0xff,sectorsize+64); // заполняем секторный буфер FF - значения по умолчанию
@@ -347,18 +315,18 @@ for(block=startblock;block<(startblock+flen);block++) {
              memcpy(datacmd,databuf+(spp-1)*(sectorsize+4),sectorsize-4*(spp-1)); // данные последнего сектора - укорачиваем
 	  break;
 	  
-		case w_standart:
+	case w_standart:
 	 // стандартный формат - только сектора по 512 байт, без ООВ
           memcpy(datacmd,databuf+sector*sectorsize,sectorsize); 
 	  break;
 	  
-		case w_image:
+	case w_image:
 	 // сырой образ - data+oob, ECC не вычисляется
           memcpy(datacmd,databuf+sector*sectorsize,sectorsize);       // data
           memcpy(datacmd+sectorsize,oobuf+sector*oobsize,oobsize);    // oob
-	  break;
+          break;
 
-		case w_yaffs:
+	case w_yaffs:
 	 // образ yaffs - записываем только данные 516-байтными блоками 
 	 //  и yaffs-тег в конце последнего блока
 	 // входной файл имеет формат page+oob, но при этом тег лежит с позиции 0 OOB 
@@ -369,20 +337,8 @@ for(block=startblock;block<(startblock+flen);block++) {
 	 // последний сектор
              memcpy(datacmd,databuf+(spp-1)*(sectorsize+4),sectorsize-4*(spp-1)); // данные последнего сектора - укорачиваем
              memcpy(datacmd+sectorsize-4*(spp-1),oobuf,16 );    // тег yaffs присоединяем к нему
-		  }
+	  }
 	  break;
-
-		case w_linout:
-	 // записываем только данные 516-байтными блоками 
-          if (sector < (spp-1))  
-	 //первые n секторов
-             memcpy(datacmd,databuf+sector*(sectorsize+4),sectorsize+4); 
-          else  {
-	 // последний сектор
-             memcpy(datacmd,databuf+(spp-1)*(sectorsize+4),sectorsize-4*(spp-1)); // данные последнего сектора - укорачиваем
-		  }
-	  break;
-
       }
       // пересылаем сектор в секторный буфер
 	  if (!memwrite(sector_buf,datacmd,sectorsize+oobsize)) {
@@ -391,7 +347,7 @@ for(block=startblock;block<(startblock+flen);block++) {
       }	
       // выполняем команду записи и ждем ее завершения
       mempoke(nand_exec,0x1);
-      nandwait(); 
+      nandwait();
      }  // конец цикла записи по секторам
      if (!vflag) continue;   // верификация не требуется
     // верификация данных
@@ -426,10 +382,9 @@ for(block=startblock;block<(startblock+flen);block++) {
 	  }    
 	  break; 
 	  
-		 case w_standart:
-	     case w_image:  
+	 case w_standart:
+	 case w_image:  
          case w_yaffs:  
-	     case w_linout: // пока не работает! 
           // верификация в стандартном формате
 	  for (i=0;i<sectorsize;i++) 
 	      if (membuf[i] != databuf[sector*sectorsize+i])
