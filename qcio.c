@@ -36,7 +36,8 @@ struct {
   { 0x70000000,   0, "MDM6600", 0,   0xffff},  //  5
   { 0x60000300,   0, "MDM6800", 0,   0xffff},  //  6
   { 0x60000000,   0, "MSM6246", 1,   0x0120},  //  7
-  { 0xA0A00000,   0, "MSM7x27", 0,   0xffff},  //  8
+  { 0xf9af0000,   1, "MDM9x3x", 0,   0xffff},  //  8
+  { 0xA0A00000,   0, "MSM7x27", 0,   0xffff},  //  9
   { 0,0,0 }
 };
 
@@ -681,7 +682,8 @@ switch (imgid) {
 	break;
 
 	case 0x0d:
-	infilename="loaders/ENPRG9x25p.bin";
+	if (chip_type == 8) infilename="loaders/MPRG8926pp.bin";
+	else infilename="loaders/ENPRG9x25p.bin";
 	break;
 
 	default:
