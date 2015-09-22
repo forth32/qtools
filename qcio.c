@@ -333,6 +333,18 @@ if (!test_loader()) {
   exit(1);
 }  
 set_chipset(chip_type);
+
+///////////////////////////////////////////////////////
+if (chip_type == 8) { // Аварийное решение для MDM9x3x при работе с MPRG8926
+    mempoke(nand_cfg0,0x295409c0);
+    mempoke(nand_cfg1,0x08065d5d);
+    mempoke(nand_ecc_cfg,0x42040d10);
+    mempoke(nand_cmd+0xac,0x1d);
+    mempoke(nand_cmd+0xe8,2);
+    mempoke(nand_cmd+0xf0,0);
+}
+///////////////////////////////////////////////////////
+
 printf("\n Чипсет: %s  (%08x)",get_chipname(),nand_cmd); fflush(stdout);
 if (chip_type == 3) disable_bam(); // отключаем NANDc BAM, если работаем с 9x25
 cfg1=mempeek(nand_cfg1);
