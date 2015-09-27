@@ -16,6 +16,7 @@
     <ClInclude Include="..\..\getopt.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\chipconfig.c" />
     <ClCompile Include="..\..\hdlc.c" />
     <ClCompile Include="..\..\memio.c" />
     <ClCompile Include="..\..\qcio.c" />

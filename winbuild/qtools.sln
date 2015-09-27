@@ -21,6 +21,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "qnvram", "qnvram\qnvram.vcx
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "qblinfo", "qblinfo\qblinfo.vcxproj", "{6BB69D49-CD85-4B14-A238-62749B01FB84}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "qident", "qident\qident.vcxproj", "{02854773-2CD9-47DC-8773-EFCA2DAF7B5C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -67,6 +69,10 @@ Global
 		{6BB69D49-CD85-4B14-A238-62749B01FB84}.Debug|Win32.Build.0 = Release|Win32
 		{6BB69D49-CD85-4B14-A238-62749B01FB84}.Release|Win32.ActiveCfg = Release|Win32
 		{6BB69D49-CD85-4B14-A238-62749B01FB84}.Release|Win32.Build.0 = Release|Win32
+		{02854773-2CD9-47DC-8773-EFCA2DAF7B5C}.Debug|Win32.ActiveCfg = Release|Win32
+		{02854773-2CD9-47DC-8773-EFCA2DAF7B5C}.Debug|Win32.Build.0 = Release|Win32
+		{02854773-2CD9-47DC-8773-EFCA2DAF7B5C}.Release|Win32.ActiveCfg = Release|Win32
+		{02854773-2CD9-47DC-8773-EFCA2DAF7B5C}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

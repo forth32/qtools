@@ -11,17 +11,16 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{B00B8A73-AAF3-41B8-87AC-2BD451C7E8EA}</ProjectGuid>
+    <ProjectGuid>{02854773-2CD9-47DC-8773-EFCA2DAF7B5C}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
-    <RootNamespace>qefs</RootNamespace>
+    <RootNamespace>qident</RootNamespace>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v110_xp</PlatformToolset>
+    <PlatformToolset>v110</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
-    <UseOfMfc>Static</UseOfMfc>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
@@ -68,7 +67,7 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32;_CRT_SECURE_NO_WARNINGS;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -81,17 +80,17 @@
     <Text Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\printf.h" />
-    <ClInclude Include="..\..\include.h" />
-    <ClInclude Include="..\..\getopt.h" />
-  </ItemGroup>
-  <ItemGroup>
     <ClCompile Include="..\..\chipconfig.c" />
+    <ClCompile Include="..\..\getopt.c" />
     <ClCompile Include="..\..\hdlc.c" />
     <ClCompile Include="..\..\memio.c" />
     <ClCompile Include="..\..\qcio.c" />
-    <ClCompile Include="..\..\qefs.c" />
-    <ClCompile Include="..\..\getopt.c" />
+    <ClCompile Include="..\..\qident.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\getopt.h" />
+    <ClInclude Include="..\..\include.h" />
+    <ClInclude Include="..\..\printf.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

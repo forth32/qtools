@@ -128,8 +128,8 @@ while(fgets(line,300,in) != 0) {
   }   
   
   // строка является одной из переменных, описывающих чипсет
-  bzero(vname,sizeof(vname));
-  bzero(vval,sizeof(vval));
+  memset(vname,0,sizeof(vname));
+  memset(vval,0,sizeof(vval));
   // выделяем токен-описатель
   index=strspn(line," ");  // получаем указатель на начало информативной части строки
   tok1=line+index; // начало токена
