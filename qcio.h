@@ -6,13 +6,8 @@ extern unsigned int maxblock;    // Общее число блоков флеш�
 extern unsigned int oobsize;
 extern unsigned int bad_loader;
 
-// тип чипcета:
-//-----------------------------------
-//  0 - (MDM9x15, по умолчанию), 
-//  1 - (MDM8200)
-//  2 - (MDM9x00), 
-//  3 - (MDM9x25)
-extern unsigned int chip_type; 
+// индекс в таблице чипcетов
+extern int chip_type; 
 
 
 // #define nand_addr0 nand_cmd+4
@@ -78,3 +73,6 @@ int identify_chipset();
 int test_loader();
 void exec_nand(int cmd);
 int find_chipset(unsigned short chip_code);
+
+int load_config();
+unsigned int get_udflag();

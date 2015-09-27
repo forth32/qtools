@@ -207,7 +207,7 @@ void load_ptable(unsigned char* buf) {
 unsigned int udsize=512;
 unsigned int blk,pg;
 
-if (chipset[chip_type].udflag) udsize=516;
+if (get_udflag()) udsize=516;
 
 memset(buf,0,1024); // обнуляем таблицу
 

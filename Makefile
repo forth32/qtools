@@ -2,7 +2,7 @@ CC       = gcc
 LIBS     = -lreadline
 CFLAGS   = -O2 -g -Wno-unused-result
 
-OBJS     = hdlc.o  qcio.o memio.o
+OBJS     = hdlc.o  qcio.o memio.o chipconfig.o
 
 .PHONY: all clean
 
@@ -17,6 +17,7 @@ clean:
 
 qcio.o: qcio.c
 hdlc.o: hdlc.c
+chipconfig.o: chipconfig.c
 memio.o: memio.c
 #	$(CC) -c qcio.c
 
