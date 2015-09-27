@@ -101,12 +101,8 @@ while(fgets(line,300,in) != 0) {
   if (strlen(tok1) == 0) continue; // строка из одних пробелов
   
   // начало описателя очередного чипсета
-  if (tok1[0] != '[') {
-    printf("\n@@ описатель чипсета:");
-    if (maxchip == -1) {
-      printf("\n! Файл конфигурации содержит строки вне секции описания чипсетов\n");
-      return 0;
-    }   
+  if (tok1[0] == '[') {
+//     printf("\n@@ описатель чипсета:");
    tok2=strchr(tok1,']');
    if (tok2 == 0) {
       printf("\n! Файл конфигурации содержит ошибку в заголовке чипсета\n %s\n",line);
@@ -118,13 +114,18 @@ while(fgets(line,300,in) != 0) {
     chipset[maxchip].id=0;         // код (id) чипcета 0 - несуществующий чипсет
     chipset[maxchip].nandbase=0;   // адрес контроллера
     chipset[maxchip].udflag=0;    // udsize таблицы разделов, 0-512, 1-516
-    strcpy(chipset[maxchip].name,tok1);  // имя чипсета
+    strcpy(chipset[maxchip].name,tok1+1);  // имя чипсета
     chipset[maxchip].ctrl_type=0;  // схема расположения регистров NAND-контроллера
     memset(chip_code[maxchip],0xffff,40);  // таблица msm_id заполняется FF
     msmidcount=0;
-      printf("\n@@ %s",tok1);
+//       printf("\n@@ %s",tok1+1);
     continue;
   }
+
+  if (maxchip == -1) {
+      printf("\n! Файл конфигурации содержит строки вне секции описания чипсетов\n");
+      return 0;
+  }   
   
   // строка является одной из переменных, описывающих чипсет
   bzero(vname,sizeof(vname));
@@ -140,8 +141,10 @@ while(fgets(line,300,in) != 0) {
      printf("\n! Файл конфигурации: нет значения переменной\n%s\n",line);
      return 0;
   }
-  index=strcspn(tok1," ="); // начало значения
-  strcpy(vval,tok1+index);
+  tok1+=strspn(tok1,"= "); // пропускаем разделитель
+  strncpy(vval,tok1,strcspn(tok1," \r\n"));
+
+//   printf("\n @@@ vname = <%s>   vval = <%s>",vname,vval); 
   
   // разбираем имена переменных
   
@@ -216,10 +219,11 @@ return -1;
 void list_chipset() {
   
 int i;
-printf("\n Код     Имя    Адрес NAND\n-----------------------------------");
+printf("\n Код     Имя    Адрес NAND   Тип  udflag\n--------------------------------------------");
 for(i=0;i<maxchip;i++) {
 //  if (i == 0)  printf("\n  0 (по умолчанию) автоопределение чипсета");
-  printf("\n %2i  %9.9s    %08x",chipset[i].id,chipset[i].name,chipset[i].nandbase);
+  printf("\n %2i  %9.9s    %08x    %1i     %1i",chipset[i].id,chipset[i].name,chipset[i].nandbase,
+    chipset[i].ctrl_type,chipset[i].udflag);
 }
 printf("\n\n");
 exit(0);
