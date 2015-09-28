@@ -251,13 +251,13 @@ switch (wmode) {
     
   case w_yaffs: 
     printf("образ yaffs2\n");
-    if ((chip_type != 3) && (chip_type != 8)) set_blocksize(516,1,10); // data - 516, spare - 1 (чего-то), ecc - 10
+    if (! (is_chipset("MDM9x25") || is_chipset("MDM9x3x"))) set_blocksize(516,1,10); // data - 516, spare - 1 (чего-то), ecc - 10
     else set_blocksize(516,2,0); // data - 516, spare - 2 (чего-то), ecc - 0
     break;
 
   case w_linout: 
     printf("линуксовый формат на флешке\n");
-    if ((chip_type != 3) && (chip_type != 8)) set_blocksize(516,1,10); // data - 516, spare - 1 (чего-то), ecc - 10
+    if (! (is_chipset("MDM9x25") || is_chipset("MDM9x3x"))) set_blocksize(516,1,10); // data - 516, spare - 1 (чего-то), ecc - 10
     else set_blocksize(516,2,0); // data - 516, spare - 2 (чего-то), ecc - 0
     break;
 }   
@@ -269,7 +269,7 @@ port_timeout(1000);
 for(block=startblock;block<(startblock+flen);block++) {
   // стираем блок
   block_erase(block);
-  if ((chip_type == 3) || (chip_type == 8)) { // 9x25 или 9x3x
+  if (is_chipset("MDM9x25") || is_chipset("MDM9x3x")) { // 9x25 или 9x3x
 	cfgecctemp=mempeek(nand_ecc_cfg); // конфигурация с учётом включения/отключения ECC
     mempoke(nand_ecc_cfg,(mempeek(nand_ecc_cfg))|2); // сброс движка BCH
     mempoke(nand_ecc_cfg,cfgecctemp); // восстановление конфигурации BCH
