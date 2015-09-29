@@ -192,7 +192,6 @@ if (sahara_flag) {
 	#endif
 
 	if (helloflag) {
-	        set_chipset(chip_type);    // все процедуры жестко завязаны на 9x25
 		hello(helloflag);
 		printf("\n");
 		if (tflag && (helloflag != 2)) extract_ptable();  // вынимаем таблицы разделов
