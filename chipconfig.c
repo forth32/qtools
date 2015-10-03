@@ -202,10 +202,11 @@ return 1;
 //************************************************
 int find_chipset(unsigned short code) {
 int i,j;
-
+if (maxchip == -1) 
+  if (!load_config()) exit(0); // конфиг не загрузился
 for(i=0;i<maxchip;i++) {
   for (j=0;j<20;j++) {
-   if (code == chip_code[i][j]) return i;
+   if (code == chip_code[i][j]) return chipset[i].id;
    if (chip_code[i][j] == 0xffff) break;
   }    
 }
@@ -218,12 +219,13 @@ return -1;
 //***********************************************
 void list_chipset() {
   
-int i;
-printf("\n Код     Имя    Адрес NAND   Тип  udflag\n--------------------------------------------");
+int i,j;
+printf("\n Код     Имя    Адрес NAND   Тип  udflag  MSM_ID\n--------------------------------------------------------------");
 for(i=0;i<maxchip;i++) {
 //  if (i == 0)  printf("\n  0 (по умолчанию) автоопределение чипсета");
-  printf("\n %2i  %9.9s    %08x    %1i     %1i",chipset[i].id,chipset[i].name,chipset[i].nandbase,
-    chipset[i].ctrl_type,chipset[i].udflag);
+  printf("\n %2i  %9.9s    %08x    %1i     %1i    ",chipset[i].id,chipset[i].name,chipset[i].nandbase,chipset[i].ctrl_type,chipset[i].udflag);
+  for(j=0;chip_code[i][j]!=0xffff;j++) 
+    printf(" %04hx",chip_code[i][j]);
 }
 printf("\n\n");
 exit(0);
