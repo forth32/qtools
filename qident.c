@@ -72,14 +72,16 @@ if (iobuf[0] != 0) {
 chip_code=*((unsigned short*)&iobuf[0x35]);
 // переворачиваем chip id
 chip_code=( ((chip_code&0xff)<<8) | ((chip_code&0xff00)>>8) );
-// получаем ID чипсета по коду
-chip_id=find_chipset(chip_code);
-if (chip_id == -1) {	
-  printf("\n Чипсет не опознан, код чипсета - %04x\n",chip_code);
-  return;
+// инициализируем таблицу чипсетов
+if (load_config()) {
+  // получаем ID чипсета по коду
+  chip_id=find_chipset(chip_code);
+  if (chip_id == -1) {	
+    printf("\n Чипсет не опознан, код чипсета - %04x\n",chip_code);
+    return;
+  }
+  // чипсет найден
+  set_chipset(chip_id+1); // не знаю, почему нужно +1, но так работает правильно
+  printf("\n Чипсет: %s  (%08x)\n",get_chipname(),nand_cmd); fflush(stdout);
 }
-// чипсет найден
-set_chipset(chip_id);
-printf("\n Чипсет: %s  (%08x)\n",get_chipname(),nand_cmd); fflush(stdout);
-
 } 
