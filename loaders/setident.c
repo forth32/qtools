@@ -47,14 +47,14 @@ if (argc == 2) {
 
 sscanf(argv[2],"%x",&code);
 if (code == 0) {
-  printf("\n Неправильный код чипсета>\n");
+  printf("\n Неправильный код чипсета\n");
   fclose(ldr);
   return;
 }
 
 sscanf(argv[3],"%x",&adr);
 if (adr == 0) {
-  printf("\n Неправильный код чипсета>\n");
+  printf("\n Неправильный адрес\n");
   fclose(ldr);
   return;
 }

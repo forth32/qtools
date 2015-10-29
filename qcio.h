@@ -76,3 +76,4 @@ int find_chipset(unsigned short chip_code);
 
 int load_config();
 unsigned int get_udflag();
+unsigned int get_sahara();

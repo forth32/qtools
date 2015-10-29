@@ -16,6 +16,7 @@ struct {
   unsigned char udflag;    // udsize таблицы разделов, 0-512, 1-516
   unsigned char name[20];  // имя чипсета
   unsigned int ctrl_type;  // схема расположения регистров NAND-контроллера
+  unsigned int sahara;
 }  chipset[100];
 
 // таблица кодов идентификации чипсета, не более 20 кодов на 1 чипсет
@@ -181,6 +182,13 @@ while(fgets(line,300,in) != 0) {
     sscanf(vval,"%hx",&chip_code[maxchip][msmidcount++]);
     continue;
   }
+
+  // флаг sahara-протокола
+  if (strcmp(vname,"sahara") == 0) {
+    chipset[maxchip].sahara=atoi(vval);
+    continue;
+  }
+
   
   // остальные имена
   printf("\n! Файл конфигурации: недопустимое имя переменной\n%s\n",line);
@@ -299,6 +307,13 @@ unsigned char* get_chipname() {
 //**************************************************************
 unsigned int get_controller() {
   return chipset[chip_type].ctrl_type;
+}  
+
+//**************************************************************
+//* Получение флага sahara-протокола
+//**************************************************************
+unsigned int get_sahara() {
+  return chipset[chip_type].sahara;
 }  
 
 //************************************************************
