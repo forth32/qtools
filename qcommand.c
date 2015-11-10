@@ -204,12 +204,13 @@ x                 - выход из программы\n\
   // активация загрузчика 
   case 'i':
     sptr=strtok(cmdline+1," "); // адрес
-    if (sptr == 0) {
+    if (sptr[0] == 0x0a) {
       hello(1);
       break;
     }
+//	printf("%s\n",*sptr);
     if (sptr[0] != 's') {
-      printf("\n Недопустимы параметр в команде i");
+      printf("\n Недопустимый параметр в команде i");
       break;
     }
     hello(2);
@@ -249,7 +250,7 @@ x                 - выход из программы\n\
    sptr=strtok(0," ");        // сектор
    if (sptr == 0) {printf("\n Не указан # сектора"); return;}
    sscanf(sptr,"%x",&sect);
-   if (sect>3)  {printf("\n Слишком большой # сектора"); return;}
+   if (sect>spp-1)  {printf("\n Слишком большой # сектора"); return;}
    
    flash_read(block,page,sect);
 //   break;
