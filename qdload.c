@@ -180,26 +180,6 @@ if (!open_port(devname))  {
 unlink("ptable/current-r.bin");
 unlink("ptable/current-w.bin");
 
-
-//----- Вариант загрузки через сахару -------
-
-if (sahara_flag) {
-  if (dload_sahara() == 0) {
-	#ifndef WIN32
-	usleep(200000);   // ждем инициализации загрузчика
-	#else
-	Sleep(200);   // ждем инициализации загрузчика
-	#endif
-
-	if (helloflag) {
-		hello(helloflag);
-		printf("\n");
-		if (tflag && (helloflag != 2)) extract_ptable();  // вынимаем таблицы разделов
-	}
-  }
-  return;
-}	
-
 // ---- открываем входной файл
 in=fopen(argv[optind],"rb");
 if (in == 0) {
@@ -208,6 +188,7 @@ if (in == 0) {
 }
 
 
+// Идентифицируем загрузчик
 // Ищем блок идентификации
 fseek(in,-12,SEEK_END);
 fread(&i,4,1,in);
@@ -239,6 +220,28 @@ if ((start == 0) && !sahara_flag) {
   fclose(in);
   return;
 }  
+
+
+
+//----- Вариант загрузки через сахару -------
+
+if (sahara_flag) {
+  if (dload_sahara() == 0) {
+	#ifndef WIN32
+	usleep(200000);   // ждем инициализации загрузчика
+	#else
+	Sleep(200);   // ждем инициализации загрузчика
+	#endif
+
+	if (helloflag) {
+		hello(helloflag);
+		printf("\n");
+		if (tflag && (helloflag != 2)) extract_ptable();  // вынимаем таблицы разделов
+	}
+  }
+  return;
+}	
+
 //------- Вариант загрузки через запись загрузчика в память ----------
 
 printf("\n Файл загрузчика: %s\n Адрес загрузки: %08x",argv[optind],start);
