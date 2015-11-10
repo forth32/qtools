@@ -180,6 +180,31 @@ if (!open_port(devname))  {
 unlink("ptable/current-r.bin");
 unlink("ptable/current-w.bin");
 
+
+// Проверяем, не требуется ли для данного чипсета sahara-протокол
+if (chip_type != 0)
+  if (get_sahara()) sahara_flag=1;
+//printf("\n chip_type = %i   sahara = %i",chip_type,sahara_flag);
+
+//----- Вариант загрузки через сахару -------
+
+if (sahara_flag) {
+  if (dload_sahara() == 0) {
+	#ifndef WIN32
+	usleep(200000);   // ждем инициализации загрузчика
+	#else
+	Sleep(200);   // ждем инициализации загрузчика
+	#endif
+
+	if (helloflag) {
+		hello(helloflag);
+		printf("\n");
+		if (tflag && (helloflag != 2)) extract_ptable();  // вынимаем таблицы разделов
+	}
+  }
+  return;
+}	
+
 // ---- открываем входной файл
 in=fopen(argv[optind],"rb");
 if (in == 0) {
@@ -211,36 +236,11 @@ if ((chip_type == 0)&&(helloflag==1)) {
 
 if ((helloflag == 0)&& (chip_type != 0))  printf("\n Чипсет: %s",get_chipname());
 
-// Проверяем, не требуется ли для данного чипсета sahara-протокол
-if (chip_type != 0)
-  if (get_sahara()) sahara_flag=1;
-//printf("\n chip_type = %i   sahara = %i",chip_type,sahara_flag);
 if ((start == 0) && !sahara_flag) {
   printf("\n Не указан адрес загрузки\n");
   fclose(in);
   return;
 }  
-
-
-
-//----- Вариант загрузки через сахару -------
-
-if (sahara_flag) {
-  if (dload_sahara() == 0) {
-	#ifndef WIN32
-	usleep(200000);   // ждем инициализации загрузчика
-	#else
-	Sleep(200);   // ждем инициализации загрузчика
-	#endif
-
-	if (helloflag) {
-		hello(helloflag);
-		printf("\n");
-		if (tflag && (helloflag != 2)) extract_ptable();  // вынимаем таблицы разделов
-	}
-  }
-  return;
-}	
 
 //------- Вариант загрузки через запись загрузчика в память ----------
 
