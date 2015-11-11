@@ -6,7 +6,7 @@
 int dload_sahara() {
 
 FILE* in;
-char* infilename="loaders/";
+char infilename[200]="loaders/";
 unsigned char sendbuf[131072];
 unsigned char replybuf[128];
 unsigned int iolen,offset,len,donestat,imgid;
@@ -57,7 +57,7 @@ switch (imgid) {
           printf("\n Неизвестный идентификатор - нет такого образа!\n");
 	return 1;
 }
-printf("\n Загружаем %s...\n",infilename); 
+printf("\n Загружаем %s...\n",infilename); fflush(stdout);
 in=fopen(infilename,"rb");
 if (in == 0) {
   printf("\n Ошибка открытия входного файла %s\n",infilename);

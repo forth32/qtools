@@ -180,18 +180,17 @@ if (!open_port(devname))  {
 unlink("ptable/current-r.bin");
 unlink("ptable/current-w.bin");
 
-// ---- открываем входной файл
-in=fopen(argv[optind],"rb");
-if (in == 0) {
-  printf("\nОшибка открытия входного файла\n");
-  return;
-}
 
 // Если чипсет уже определен ключами - определяемся с сахара-режимом
 if (chip_type != 0) sahara_flag=get_sahara();
 
-
 if (!sahara_flag) {
+ // открываем входной файл
+ in=fopen(argv[optind],"rb");
+ if (in == 0) {
+  printf("\nОшибка открытия входного файла\n");
+  return;
+ } 
  // Идентифицируем загрузчик
  // Ищем блок идентификации
  fseek(in,-12,SEEK_END);
