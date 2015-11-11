@@ -89,6 +89,7 @@
     <ClCompile Include="..\..\qcio.c" />
     <ClCompile Include="..\..\qdload.c" />
     <ClCompile Include="..\..\getopt.c" />
+    <ClCompile Include="..\..\sahara.c" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
