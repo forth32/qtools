@@ -217,17 +217,8 @@ if ((chip_type == 0)&&(helloflag==1)) {
 
 if ((helloflag == 0)&& (chip_type != 0))  printf("\n Чипсет: %s",get_chipname());
 
-<<<<<<< HEAD
-<<<<<<< HEAD
 //printf("\n chip_type = %i   sahara = %i",chip_type,sahara_flag);
-=======
->>>>>>> 93684eb8ddbbc49119cfd97408963cac5c11e937
-=======
-// Проверяем, не требуется ли для данного чипсета sahara-протокол
-if (chip_type != 0)
-  if (get_sahara()) sahara_flag=1;
-//printf("\n chip_type = %i   sahara = %i",chip_type,sahara_flag);
->>>>>>> 04c059f2e350e3f96bf82a364dbc09543f02bc82
+
 if ((start == 0) && !sahara_flag) {
   printf("\n Не указан адрес загрузки\n");
   fclose(in);

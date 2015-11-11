@@ -344,7 +344,7 @@ switch (getfileinfo(filename,&fi)) {
 }    
 if (fi.size == 0) {
   printf("\nФайл %s не содержит данных\n",filename);
-  return;
+  return 0;
 }
 fbuf=malloc(fi.size);
 strcpy(open_cmd+0xc,filename);

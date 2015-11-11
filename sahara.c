@@ -6,7 +6,7 @@
 int dload_sahara() {
 
 FILE* in;
-char* infilename;
+char* infilename="loaders/";
 unsigned char sendbuf[131072];
 unsigned char replybuf[128];
 unsigned int iolen,offset,len,donestat,imgid;
@@ -46,22 +46,21 @@ printf("\n Идентификатор образа для загрузки: %08x
 switch (imgid) {
 
 	case 0x07:
-	infilename="loaders/NPRG9x25p.bin";
+	  strcat(infilename,get_nprg());
 	break;
 
 	case 0x0d:
-	if (is_chipset("MDM9x3x")) infilename="loaders/MPRG8926pp.bin";
-	else infilename="loaders/ENPRG9x25p.bin";
+	  strcat(infilename,get_nprg());
 	break;
 
 	default:
-	printf("\n Неизвестный идентификатор - нет такого образа!\n");
+          printf("\n Неизвестный идентификатор - нет такого образа!\n");
 	return 1;
 }
 printf("\n Загружаем %s...\n",infilename); 
 in=fopen(infilename,"rb");
 if (in == 0) {
-  printf("\n Ошибка открытия входного файла\n");
+  printf("\n Ошибка открытия входного файла %s\n",infilename);
   return 1;
 }
 

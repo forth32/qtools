@@ -14,9 +14,11 @@ struct {
   unsigned int id;         // код (id) чипcета
   unsigned int nandbase;   // адрес контроллера
   unsigned char udflag;    // udsize таблицы разделов, 0-512, 1-516
-  unsigned char name[20];  // имя чипсета
+  char name[20];  // имя чипсета
   unsigned int ctrl_type;  // схема расположения регистров NAND-контроллера
-  unsigned int sahara;
+  unsigned int sahara;     // флаг sahara-протокола
+  char nprg[40];           // имя nprg-загрузчика
+  char enprg[40];         // имя enprg-загрузчика
 }  chipset[100];
 
 // таблица кодов идентификации чипсета, не более 20 кодов на 1 чипсет
@@ -117,6 +119,8 @@ while(fgets(line,300,in) != 0) {
     chipset[maxchip].udflag=0;    // udsize таблицы разделов, 0-512, 1-516
     strcpy(chipset[maxchip].name,tok1+1);  // имя чипсета
     chipset[maxchip].ctrl_type=0;  // схема расположения регистров NAND-контроллера
+    chipset[maxchip].nprg[0]=0;
+    chipset[maxchip].enprg[0]=0;
     memset(chip_code[maxchip],0xffff,40);  // таблица msm_id заполняется FF
     msmidcount=0;
 //       printf("\n@@ %s",tok1+1);
@@ -189,6 +193,18 @@ while(fgets(line,300,in) != 0) {
     continue;
   }
 
+
+  // имя NPRG по умолчанию
+  if (strcmp(vname,"nprg") == 0) {
+  strncpy(chipset[maxchip].nprg,vval,39);
+  continue;
+  }
+  
+  // имя ENPRG по умолчанию
+  if (strcmp(vname,"enprg") == 0) {
+  strncpy(chipset[maxchip].enprg,vval,39);  
+  continue;
+  }
   
   // остальные имена
   printf("\n! Файл конфигурации: недопустимое имя переменной\n%s\n",line);
@@ -228,10 +244,11 @@ return -1;
 void list_chipset() {
   
 int i,j;
-printf("\n Код     Имя    Адрес NAND   Тип  udflag  MSM_ID\n--------------------------------------------------------------");
+printf("\n Код     Имя    Адрес NAND   Тип  udflag  MSM_ID\n---------------------------------------------------------------------");
 for(i=0;i<maxchip;i++) {
 //  if (i == 0)  printf("\n  0 (по умолчанию) автоопределение чипсета");
-  printf("\n %2i  %9.9s    %08x    %1i     %1i    ",chipset[i].id,chipset[i].name,chipset[i].nandbase,chipset[i].ctrl_type,chipset[i].udflag);
+  printf("\n %2i  %9.9s    %08x    %1i     %1i    ",chipset[i].id,chipset[i].name,
+	 chipset[i].nandbase,chipset[i].ctrl_type,chipset[i].udflag);
   for(j=0;chip_code[i][j]!=0xffff;j++) 
     printf(" %04hx",chip_code[i][j]);
 }
@@ -331,3 +348,18 @@ int is_chipset(char* name) {
 unsigned int get_udflag() {
   return chipset[chip_type].udflag;
 }  
+
+//**************************************************************
+//* Получение имени загрузчика NPRG
+//**************************************************************
+char* get_nprg() {
+  return chipset[chip_type].nprg;
+}  
+
+//**************************************************************
+//* Получение имени загрузчика ENPRG
+//**************************************************************
+char* get_enprg() {
+  return chipset[chip_type].enprg;
+}  
+
