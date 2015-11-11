@@ -77,3 +77,8 @@ int find_chipset(unsigned short chip_code);
 int load_config();
 unsigned int get_udflag();
 unsigned int get_sahara();
+char* get_enprg();
+char* get_nprg();
+unsigned int get_controller();
+int is_chipset(char* name);
+int dload_sahara();

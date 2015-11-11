@@ -17,6 +17,7 @@ clean:
 
 qcio.o: qcio.c
 hdlc.o: hdlc.c
+sahara.o: sahara.c
 chipconfig.o: chipconfig.c
 memio.o: memio.c
 #	$(CC) -c qcio.c
@@ -36,7 +37,7 @@ qwflash: qwflash.o $(OBJS)
 #qwimage: qwimage.o $(OBJS)
 #	gcc $^ -o $@ $(LIBS)
 
-qdload: qdload.o $(OBJS)
+qdload: qdload.o sahara.o $(OBJS)
 	gcc $^ -o $@ $(LIBS)
 
 qwdirect: qwdirect.o $(OBJS)
