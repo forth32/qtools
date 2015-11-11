@@ -169,8 +169,19 @@ if (!test_loader()) {
   exit(1);
 }  
 
+///////////////////////////////////////////////////////
+if (is_chipset("MDM9x3x")) { // Аварийное решение для MDM9x3x при работе с MPRG8926
+    mempoke(nand_cfg0,0x295409c0);
+    mempoke(nand_cfg1,0x08065d5d);
+    mempoke(nand_ecc_cfg,0x42040d10);
+    mempoke(nand_cmd+0xac,0x1d);
+    mempoke(nand_cmd+0xe8,2);
+    mempoke(nand_cmd+0xf0,0);
+}
+///////////////////////////////////////////////////////
+
 printf("\n Чипсет: %s  (%08x)",get_chipname(),nand_cmd); fflush(stdout);
-if ((is_chipset("MDM9x25")) || (is_chipset("MDM9x3x"))) disable_bam(); // отключаем NANDc BAM, если работаем с 9x25 или 9x3x
+if (is_chipset("MDM9x25")) disable_bam(); // отключаем NANDc BAM, если работаем с 9x25
 cfg1=mempeek(nand_cfg1);
 if (nand_ecc_cfg != 0xffff) ecccfg=mempeek(nand_ecc_cfg);
 else ecccfg=0;
@@ -501,12 +512,11 @@ printf("\n Идентификатор образа для загрузки: %08x
 switch (imgid) {
 
 	case 0x07:
-	if (is_chipset("MDM9x3x")) infilename="loaders/NPRG9x35p.bin";
-	else infilename="loaders/NPRG9x25p.bin";
+	infilename="loaders/NPRG9x25p.bin";
 	break;
 
 	case 0x0d:
-	if (is_chipset("MDM9x3x")) infilename="loaders/ENPRG9x35p.bin";
+	if (is_chipset("MDM9x3x")) infilename="loaders/MPRG8926pp.bin";
 	else infilename="loaders/ENPRG9x25p.bin";
 	break;
 
