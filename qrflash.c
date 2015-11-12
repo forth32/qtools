@@ -23,7 +23,7 @@ for(page=0;page<ppb;page++)  {
    mempoke(nand_exec,0x1); 
    nandwait();
    st=mempeek(nand_buffer_status)&0xffff0000;
-   if (st != 0) badflag=st;
+   if (st != 0xff0000) badflag=st;
    // выгребаем порцию данных
    memread(iobuf,sector_buf, cwsize);
    fwrite(iobuf,1,cwsize,out);
@@ -49,7 +49,7 @@ for(page=0;page<ppb;page++)  {
    mempoke(nand_exec,0x1); 
    nandwait();
    st=mempeek(nand_buffer_status)&0xffff0000;
-   if (st != 0) badflag=st;
+   if (st != 0xff0000) badflag=st;
    // выгребаем порцию данных
    memread(iobuf,sector_buf,sectorsize+4);
    if (sec != (spp-1)) 
@@ -346,7 +346,7 @@ for(i=0;i<npar;i++) {
                badflag=read_block_resequence(block,out);
 	      break;
 	 }  
-        if (badflag != 0xff0000) printf(" - Badblock %08x\n",badflag);
+        if (badflag != 0) printf(" - Badblock %08x\n",badflag);
         }
      // Обрезка всех FF хвоста
       fclose(out);
