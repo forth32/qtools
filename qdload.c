@@ -195,7 +195,6 @@ if (!sahara_flag) {
  // Ищем блок идентификации
  fseek(in,-12,SEEK_END);
  fread(&i,4,1,in);
- rewind(in);
 
  if (i == 0xdeadbeef) {
    // нашли блок - разбираем
@@ -207,6 +206,7 @@ if (!sahara_flag) {
    if (chip_type == 0) set_chipset(ichipset);  // меняем тип чипсета на определенный из блока идентификации
  }
 } 
+rewind(in);
 
 // проверяем тип чипсета
 if ((chip_type == 0)&&(helloflag==1)) {
