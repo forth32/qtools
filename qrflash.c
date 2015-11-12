@@ -9,32 +9,38 @@
 //*************************************
 //* Чтение блока данных
 //*************************************
-void read_block(int block,int cwsize,FILE* out) {
+unsigned int read_block(int block,int cwsize,FILE* out) {
 
 unsigned char iobuf[14096];  
 unsigned int page,sec;
- // цикл по страницам
-for(page=0;page<ppb;page++)  {
+unsigned int st,badflag=0;
 
+// цикл по страницам
+for(page=0;page<ppb;page++)  {
   setaddr(block,page);
   // по секторам  
   for(sec=0;sec<spp;sec++) {
    mempoke(nand_exec,0x1); 
    nandwait();
+   st=mempeek(nand_buffer_status)&0xffff0000;
+   if (st != 0) badflag=st;
    // выгребаем порцию данных
    memread(iobuf,sector_buf, cwsize);
    fwrite(iobuf,1,cwsize,out);
   }
  } 
+return badflag; 
 } 
 
 //****************************************************************
 //* Чтение блока данных с восстановлением китайского изврата
 //****************************************************************
-void read_block_resequence(int block, FILE* out) {
+unsigned int read_block_resequence(int block, FILE* out) {
 unsigned char iobuf[4096];  
 unsigned int page,sec;
- // цикл по страницам
+unsigned int st,badflag=0;
+
+// цикл по страницам
 for(page=0;page<ppb;page++)  {
 
   setaddr(block,page);
@@ -42,6 +48,8 @@ for(page=0;page<ppb;page++)  {
   for(sec=0;sec<spp;sec++) {
    mempoke(nand_exec,0x1); 
    nandwait();
+   st=mempeek(nand_buffer_status)&0xffff0000;
+   if (st != 0) badflag=st;
    // выгребаем порцию данных
    memread(iobuf,sector_buf,sectorsize+4);
    if (sec != (spp-1)) 
@@ -52,6 +60,7 @@ for(page=0;page<ppb;page++)  {
      fwrite(iobuf,1,sectorsize-4*(spp-1),out);   // Тело сектора - хвост oob
   }
  } 
+return badflag; 
 } 
 
 
@@ -99,6 +108,7 @@ int rflag=0;     // формат разделов: 0 - авто, 1 - станд�
 int listmode=0;    // 1- вывод карты разделов
 int truncflag=0;  //  1 - отрезать все FF от конца раздела
 int xflag=0;
+unsigned int badflag;
 
 int attr; // арибуты
 unsigned int npar; // число разедлов в таблице
@@ -322,21 +332,21 @@ for(i=0;i<npar;i++) {
 	    case 0: // автовыбор формата
                if ((attr != 0x1ff)||(cwsize>sectorsize)) 
 	       // сырое чтение или чтение неизварщенных разделов
-	           read_block(block,cwsize,out);
+	           badflag=read_block(block,cwsize,out);
 	       else 
 	       // чтение китайсколинуксовых разделов
-	           read_block_resequence(block,out);
+	           badflag=read_block_resequence(block,out);
 	       break;
 	       
 	    case 1: // стандартный формат  
-	      read_block(block,cwsize,out);
+	      badflag=read_block(block,cwsize,out);
 	      break;
 	      
 	    case 2: // китайсколинуксовый формат  
-               read_block_resequence(block,out);
+               badflag=read_block_resequence(block,out);
 	      break;
 	 }  
-
+        if (badflag != 0xff0000) printf(" - Badblock %08x\n",badflag);
         }
      // Обрезка всех FF хвоста
       fclose(out);

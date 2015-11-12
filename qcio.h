@@ -26,6 +26,7 @@ extern unsigned int nand_addr1;
 extern unsigned int nand_cs;   
 extern unsigned int nand_exec; 
 extern unsigned int nand_status;
+extern unsigned int nand_buffer_status;
 extern unsigned int nand_cfg0;  
 extern unsigned int nand_cfg1;  
 extern unsigned int nand_ecc_cfg;

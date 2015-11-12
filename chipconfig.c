@@ -31,6 +31,7 @@ struct {
   unsigned int nand_addr1;
   unsigned int nand_cs;   
   unsigned int nand_exec; 
+  unsigned int nand_buffer_status;
   unsigned int nand_status;
   unsigned int nand_cfg0;  
   unsigned int nand_cfg1;  
@@ -38,9 +39,9 @@ struct {
   unsigned int NAND_FLASH_READ_ID; 
   unsigned int sector_buf;
 } nandreg[]={
-// cmd  adr0   adr1    cs    exec  stat   cfg0   cfg1   ecc     id   sbuf 
-  { 0,   4,     8,    0xc,   0x10 , 0x14, 0x20  ,0x24,  0x28,  0x40, 0x100 }, //  ctrl=0 - новые
-  {0x304,0x300,0xffff,0x30c,0xffff,0x308, 0xffff,0x328,0xffff, 0x320,0     }  //  ctrl=1 - старые
+// cmd  adr0   adr1    cs    exec  buf_st fl_st  cfg0   cfg1   ecc     id   sbuf 
+  { 0,   4,     8,    0xc,   0x10 , 0x18, 0x14,  0x20  ,0x24,  0x28,  0x40, 0x100 }, //  ctrl=0 - новые
+  {0x304,0x300,0xffff,0x30c,0xffff,0xffff,0x308, 0xffff,0x328,0xffff, 0x320,0     }  //  ctrl=1 - старые
 };  
 
 // Команды контроллера
@@ -65,6 +66,7 @@ unsigned int nand_addr1;
 unsigned int nand_cs;   
 unsigned int nand_exec; 
 unsigned int nand_status;
+unsigned int nand_buffer_status;
 unsigned int nand_cfg0;  
 unsigned int nand_cfg1;  
 unsigned int nand_ecc_cfg;
@@ -305,6 +307,7 @@ setnandreg(nand_addr1)
 setnandreg(nand_cs)   
 setnandreg(nand_exec)
 setnandreg(nand_status)
+setnandreg(nand_buffer_status)
 setnandreg(nand_cfg0)  
 setnandreg(nand_cfg1)  
 setnandreg(nand_ecc_cfg)
