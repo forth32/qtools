@@ -4,19 +4,11 @@
 .syntax unified 
 .code 16           @  Thumb-2 
 
-<<<<<<< HEAD
-pkt_data_len_off=8
-		.ORG		0xF80057E8
-leavecmd:
-
-		.ORG		0xF80057F4
-=======
 pkt_data_len_off=10
-		.ORG		0x02A00F20
+		.ORG		0x0011607c
 leavecmd:
 
-		.ORG		0x02A00F2C
->>>>>>> 3bc33e9b4ade6366d542615c7471e8d3db6a0c56
+		.ORG		0x00116110
 cmd_11_exec:
 		PUSH		{R4,LR}
 		LDR		R1, cmd_reply_code_ptr 	     @ Адрес ответнго буфера
@@ -27,13 +19,12 @@ cmd_11_exec:
 		LDR		R0, cmd_processor_data_ptr   @  Структура данных командного обработчика
 		STRH		R4, [R0,#pkt_data_len_off]   @ сохраняем размер ответного буфера
 		B		leavecmd
-
-<<<<<<< HEAD
-		.ORG  0xF8005960
-=======
-		.ORG  0x02A01098
->>>>>>> 3bc33e9b4ade6366d542615c7471e8d3db6a0c56
+@ блок идентификации
+                .word 		0xdeadbeef   @ сигнатура
+                .byte           3            @ код чипсета
 		
-cmd_processor_data_ptr:  .word  0
+		.ORG  0x00116140
+		
 cmd_reply_code_ptr:      .word  0
+cmd_processor_data_ptr:  .word  0
 

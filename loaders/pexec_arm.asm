@@ -18,6 +18,9 @@ cmd_11_exec:
 		LDR		R0, cmd_processor_data_ptr   @  Структура данных командного обработчика
 		STRH		R4, [R0,#pkt_data_len_off]   @ сохраняем размер ответного буфера
 		B		leavecmd
+@ блок идентификации
+                .word 		0xdeadbeef   @ сигнатура
+                .byte           3            @ код чипсета
 
 		.ORG  0x00116140
 		
