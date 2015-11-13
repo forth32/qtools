@@ -25,6 +25,6 @@ cmd_11_exec:
 		
 		.ORG  0x00116140
 		
-cmd_reply_code_ptr:      .word  0
-cmd_processor_data_ptr:  .word  0
+reply_buf_ptr:    .word  0
+escape_state_ptr: .word  0
 
