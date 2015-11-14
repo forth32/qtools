@@ -9,6 +9,7 @@ unsigned char hwidstr[7]="HW_ID1";
 unsigned char hwid[17];
 unsigned int header[7];
 unsigned int baseaddr=0;
+unsigned int codeoffset=0x28;
 
 if (argv[1] == NULL) {
   printf("\nНе указан файл\n");
@@ -29,13 +30,18 @@ memcpy(header,buf,28);
 if (header[1] == 0x73d71034) {
   // новый формат заголовка ENPRG - загрузчиков
   baseaddr=header[6]-header[5];
+  codeoffset=0x50;
 }
 else if (header[1] == 3) {
   // формат для NPRG и старых ENPRG
   baseaddr=header[3]-0x28;
 }
 else printf("\n Неопределенный заголовок файла - скорее всего это не загрузчик");
-if (baseaddr != 0) printf("\n Адрес загрузки: %08x",baseaddr);
+if (baseaddr != 0) { 
+  printf("\n Адрес загрузки:    %08x",baseaddr);
+  printf("\n Адрес начала кода: %08x",baseaddr+codeoffset);
+}
+
 for (i=0;i<fl;i++) {
  if (hwidfound == 0) {
 	if (((memcmp(buf+i,hwidstr,6)) == 0) && (buf[i-17] == 0x30)) { // ищем строку "HW_ID" в сертификате
