@@ -14,7 +14,7 @@ char filename[50];        // имя выходного файла
 void verify_item(int item) {
 
 if (item>0xffff) {
-  printf("\n Неправильно указан номер раздела - %x\n",item);
+  printf("\n Неправильно указан номер ячейки - %x\n",item);
   exit(1);
 }
 }
@@ -47,14 +47,14 @@ char buf[134];
 int len;
 
 if (!get_nvitem(item,buf)) {
-  printf("\n! Раздел %04x не читается\n",item);
+  printf("\n! Ячейка %04x не читается\n",item);
   return;
 }
 if (zeroflag && (test_zero(buf,128) == 0)) {
-  printf("\n! Раздел %04x пуст\n",item);
+  printf("\n! Ячейка %04x пуста\n",item);
   return;
 }  
-printf("\n *** NVRAM: Раздел %04x  атрибут %04x\n--------------------------------------------------\n",
+printf("\n *** NVRAM: Ячкйка %04x  атрибут %04x\n--------------------------------------------------\n",
        item,*((unsigned short*)&buf[128]));
 
 // отрезаем хвостовые нули 
@@ -118,7 +118,7 @@ int iolen;
 memcpy(cmdwrite+3,buf,130);
 iolen=send_cmd_base(cmdwrite,133,iobuf,0);
 if ((iolen != 136) || (iobuf[0] != 0x27)) {
-  printf("\n Ошибка записи раздела\n");
+  printf("\n Ошибка записи ячейки\n");
   dump(iobuf,iolen,0);
 }  
 }
@@ -168,7 +168,7 @@ char devname[50]="";
 while ((opt = getopt(argc, argv, "hp:o:b:r:w:")) != -1) {
   switch (opt) {
    case 'h': 
-    printf("\n  Утилита предназначена для работы с разделом efs \n\
+    printf("\n  Утилита предназначена для работы с nvram модема \n\
 %s [ключи] [параметр или имя файла]\n\
 Допустимы следующие ключи:\n\n\
 Ключи, определяюще выполняемую операцию:\n\
@@ -179,7 +179,7 @@ while ((opt = getopt(argc, argv, "hp:o:b:r:w:")) != -1) {
 \n\
 Ключи-модификаторы:\n\
 -p <tty>  - указывает имя устройства диагностического порта модема\n\
--o <file> - имя файла для сохранения efs\n\
+-o <file> - имя файла для сохранения nvram\n\
 \n",argv[0]);
     return;
     
