@@ -71,6 +71,7 @@ return badflag;
 void read_raw(int start,int len,int cwsize,FILE* out, unsigned int rflag) {
   
 int block;  
+unsigned int badflag;
 
 printf("\n Чтение блоков %08x - %08x",start,start+len-1);
 printf("\n Формат данных: %u+%i\n",sectorsize,cwsize-sectorsize);
@@ -78,8 +79,9 @@ printf("\n Формат данных: %u+%i\n",sectorsize,cwsize-sectorsize);
 // по блокам
 for (block=start;block<(start+len);block++) {
   printf("\r Блок: %08x",block); fflush(stdout);
-  if (rflag != 2) read_block(block,cwsize,out);
-  else            read_block_resequence(block,out); 
+  if (rflag != 2) badflag=read_block(block,cwsize,out);
+  else            badflag=read_block_resequence(block,out); 
+  if (badflag != 0) printf(" - Badblock %08x\n",badflag);   
 } 
 printf("\n"); 
 }
@@ -227,6 +229,10 @@ printf("\n Утилита предназначена для чтения обр�
    case 't':
      truncflag=1;
      break;
+
+   case '?':
+   case ':':  
+     return;
   }
 }  
 

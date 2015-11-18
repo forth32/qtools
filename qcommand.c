@@ -367,6 +367,10 @@ while ((opt = getopt(argc, argv, "p:ic:hek:f")) != -1) {
    case 'c':
      strcpy(scmdline,optarg);
      break;
+
+   case '?':
+   case ':':  
+     return;
   }
 }  
 

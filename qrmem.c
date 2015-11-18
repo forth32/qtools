@@ -53,6 +53,10 @@ while ((opt = getopt(argc, argv, "p:a:l:o:h:i")) != -1) {
    case 'i':
      helloflag=1;
      break;
+
+   case '?':
+   case ':':  
+     return;
   }
 }  
 
