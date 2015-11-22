@@ -210,8 +210,8 @@ if (!sahara_flag) {
    if (start == 0) start=iaddr;
    if (chip_type == 0) set_chipset(ichipset);  // меняем тип чипсета на определенный из блока идентификации
  }
-} 
 rewind(in);
+} 
 
 // проверяем тип чипсета
 if ((chip_type == 0)&&(helloflag==1)) {
