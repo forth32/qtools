@@ -50,7 +50,7 @@ switch (imgid) {
 	break;
 
 	case 0x0d:
-	  strcat(infilename,get_nprg());
+	  strcat(infilename,get_enprg());
 	break;
 
 	default:
