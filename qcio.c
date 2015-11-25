@@ -119,6 +119,7 @@ int i;
 unsigned char rbuf[1024];
 char hellocmd[]="\x01QCOM fast download protocol host\x03### ";
 
+
 // апплет проверки работоспособности загрузчика
 unsigned char cmdbuf[]={
   0x11,0x00,0x12,0x00,0xa0,0xe3,0x00,0x00,
@@ -179,12 +180,22 @@ else ecccfg=0;
 get_flash_config();
 printf("\n Флеш-память: %s %s, %s",flash_mfr,(rbuf[0x2d] != 0x65)?((char*)(rbuf+0x2d)):"",flash_descr); fflush(stdout);
 printf("\n Версия протокола: %i",rbuf[0x22]); fflush(stdout);
-printf("\n Максимальный размер пакета: %i байта",*((unsigned int*)&rbuf[0x24]));fflush(stdout);
+//printf("\n Максимальный размер пакета: %i байта",*((unsigned int*)&rbuf[0x24]));fflush(stdout);
 printf("\n Размер сектора: %u байт",sectorsize);fflush(stdout);
 printf("\n Размер страницы: %u байт (%u секторов)",pagesize,spp);fflush(stdout);
 printf("\n Размер OOB: %u байт",oobsize); fflush(stdout);
 printf("\n Тип ECC: %s",(cfg1&(1<<27))?"BCH":"R-S"); fflush(stdout);
 if (nand_ecc_cfg != 0xffff) printf(", %i бит",(cfg1&(1<<27))?(((ecccfg>>4)&3)?(((ecccfg>>4)&3)+1)*4:4):4);fflush(stdout);
+
+printf("\n Положение маркера дефектных блоков: ");
+i=(cfg1>>6)&0x3ff;
+if (i == 0) printf(" маркер отсутствует");
+else {
+  if (((cfg1>>16)&1) == 0) printf("user");
+  else printf("spare");
+  printf("+%x",i);
+}
+
 printf("\n Общий размер флеш-памяти = %u блоков (%i MB)",maxblock,maxblock*ppb/1024*pagesize/1024);fflush(stdout);
 printf("\n");
 }
