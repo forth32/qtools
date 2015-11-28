@@ -368,6 +368,61 @@ iolen=send_cmd_base(close_cmd,8,iobuf,0);
 return fi.size;
 }
 
+/////////////////////////////////////////////////////////////////
+//**************************************************   
+//* Запись файла 
+//**************************************************   
+unsigned int write_file(char* file, char* path) {	
+
+struct fileinfo fi;
+int i,blk;
+
+char open_cmd[100]={0x4b, 0x13, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x24, 0x01, 0x00, 0x00};
+char close_cmd[]={0x4b, 0x13, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00}; 
+// 4b 13 05 00 00 00 00 00 ss ss ss ss oo oo oo oo
+char write_cmd[16]={0x4b, 0x13, 0x05, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+
+char iobuf[4096];
+int iolen;
+
+iolen=send_cmd_base(close_cmd,8,iobuf,0);
+switch (getfileinfo(filename,&fi)) {
+   case 1:
+     printf("\nОбъект %s уже существует\n",filename);
+     return 0;
+ 
+   case 2: // каталог
+     printf("\nОбъект %s является каталогом\n",filename);
+     return 0;
+}    
+if (fi.size == 0) {
+  printf("\nФайл %s не содержит данных\n",filename);
+  return 0;
+}
+fbuf=malloc(fi.size);
+strcpy(open_cmd+0xc,filename);
+iolen=send_cmd_base(open_cmd,13+strlen(filename),iobuf,0);
+if (*((unsigned int*)&iobuf[4]) != 0) {
+  printf("\n Ошибка открытия файла %s",filename);
+  free(fbuf);
+  return 0;
+}
+blk=512;
+for (i=0;i<(fi.size);i+=512) {
+ *((unsigned int*)&write_cmd[0x0c])=i;
+ if ((i+512) > fi.size) {
+   blk=fi.size-i;
+   *((unsigned int*)&write_cmd[8])=blk;
+ }
+ iolen=send_cmd_base(write_cmd,16,iobuf,0);
+ memcpy(fbuf+i,iobuf+0x14,blk);
+}
+iolen=send_cmd_base(close_cmd,8,iobuf,0);
+return fi.size;
+}
+////////////////////////////////////////////////////////////////////////////////////
+
+
 //***************************************
 //* Просмотр файла на экране
 //*
@@ -418,7 +473,8 @@ enum{
   MODE_BACK_EFS,
   MODE_FILELIST,
   MODE_TYPE,
-  MODE_GETFILE
+  MODE_GETFILE,
+  MODE_WRITEFILE
 }; 
 
 
@@ -443,7 +499,7 @@ char devname[50]="/dev/ttyUSB0";
 char devname[50]="";
 #endif
 
-while ((opt = getopt(argc, argv, "hp:o:ab:g:l:rt:")) != -1) {
+while ((opt = getopt(argc, argv, "hp:o:ab:g:l:rt:w:")) != -1) {
   switch (opt) {
    case 'h': 
     printf("\n  Утилита предназначена для работы с разделом efs \n\
@@ -457,7 +513,8 @@ while ((opt = getopt(argc, argv, "hp:o:ab:g:l:rt:")) != -1) {
 -lf       - показать полный список файлов EFS\n  (Для всех -l ключей можео указать начальный путь к каталогу)\n\n\
 -tt       - просмотр файла в текстовом виде\n\
 -td       - просмотр файла в виде дампа\n\n\
--gf       - читает указанный файл из EFS в текущий каталог\n\n\
+-gf file  - читает указанный файл из EFS в текущий каталог\n\
+-wf file path - записывает указанный файл по указанному пути\n\
 * Ключи-модификаторы:\n\
 -r        - обработка всех подкаталогов при выводе листинга\n\
 -p <tty>  - указывает имя устройства диагностического порта модема\n\
@@ -554,6 +611,24 @@ while ((opt = getopt(argc, argv, "hp:o:ab:g:l:rt:")) != -1) {
       }
       break;
       
+  //  === группа ключей записи файла (write) ==
+   case 'w':
+     if (mode != -1) {
+       printf("\n В командной строке задано более 1 ключа режима работы\n");
+       return;
+     }  
+     mode=MODE_WRITEFILE;
+     switch(*optarg) {
+       case 'f':
+	 gmode=G_FILE;
+	 break;
+	 
+       default:
+	 printf("\n Неправильно задано значение ключа -g\n");
+	 return;
+      }
+      break;      
+      
    case 'p':
     strcpy(devname,optarg);
     break;
@@ -639,6 +714,14 @@ switch (mode) {
 
   case MODE_GETFILE:
     get_file(argv[optind]);
+    break;
+    
+  case MODE_WRITEFILE:
+    if (optind != (argc-2)) {
+      printf("\n Недостаточно параметров в командной строке");
+      break;
+    }  
+    write_file(argv[optind],argv[optind+1]);
     break;
     
   default:

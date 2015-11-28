@@ -317,17 +317,17 @@ for(block=startblock;block<(startblock+flen);block++) {
     // устанавливаем код команды записи
     switch (wmode) {
 	case w_standart:
-	mempoke(nand_cmd,0x36); // page program
+	mempoke(nand_cmd,0x36); // page program - пишем только тело блока
     break;
 
 	case w_linux:
 	case w_yaffs:
 	case w_linout:
-        mempoke(nand_cmd,0x39); // запись data+spare
+        mempoke(nand_cmd,0x39); // запись data+spare, ECC вычисляется контроллером
     break;
 	 
 	case w_image:
-        mempoke(nand_cmd,0x37); // запись data+spare+ecc
+        mempoke(nand_cmd,0x39); // запись data+spare+ecc, все данные из буфера идут прямо на флешку
     break;
     }
 
