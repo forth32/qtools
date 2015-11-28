@@ -144,8 +144,92 @@ fclose (in);
 write_item(sysitem,buf);
 }
 
+//*******************************************
+//*  Запись всех разделов nvram 
+//*******************************************
+void write_all_nvram() {
 
-//@@@@@@@@@@@@ Головная программа
+int i;
+FILE* in;
+char buf[135];
+
+printf("\n");
+for (i=0;i<0x10000;i++) {
+  sprintf(filename,"nv/%04x.bin",i);
+  in=fopen(filename,"r");
+  if (in == 0) continue;
+  printf("\r %04x: ",i);
+  if (fread(buf,1,130,in) != 130) {
+    printf(" Файл %s слишком мал - пропускаем\n",filename);
+    fclose (in);
+    continue;
+  }
+  fclose (in);
+  write_item(i,buf);
+  printf(" OK");
+}
+}  
+  
+//**********************************************
+//* Генерация nvitem 226 с указанным IMEI
+//**********************************************
+void write_imei(char* src) {
+
+unsigned char binimei[15];
+unsigned char imeibuf[0x84];
+int i,j,f;  
+char cbuf[7];
+int csum;
+
+memset(imeibuf,0,0x84);
+if (strlen(src) != 15) {
+  printf("\n Неправильная длина IMEI");
+  return;
+}
+
+for (i=0;i<15;i++) {
+  if ((src[i] >= '0') && (src[i] <='9')) {
+    binimei[i] = src[i]-'0'; 
+    continue;
+  }  
+  printf("\n Неправильный символ в строке IMEI - %c\n",src[i]);
+  return;
+}
+
+// Проверяем контрольную сумму IMEI
+j=0;
+for (i=1;i<14;i+=2) cbuf[j++]=binimei[i]*2;
+csum=0;
+for (i=0;i<7;i++) {
+  f=(int)cbuf[i]/10;
+  csum = csum + f + (int)((cbuf[i]*10) - f*100)/10;
+}  
+for (i=0;i<13;i+=2) csum += binimei[i];
+ 
+if ((((int)csum/10)*10) == csum) csum=0;
+else csum=( (int)csum/10 + 1)*10 - csum;
+if (binimei[14] != csum) {
+  printf("\n IMEI имеет неправильную контрольную сумму !\n Правильный IMEI = ");
+  for (i=0;i<14;i++) printf("%1i",binimei[i]);
+  printf("%1i",csum);
+  printf("\n Исправить (y,n)?");
+  i=getchar();
+  if (i == 'y') binimei[14]=csum;
+}  
+
+// Формируем IMEI в квалкомовском формате
+imeibuf[0]=8;
+imeibuf[1]=(binimei[0]<<4)|0xa;
+j=2;
+for (i=1;i<15;i+=2) {
+  imeibuf[j++] = binimei[i] | (binimei[i+1] <<4);
+}
+write_item(0x226,imeibuf);
+//dump(imeibuf,9,0);
+}
+  
+  
+//@@@@@@@@@@@@ Головная программа @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@2
 void main(int argc, char* argv[]) {
 
 unsigned int opt;
@@ -155,9 +239,12 @@ enum{
   MODE_READ_NVRAM,
   MODE_SHOW_NVRAM,
   MODE_WRITE_NVRAM,
+  MODE_WRITE_ALL,
+  MODE_WRITE_IMEI
 }; 
 
 int mode=-1;
+char* imeiptr;
 
 #ifndef WIN32
 char devname[50]="/dev/ttyUSB0";
@@ -165,7 +252,7 @@ char devname[50]="/dev/ttyUSB0";
 char devname[50]="";
 #endif
 
-while ((opt = getopt(argc, argv, "hp:o:b:r:w:")) != -1) {
+while ((opt = getopt(argc, argv, "hp:o:b:r:w:j:")) != -1) {
   switch (opt) {
    case 'h': 
     printf("\n  Утилита предназначена для работы с nvram модема \n\
@@ -174,8 +261,10 @@ while ((opt = getopt(argc, argv, "hp:o:b:r:w:")) != -1) {
 Ключи, определяюще выполняемую операцию:\n\
 -bn           - дамп nvram\n\
 -ri[z] [item] - чтение всех или только указанной записей nvram в отдельные файлы (z-пропускать пустые записи)\n\
--rd[z]        - дамп указанного раздела nvram (z-отрезать хвостовые нули)\n\
+-rd[z]        - дамп указанного раздела nvram (z-отрезать хвостовые нули)\n\n\
 -wi item file - запись раздела item из файла file\n\
+-wa           - запись всех разделов, имеющихся в каталоге nv/\n\
+-j imei       - запись указаного IMEI в nv226\n\
 \n\
 Ключи-модификаторы:\n\
 -p <tty>  - указывает имя устройства диагностического порта модема\n\
@@ -242,6 +331,10 @@ while ((opt = getopt(argc, argv, "hp:o:b:r:w:")) != -1) {
          mode=MODE_WRITE_NVRAM;
 	 break;
 
+       case 'a':
+         mode=MODE_WRITE_ALL;
+	 break;
+
        default:
 	 printf("\n Неправильно задано значение ключа -w\n");
 	 return;
@@ -249,7 +342,17 @@ while ((opt = getopt(argc, argv, "hp:o:b:r:w:")) != -1) {
       break;
 	 
 //----------------------------------------------	 
-      
+//  === запись IMEI ==
+    case 'j':
+     if (mode != -1) {
+       printf("\n В командной строке задано более 1 ключа режима работы");
+       return;
+     }  
+     mode=MODE_WRITE_IMEI;
+     imeiptr=optarg;
+     break;
+     
+//------------- прочие ключи --------------------      
    case 'p':
     strcpy(devname,optarg);
     break;
@@ -315,6 +418,14 @@ switch (mode) {
     verify_item(sysitem);
     strcpy(filename,argv[optind+1]);
     write_nvram();
+    break;
+ 
+  case MODE_WRITE_ALL:
+    write_all_nvram();
+    break;
+   
+  case MODE_WRITE_IMEI:
+    write_imei(imeiptr);
     break;
     
   default:
