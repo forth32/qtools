@@ -48,6 +48,7 @@ unsigned int startblock=0;
 unsigned int bsize;
 unsigned int fileoffset=0;
 int wmode=0; // режим записи
+unsigned int sparnum;
 
 #define w_standart 0
 #define w_linux    1
@@ -235,6 +236,11 @@ else if (flen>fsize) {
 } 
   
 printf("\n Запись из файла %s, стартовый блок %03x, размер %03x\n Режим записи: ",argv[optind],startblock,flen);
+
+if (nand_ecc_cfg != 0xffff) cfgecctemp=mempeek(nand_ecc_cfg);
+else cfgecctemp=0;
+sparnum = 6-((((cfgecctemp>>4)&3)?(((cfgecctemp>>4)&3)+1)*4:4)>>1);
+
 switch (wmode) {
   case w_standart:
     printf("только данные, стандартный формат\n");
@@ -252,13 +258,13 @@ switch (wmode) {
   case w_yaffs: 
     printf("образ yaffs2\n");
     if (! (is_chipset("MDM9x25") || is_chipset("MDM9x3x"))) set_blocksize(516,1,10); // data - 516, spare - 1 (чего-то), ecc - 10
-    else set_blocksize(516,2,0); // data - 516, spare - 2 (чего-то), ecc - 0
+    else set_blocksize(516,sparnum,0); // data - 516, spare - 2 или 4 (чего-то), ecc - 0
     break;
 
   case w_linout: 
     printf("линуксовый формат на флешке\n");
     if (! (is_chipset("MDM9x25") || is_chipset("MDM9x3x"))) set_blocksize(516,1,10); // data - 516, spare - 1 (чего-то), ecc - 10
-    else set_blocksize(516,2,0); // data - 516, spare - 2 (чего-то), ecc - 0
+    else set_blocksize(516,sparnum,0); // data - 516, spare - 2 или 4 (чего-то), ecc - 0
     break;
 }   
     
