@@ -419,6 +419,15 @@ char iobuf[4096];
 int iolen;
 
 iolen=send_cmd_base(close_cmd,8,iobuf,0);
+
+// готовим имя выходного файла
+
+strcpy(filename,path);
+if (strrchr(file,'/') != 0) strcat(filename,strrchr(file,'/')+1);
+else strcat(filename,file);
+
+// проверяем существование файла
+
 switch (getfileinfo(filename,&fi)) {
    case 1:
      printf("\nОбъект %s уже существует\n",filename);
@@ -442,11 +451,6 @@ fseek(in,0,SEEK_SET);
 fread(fbuf,1,filesize,in);
 fclose(in);
 
-// готовим имя выходного файла
-
-strcpy(filename,path);
-if (strrchr(file,'/') != 0) strcat(filename,strrchr(file,'/'));
-else strcat(filename,file);
 
 if (!efs_open(filename,1)) return;
 
@@ -459,6 +463,7 @@ for (i=0;i<(filesize);i+=512) {
  }
  memcpy(write_cmd+12,fbuf+i,blk);
  iolen=send_cmd_base(write_cmd,16,iobuf,0);
+ usleep(3000);
 }
 iolen=send_cmd_base(close_cmd,8,iobuf,0);
 return 1;
@@ -503,7 +508,20 @@ fwrite(fbuf,1,flen,out);
 fclose(out);
 }
 
+//******************************************************
+//*  Удаление файла по имени
+//******************************************************
+void erase_file(char* name) {
 
+char erase_cmd[600]={0x4b, 0x13, 0x08, 0x00};
+
+memset(erase_cmd+4,0,590);
+strcpy(erase_cmd+4,name);
+iolen=send_cmd_base(erase_cmd,strlen(name)+5,iobuf,0);
+
+} 
+  
+  
 
 //@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 //@@@@@@@@@@@@ Головная программа
@@ -517,7 +535,8 @@ enum{
   MODE_FILELIST,
   MODE_TYPE,
   MODE_GETFILE,
-  MODE_WRITEFILE
+  MODE_WRITEFILE,
+  MODE_DELFILE
 }; 
 
 
@@ -542,7 +561,7 @@ char devname[50]="/dev/ttyUSB0";
 char devname[50]="";
 #endif
 
-while ((opt = getopt(argc, argv, "hp:o:ab:g:l:rt:w:")) != -1) {
+while ((opt = getopt(argc, argv, "hp:o:ab:g:l:rt:w:e:")) != -1) {
   switch (opt) {
    case 'h': 
     printf("\n  Утилита предназначена для работы с разделом efs \n\
@@ -558,6 +577,7 @@ while ((opt = getopt(argc, argv, "hp:o:ab:g:l:rt:w:")) != -1) {
 -td       - просмотр файла в виде дампа\n\n\
 -gf file  - читает указанный файл из EFS в текущий каталог\n\
 -wf file path - записывает указанный файл по указанному пути\n\
+-ef file  - удаляет указанный файл\n\
 * Ключи-модификаторы:\n\
 -r        - обработка всех подкаталогов при выводе листинга\n\
 -p <tty>  - указывает имя устройства диагностического порта модема\n\
@@ -671,6 +691,26 @@ while ((opt = getopt(argc, argv, "hp:o:ab:g:l:rt:w:")) != -1) {
 	 return;
       }
       break;      
+
+  //  === группа ключей удаления файла (erase) ==
+   case 'e':
+     if (mode != -1) {
+       printf("\n В командной строке задано более 1 ключа режима работы\n");
+       return;
+     }  
+     mode=MODE_DELFILE;
+     switch(*optarg) {
+       case 'f':
+	 gmode=G_FILE;
+	 break;
+	 
+       default:
+	 printf("\n Неправильно задано значение ключа -g\n");
+	 return;
+      }
+      break;      
+
+
       
    case 'p':
     strcpy(devname,optarg);
@@ -765,6 +805,10 @@ switch (mode) {
       break;
     }  
     write_file(argv[optind],argv[optind+1]);
+    break;
+
+  case MODE_DELFILE:
+    erase_file(argv[optind]);
     break;
     
   default:
