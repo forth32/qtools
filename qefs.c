@@ -11,6 +11,9 @@ char* fbuf;  // буфер для файловых операций
 
 int recurseflag=0;
 
+char iobuf[44096];
+int iolen;
+
 // режимы вывода списка файлов:
 
 enum {
@@ -53,8 +56,6 @@ int tspace; // отступ для формирования дерева фай�
 int getfileinfo(char* filename, struct fileinfo* fi) {
   
 unsigned char cmd_fileinfo[100]={0x4b, 0x13, 0x0f, 0x00};
-unsigned char iobuf[4096];
-unsigned int iolen;
 
 strcpy(cmd_fileinfo+4,filename);
 iolen=send_cmd_base(cmd_fileinfo,strlen(filename)+5, iobuf, 0);
@@ -70,13 +71,11 @@ return 1;
 
 void back_efs() {
 
-unsigned char iobuf[14048];
 unsigned char cmd_efsh1[16]=  {0x4B, 0x13,0x19, 0};
 unsigned char cmd_efsopen[16]=  {0x4B, 0x13,0x16, 0};
 unsigned char cmd_efsdata[16]={0x4B, 0x13,0x17,0,0,0,0,0,0,0,0,0};
 unsigned char cmd_efsclose[16]=  {0x4B, 0x13,0x18, 0};
 
-int iolen;
 FILE* out;
 
 // настройка на альтернативную EFS
@@ -195,12 +194,11 @@ void show_files (int lmode, char* fname) {
 char chdir[120]={0x4b, 0x13, 0x0b, 0x00, 0x2f, 0};
 char cmdfile[]= {0x4b, 0x13, 0x0c, 0x00, 0x01, 0, 0, 0, 0, 0, 0, 0};
 char closedir[]={0x4b, 0x13, 0x0d, 00, 1, 00, 00, 00};
-unsigned char iobuf[2048];
-int iolen;
 
 char dnlist[200][100]; // список каталогов
 unsigned short ndir=0;
 unsigned char dirname[100];	
+struct tm lt;      // структура для сохранения преобразованной даты
 
 int i,nfile;
 time_t* filetime;
@@ -231,6 +229,11 @@ for(nfile=1;;nfile++) {
  iolen=send_cmd_base(cmdfile,12,iobuf,0);
  if(iobuf[0x28] == 0) break; // конец списка
  filecnt++;
+//  printf("\n");
+//  dump(iobuf,128,0);
+//  printf("\n");
+ 
+ 
  // разбираем блок атрибутов
  // формат блока:
  //------------------------------------------
@@ -246,6 +249,7 @@ for(nfile=1;;nfile++) {
  fileattr=*((unsigned int*)&iobuf[0x14]);
  filesize=*((unsigned int*)&iobuf[0x18]);
  filetime=(time_t*)&iobuf[0x1c];
+//   printf("\n filetime = %08x",(int)*filetime);
  ftype='-';
  if ((fileattr&S_IFDIR) == S_IFDIR) { 
    ftype='D';
@@ -290,7 +294,10 @@ for(nfile=1;;nfile++) {
  }
  
  // режим полного списка файлов
- strftime(timestr,100,"%d-%b-%y %H:%M",localtime(filetime));
+//   printf("\n filetime = %08x",(int)*filetime);
+if (localtime_r(filetime,&lt) != 0) 
+ strftime(timestr,100,"%d-%b-%y %H:%M",&lt);
+else strcpy(timestr,"---------------");
  printf("\n%c%s%s%s %2i %9i %s %s",
       ftype,
       cfattr(fileattr&7),
@@ -317,6 +324,30 @@ if (lmode == fl_full) {
 }
 
 //**************************************************   
+//* Открытие EFS-файла 
+//*
+// mode=0 - чтение
+//      1 - запись
+//**************************************************
+int efs_open(char* filename, int mode) {
+
+char open_cmd[2][100]={
+  {0x4b, 0x13, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x24, 0x01, 0x00, 0x00},
+  {0x4b, 0x13, 0x02, 0x00, 0x41, 0x02, 0x00, 0x00, 0xb6, 0x01, 0x00, 0x00}
+};  
+
+strcpy(open_cmd[mode]+0xc,filename);
+iolen=send_cmd_base(open_cmd[mode],13+strlen(filename),iobuf,0);
+if (*((unsigned int*)&iobuf[4]) != 0) {
+  printf("\n Ошибка открытия EFS-файла %s",filename);
+  dump(iobuf,iolen,0);
+  free(fbuf);
+  return 0;
+}
+return 1;
+}
+
+//**************************************************   
 //* Чтение файла в буфер
 //**************************************************   
 unsigned int readfile(char* filename) {	
@@ -324,13 +355,10 @@ unsigned int readfile(char* filename) {
 struct fileinfo fi;
 int i,blk;
 
-char open_cmd[100]={0x4b, 0x13, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x24, 0x01, 0x00, 0x00};
 char close_cmd[]={0x4b, 0x13, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00}; 
 // 4b 13 04 00 00 00 00 00 ss ss ss ss oo oo oo oo
 char read_cmd[16]={0x4b, 0x13, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00};
 
-char iobuf[4096];
-int iolen;
 
 iolen=send_cmd_base(close_cmd,8,iobuf,0);
 switch (getfileinfo(filename,&fi)) {
@@ -347,13 +375,8 @@ if (fi.size == 0) {
   return 0;
 }
 fbuf=malloc(fi.size);
-strcpy(open_cmd+0xc,filename);
-iolen=send_cmd_base(open_cmd,13+strlen(filename),iobuf,0);
-if (*((unsigned int*)&iobuf[4]) != 0) {
-  printf("\n Ошибка открытия файла %s",filename);
-  free(fbuf);
-  return 0;
-}
+if (!efs_open(filename,0)) return;
+
 blk=512;
 for (i=0;i<(fi.size);i+=512) {
  *((unsigned int*)&read_cmd[0x0c])=i;
@@ -376,11 +399,13 @@ unsigned int write_file(char* file, char* path) {
 
 struct fileinfo fi;
 int i,blk;
+FILE* in;
+long filesize;
 
 char open_cmd[100]={0x4b, 0x13, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x24, 0x01, 0x00, 0x00};
 char close_cmd[]={0x4b, 0x13, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00}; 
 // 4b 13 05 00 00 00 00 00 ss ss ss ss oo oo oo oo
-char write_cmd[16]={0x4b, 0x13, 0x05, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+char write_cmd[600]={0x4b, 0x13, 0x05, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 
 char iobuf[4096];
 int iolen;
@@ -395,30 +420,40 @@ switch (getfileinfo(filename,&fi)) {
      printf("\nОбъект %s является каталогом\n",filename);
      return 0;
 }    
-if (fi.size == 0) {
-  printf("\nФайл %s не содержит данных\n",filename);
-  return 0;
-}
-fbuf=malloc(fi.size);
-strcpy(open_cmd+0xc,filename);
-iolen=send_cmd_base(open_cmd,13+strlen(filename),iobuf,0);
-if (*((unsigned int*)&iobuf[4]) != 0) {
-  printf("\n Ошибка открытия файла %s",filename);
-  free(fbuf);
-  return 0;
-}
+
+// читаем файл в буфер
+in=fopen(file,"r");
+if (in == 0) {
+  printf("\n ошибка открытия файла %s",file);
+  return;
+}  
+fseek(in,0,SEEK_END);
+filesize=ftell(in);
+fbuf=malloc(filesize);
+fseek(in,0,SEEK_SET);
+fread(fbuf,1,filesize,in);
+fclose(in);
+
+// готовим имя выходного файла
+
+strcpy(filename,path);
+if (strrchr(file,'/') != 0) strcat(filename,strrchr(file,'/'));
+else strcat(filename,file);
+
+if (!efs_open(filename,0)) return;
+
 blk=512;
-for (i=0;i<(fi.size);i+=512) {
+for (i=0;i<(filesize);i+=512) {
  *((unsigned int*)&write_cmd[0x0c])=i;
- if ((i+512) > fi.size) {
-   blk=fi.size-i;
+ if ((i+512) > filesize) {
+   blk=filesize-i;
    *((unsigned int*)&write_cmd[8])=blk;
  }
+ memcpy(write_cmd+12,fbuf+i,blk);
  iolen=send_cmd_base(write_cmd,16,iobuf,0);
- memcpy(fbuf+i,iobuf+0x14,blk);
 }
 iolen=send_cmd_base(close_cmd,8,iobuf,0);
-return fi.size;
+return 1;
 }
 ////////////////////////////////////////////////////////////////////////////////////
 
