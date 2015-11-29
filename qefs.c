@@ -410,7 +410,7 @@ int i,blk;
 FILE* in;
 long filesize;
 
-char open_cmd[100]={0x4b, 0x13, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x24, 0x01, 0x00, 0x00};
+//char open_cmd[100]={0x4b, 0x13, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x24, 0x01, 0x00, 0x00};
 char close_cmd[]={0x4b, 0x13, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00}; 
 // 4b 13 05 00 00 00 00 00 ss ss ss ss oo oo oo oo
 char write_cmd[600]={0x4b, 0x13, 0x05, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
@@ -456,13 +456,13 @@ if (!efs_open(filename,1)) return;
 
 blk=512;
 for (i=0;i<(filesize);i+=512) {
- *((unsigned int*)&write_cmd[0x0c])=i;
+ *((unsigned int*)&write_cmd[8])=i;
  if ((i+512) > filesize) {
    blk=filesize-i;
    *((unsigned int*)&write_cmd[8])=blk;
  }
  memcpy(write_cmd+12,fbuf+i,blk);
- iolen=send_cmd_base(write_cmd,16,iobuf,0);
+ iolen=send_cmd_base(write_cmd,blk+12,iobuf,0);
  usleep(3000);
 }
 iolen=send_cmd_base(close_cmd,8,iobuf,0);
