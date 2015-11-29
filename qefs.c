@@ -448,7 +448,7 @@ strcpy(filename,path);
 if (strrchr(file,'/') != 0) strcat(filename,strrchr(file,'/'));
 else strcat(filename,file);
 
-if (!efs_open(filename,0)) return;
+if (!efs_open(filename,1)) return;
 
 blk=512;
 for (i=0;i<(filesize);i+=512) {
