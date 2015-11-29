@@ -14,6 +14,14 @@ int recurseflag=0;
 char iobuf[44096];
 int iolen;
 
+#ifdef WIN32
+struct tm* localtime_r(const time_t *clock, struct tm *result) {
+       if (!clock || !result) return NULL;
+       memcpy(result,localtime(clock),sizeof(*result));
+       return result;
+}
+#endif
+
 // режимы вывода списка файлов:
 
 enum {
