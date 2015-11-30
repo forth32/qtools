@@ -451,7 +451,6 @@ fseek(in,0,SEEK_SET);
 fread(fbuf,1,filesize,in);
 fclose(in);
 
-
 if (!efs_open(filename,1)) return;
 
 blk=512;
@@ -459,7 +458,6 @@ for (i=0;i<(filesize);i+=512) {
  *((unsigned int*)&write_cmd[8])=i;
  if ((i+512) > filesize) {
    blk=filesize-i;
-   *((unsigned int*)&write_cmd[8])=blk;
  }
  memcpy(write_cmd+12,fbuf+i,blk);
  iolen=send_cmd_base(write_cmd,blk+12,iobuf,0);
