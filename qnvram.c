@@ -98,7 +98,7 @@ for(nv=start;nv<end;nv++) {
   printf("\r NV %04x:  ok",nv); fflush(stdout);
   if (!get_nvitem(nv,buf)) continue;
   if (zeroflag && (test_zero(buf,128) == 0)) continue;
-  sprintf(filename,"nv/%04x-%04x.bin",nv,*((unsigned short*)&buf[128]));
+  sprintf(filename,"nv/%04x.bin",nv);
   out=fopen(filename,"w");
   fwrite(buf,1,130,out);
   fclose(out);
