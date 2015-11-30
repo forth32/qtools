@@ -463,6 +463,7 @@ for (i=0;i<(filesize);i+=512) {
  iolen=send_cmd_base(write_cmd,blk+12,iobuf,0);
  usleep(3000);
 }
+free(fbuf);
 iolen=send_cmd_base(close_cmd,8,iobuf,0);
 return 1;
 }

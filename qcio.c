@@ -126,7 +126,7 @@ unsigned char cmdbuf[]={
   0xc1,0xe5,0x01,0x40,0xa0,0xe3,0x1e,0xff,
   0x2f,0xe1
 };
-unsigned int cfg1,ecccfg;
+unsigned int cfg0,cfg1,ecccfg;
 
 // режим тихой инициализации
 if (mode == 0) {
@@ -174,6 +174,7 @@ if (!test_loader()) {
 printf("\n Чипсет: %s  (%08x)",get_chipname(),nand_cmd); fflush(stdout);
 if (get_sahara()) disable_bam(); // отключаем NANDc BAM, если работаем с чипсетами нового поколения
 
+cfg0=mempeek(nand_cfg0);
 cfg1=mempeek(nand_cfg1);
 if (nand_ecc_cfg != 0xffff) ecccfg=mempeek(nand_ecc_cfg);
 else ecccfg=0;
@@ -188,6 +189,7 @@ printf("\n Тип ECC: %s",(cfg1&(1<<27))?"BCH":"R-S"); fflush(stdout);
 if (nand_ecc_cfg != 0xffff) printf(", %i бит",(cfg1&(1<<27))?(((ecccfg>>4)&3)?(((ecccfg>>4)&3)+1)*4:4):4);fflush(stdout);
 printf("\n Размер ЕСС: %u байт",(ecccfg>>8)&0x1f);
 
+printf("\n Размер spare: %u байт",(cfg0>>23)&0xf);
 
 printf("\n Положение маркера дефектных блоков: ");
 i=(cfg1>>6)&0x3ff;
