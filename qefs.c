@@ -1,3 +1,6 @@
+#ifdef WIN32
+#define _USE_32BIT_TIME_T
+#endif
 #include "include.h"
 #include <time.h>
 
