@@ -10,6 +10,7 @@ char filename[50];        // имя выходного файла
 char* fbuf;  // буфер для файловых операций
 
 int recurseflag=0;
+int fullpathflag=0;
 
 char iobuf[44096];
 int iolen;
@@ -275,7 +276,16 @@ for(nfile=1;;nfile++) {
  // Режим дерева
  if ((lmode == fl_tree) || (lmode == fl_ftree)) {
    if ((lmode == fl_tree) && (ftype != 'D')) continue; // пропускаем регулярные файлы в режиме дерева каталогов
-   printspace(targetname);
+   
+
+   if (fullpathflag) printspace(targetname);
+   else {
+     for(i=strlen(targetname)-2;i>=0;i--) {
+       if (targetname[i] == '/') break;
+     } 
+     i++;
+     printspace(targetname+i);
+   }  
    if (ftype == 'D') {
      tspace++;
      show_files(lmode,targetname); // обрабатываем вложенный подкаталог
@@ -560,7 +570,7 @@ char devname[50]="/dev/ttyUSB0";
 char devname[50]="";
 #endif
 
-while ((opt = getopt(argc, argv, "hp:o:ab:g:l:rt:w:e:")) != -1) {
+while ((opt = getopt(argc, argv, "hp:o:ab:g:l:rt:w:e:f")) != -1) {
   switch (opt) {
    case 'h': 
     printf("\n  Утилита предназначена для работы с разделом efs \n\
@@ -579,6 +589,7 @@ while ((opt = getopt(argc, argv, "hp:o:ab:g:l:rt:w:e:")) != -1) {
 -ef file  - удаляет указанный файл\n\
 * Ключи-модификаторы:\n\
 -r        - обработка всех подкаталогов при выводе листинга\n\
+-f        - вывод полного пути к каждому каталогу при просмотре дерева\n\
 -p <tty>  - указывает имя устройства диагностического порта модема\n\
 -a        - использовать альтернативную EFS\n\
 -o <file> - имя файла для сохранения efs\n\
@@ -721,6 +732,10 @@ while ((opt = getopt(argc, argv, "hp:o:ab:g:l:rt:w:e:")) != -1) {
      
    case 'r':
      recurseflag=1;
+     break;
+     
+   case 'f':
+     fullpathflag=1;
      break;
      
    case '?':
