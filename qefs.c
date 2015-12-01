@@ -471,7 +471,11 @@ for (i=0;i<(filesize);i+=512) {
  }
  memcpy(write_cmd+12,fbuf+i,blk);
  iolen=send_cmd_base(write_cmd,blk+12,iobuf,0);
+#ifndef WIN32
  usleep(3000);
+#else
+ Sleep(3);
+#endif
 }
 free(fbuf);
 iolen=send_cmd_base(close_cmd,8,iobuf,0);
