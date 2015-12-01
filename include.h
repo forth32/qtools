@@ -25,9 +25,9 @@
 
     #ifdef WIN32
         #include "printf.h"
-		#define S_IFMT  00170000
-		#define S_IFDIR 0x40000
-		#define S_IFBLK 0x60000
+		#define S_IFMT  170000
+		#define S_IFDIR 40000
+		#define S_IFBLK 60000
 		#define S_ISDIR(m) (((m) & S_IFMT) == S_IFDIR)
     #endif
     #include "qcio.h"
