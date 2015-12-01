@@ -99,7 +99,7 @@ if (altflag) {
  if (!fixname) strcpy(filename,"efs_alt.mbn");
 }
 // настройка на стандартную EFS
-else strcpy(filename,"efs.mbn");
+else if (!fixname) strcpy(filename,"efs.mbn");
    
 out=fopen(filename,"w");
   
