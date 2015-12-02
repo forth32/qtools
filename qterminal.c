@@ -8,6 +8,7 @@ unsigned int hexflag=0;         // hex-флаг
 unsigned int wrapperlen=0;      // размер строки (0 - без заворота строк)
 unsigned int waittime=1;        // время ожидания ответа
 unsigned int monitorflag=0;     // режим монитора
+unsigned int autoflag=1;        // режим автодобавления АТ
 char outcmd[500];
 char ibuf[6000];
 
@@ -61,9 +62,16 @@ fflush(stdout);
 //*****************************************************
 void process_command(char* cmdline) {
 
-  
-strcpy(outcmd,cmdline);
+outcmd[0]=0;
+
+// автодобавление префикса АТ
+if ( autoflag &&
+    (((cmdline[0] != 'a') && (cmdline[0] != 'A')) ||
+    ((cmdline[1] != 't') && (cmdline[1] != 'T'))) 
+   )  strcpy(outcmd,"AT");
+strcat(outcmd,cmdline);
 strcat(outcmd,"\r");   // добавляем CR в конец строки
+
 // отправка команды
 ttyflush();  // очистка выходного буфера
 write(siofd,outcmd,strlen(outcmd));  // отсылка команды
@@ -89,7 +97,7 @@ char devname[50]="";
 #endif
 int opt;
 
-while ((opt = getopt(argc, argv, "p:xw:c:hd:m")) != -1) {
+while ((opt = getopt(argc, argv, "p:xw:c:hd:ma")) != -1) {
   switch (opt) {
    case 'h': 
      printf("\nТерминальная программа для ввода АТ-команд в модем\n\n\
@@ -99,6 +107,7 @@ while ((opt = getopt(argc, argv, "p:xw:c:hd:m")) != -1) {
 -x             - выводит ответ модема в виде HEX-дампа\n\
 -w <len>       - длина строки в режиме заворота длинных строк (0 - заворота нет)\n\
 -m             - режим монитора порта\n\
+-a             - запретить автодобавление букв AT в начало команды\n\
 -c \"<команда>\" - запускает указанную команду и завершает работу\n");
     return;
      
@@ -120,6 +129,10 @@ while ((opt = getopt(argc, argv, "p:xw:c:hd:m")) != -1) {
 
    case 'x':
      hexflag=1;
+     break;
+     
+   case 'a':
+     autoflag=0;
      break;
      
    case 'm':
@@ -180,7 +193,7 @@ for(;;)  {
     printf("\n");
     return;
  }   
- if (strlen(line) <2) continue; // слишком короткая команда
+ if (strlen(line) == 0) continue; // пустая команда
 #ifndef WIN32
  if (strcmp(line,oldcmdline) != 0) {
    add_history(line); // в буфер ее для истории
