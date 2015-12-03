@@ -108,19 +108,29 @@ for(nv=start;nv<end;nv++) {
 //*******************************************
 //* Запись раздела nvram из буфера
 //*******************************************
-void write_item(int item, char*buf) {
+int write_item(int item, char*buf) {
   
 unsigned char cmdwrite[200]={0x27,0,0};
 unsigned char iobuf[200];
 int iolen;
+int i;
+
+// обрезаем хвостовые нули
+for (i=124;i>0;i-=4) {
+ if (*((unsigned int*)&buf[i]) != 0) break;
+} 
+i+=4;
 
 *((unsigned short*)&cmdwrite[1])=item;
-memcpy(cmdwrite+3,buf,130);
-iolen=send_cmd_base(cmdwrite,133,iobuf,0);
+memcpy(cmdwrite+3,buf,i);
+iolen=send_cmd_base(cmdwrite,i+3,iobuf,0);
 if ((iolen != 136) || (iobuf[0] != 0x27)) {
-  printf("\n Ошибка записи ячейки\n");
+  printf("\n --- Ошибка записи ячейки %04x ---\n",item);
   dump(iobuf,iolen,0);
+  printf("\n------------------------------------------------------\n");
+  return 0;
 }  
+return 1;
 }
 
 //*******************************************
@@ -165,8 +175,7 @@ for (i=0;i<0x10000;i++) {
     continue;
   }
   fclose (in);
-  write_item(i,buf);
-  printf(" OK");
+  if (write_item(i,buf)) printf(" OK"); fflush(stdout);
 }
 }  
   
