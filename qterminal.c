@@ -67,7 +67,7 @@ outcmd[0]=0;
 // автодобавление префикса АТ
 if ( autoflag &&
     (((cmdline[0] != 'a') && (cmdline[0] != 'A')) ||
-    ((cmdline[1] != 't') && (cmdline[1] != 'T'))) 
+    ((cmdline[1] != 't') && (cmdline[1] != 'T') && (cmdline[1] != '/'))) 
    )  strcpy(outcmd,"AT");
 strcat(outcmd,cmdline);
 strcat(outcmd,"\r");   // добавляем CR в конец строки
