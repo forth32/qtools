@@ -195,7 +195,7 @@ x                 - выход из программы\n\
   // активация загрузчика 
   case 'i':
     sptr=strtok(cmdline+1," "); // адрес
-    if (sptr[0] == 0x0a) {
+    if ((sptr == 0) || (sptr[0] == 0x0a)) {
       hello(1);
       break;
     }
