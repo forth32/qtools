@@ -369,6 +369,16 @@ return 1;
 }
 
 //**************************************************   
+//* Закрытие файла
+//**************************************************   
+void closefile() {
+
+char close_cmd[]={0x4b, 0x13, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00}; 
+send_cmd_base(close_cmd,8,iobuf,0);
+}
+  
+  
+//**************************************************   
 //* Чтение файла в буфер
 //**************************************************   
 unsigned int readfile(char* filename) {	
@@ -376,12 +386,10 @@ unsigned int readfile(char* filename) {
 struct fileinfo fi;
 int i,blk;
 
-char close_cmd[]={0x4b, 0x13, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00}; 
 // 4b 13 04 00 00 00 00 00 ss ss ss ss oo oo oo oo
 char read_cmd[16]={0x4b, 0x13, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00};
 
-
-iolen=send_cmd_base(close_cmd,8,iobuf,0);
+closefile();
 switch (getfileinfo(filename,&fi)) {
    case 0:
      printf("\nОбъект %s не найден\n",filename);
@@ -396,7 +404,7 @@ if (fi.size == 0) {
   return 0;
 }
 fbuf=malloc(fi.size);
-if (!efs_open(filename,0)) return;
+if (!efs_open(filename,0)) return 0;
 
 blk=512;
 for (i=0;i<(fi.size);i+=512) {
@@ -408,7 +416,7 @@ for (i=0;i<(fi.size);i+=512) {
  iolen=send_cmd_base(read_cmd,16,iobuf,0);
  memcpy(fbuf+i,iobuf+0x14,blk);
 }
-iolen=send_cmd_base(close_cmd,8,iobuf,0);
+closefile();
 return fi.size;
 }
 
@@ -423,15 +431,13 @@ int i,blk;
 FILE* in;
 long filesize;
 
-//char open_cmd[100]={0x4b, 0x13, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x24, 0x01, 0x00, 0x00};
-char close_cmd[]={0x4b, 0x13, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00}; 
 // 4b 13 05 00 00 00 00 00 ss ss ss ss oo oo oo oo
 char write_cmd[600]={0x4b, 0x13, 0x05, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 
 char iobuf[4096];
 int iolen;
 
-iolen=send_cmd_base(close_cmd,8,iobuf,0);
+closefile();
 
 // готовим имя выходного файла
 
@@ -455,7 +461,7 @@ switch (getfileinfo(filename,&fi)) {
 in=fopen(file,"r");
 if (in == 0) {
   printf("\n ошибка открытия файла %s",file);
-  return;
+  return 0;
 }  
 fseek(in,0,SEEK_END);
 filesize=ftell(in);
@@ -464,7 +470,7 @@ fseek(in,0,SEEK_SET);
 fread(fbuf,1,filesize,in);
 fclose(in);
 
-if (!efs_open(filename,1)) return;
+if (!efs_open(filename,1)) return 0;
 
 blk=512;
 for (i=0;i<(filesize);i+=512) {
@@ -481,7 +487,7 @@ for (i=0;i<(filesize);i+=512) {
 #endif
 }
 free(fbuf);
-iolen=send_cmd_base(close_cmd,8,iobuf,0);
+closefile();
 return 1;
 }
 ////////////////////////////////////////////////////////////////////////////////////
@@ -536,8 +542,31 @@ strcpy(erase_cmd+4,name);
 iolen=send_cmd_base(erase_cmd,strlen(name)+5,iobuf,0);
 
 } 
+
+//******************************************************
+//*  Создание каталога
+//******************************************************
+void efs_mkdir(char* dirname) {
   
+char mkdir_cmd[600]={0x4b, 0x13, 0x09, 0x00,1,1};
+
+memset(mkdir_cmd+6,0,580);
+strcpy(mkdir_cmd+6,dirname);
+iolen=send_cmd_base(mkdir_cmd,strlen(dirname)+7,iobuf,0);
+}
+
+//******************************************************
+//*  Удаление каталога
+//******************************************************
+void efs_rmdir(char* dirname) {
   
+char rmdir_cmd[600]={0x4b, 0x13, 0x0a, 0x00};
+  
+memset(rmdir_cmd+4,0,580);
+strcpy(rmdir_cmd+4,dirname);
+iolen=send_cmd_base(rmdir_cmd,strlen(dirname)+5,iobuf,0);
+}
+
 
 //@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 //@@@@@@@@@@@@ Головная программа
@@ -552,7 +581,8 @@ enum{
   MODE_TYPE,
   MODE_GETFILE,
   MODE_WRITEFILE,
-  MODE_DELFILE
+  MODE_DELFILE,
+  MODE_MKDIR
 }; 
 
 
@@ -563,7 +593,8 @@ enum {
 
 enum {
   G_FILE,
-  G_ALL
+  G_ALL,
+  G_DIR
 };  
 
 int mode=-1;
@@ -577,7 +608,7 @@ char devname[50]="/dev/ttyUSB0";
 char devname[50]="";
 #endif
 
-while ((opt = getopt(argc, argv, "hp:o:ab:g:l:rt:w:e:f")) != -1) {
+while ((opt = getopt(argc, argv, "hp:o:ab:g:l:rt:w:e:fm:")) != -1) {
   switch (opt) {
    case 'h': 
     printf("\n  Утилита предназначена для работы с разделом efs \n\
@@ -594,6 +625,8 @@ while ((opt = getopt(argc, argv, "hp:o:ab:g:l:rt:w:e:f")) != -1) {
 -gf file  - читает указанный файл из EFS в текущий каталог\n\
 -wf file path - записывает указанный файл по указанному пути\n\
 -ef file  - удаляет указанный файл\n\
+-ed dir   - удаляет указанный каталог\n\
+-md dir   - создает каталог\n\n\
 * Ключи-модификаторы:\n\
 -r        - обработка всех подкаталогов при выводе листинга\n\
 -f        - вывод полного пути к каждому каталогу при просмотре дерева\n\
@@ -721,13 +754,30 @@ while ((opt = getopt(argc, argv, "hp:o:ab:g:l:rt:w:e:f")) != -1) {
 	 gmode=G_FILE;
 	 break;
 	 
+       case 'd':
+	 gmode=G_DIR;
+	 break;
+	 
        default:
 	 printf("\n Неправильно задано значение ключа -g\n");
 	 return;
       }
       break;      
 
-
+  // ==== Ключ создания каталога ====
+   case 'm':
+     if (mode != -1) {
+       printf("\n В командной строке задано более 1 ключа режима работы\n");
+       return;
+     }  
+     mode=MODE_MKDIR;
+     if (*optarg != 'd') {
+       printf("\n Недопустимый ключ m%s",*optarg);
+       return;
+     }
+     break;
+   
+ //===================== Вспомогательные ключи ====================    
       
    case 'p':
     strcpy(devname,optarg);
@@ -829,7 +879,27 @@ switch (mode) {
     break;
 
   case MODE_DELFILE:
-    erase_file(argv[optind]);
+    if (optind == argc) {
+      printf("\n Не указано имя файла");
+      break;
+    }  
+    switch (gmode) {
+      case G_FILE:
+        erase_file(argv[optind]);
+	break;
+
+      case G_DIR:
+        efs_rmdir(argv[optind]);
+	break;
+    }	
+    break;
+
+  case MODE_MKDIR:
+    if (optind == argc) {
+      printf("\n Не указано имя каталога");
+      break;
+    }  
+    efs_mkdir(argv[optind]);
     break;
     
   default:
