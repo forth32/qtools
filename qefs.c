@@ -164,9 +164,9 @@ static char str[5]={0,0,0,0,0};
 int i;
 
 memset(str,'-',3);
-if ((mode&1) != 0) str[0]='r';
+if ((mode&4) != 0) str[0]='r';
 if ((mode&2) != 0) str[1]='w';
-if ((mode&4) != 0) str[2]='x';
+if ((mode&1) != 0) str[2]='x';
 return str;
 }
 
@@ -176,6 +176,7 @@ return str;
 void show_fileinfo(char* filename, struct fileinfo* fi) {
 
 char timestr[100];
+struct tm lt;      // структура для сохранения преобразованной даты
 
 printf("\n Имя файла: %s",filename);
 printf("\n Размер   : %i байт",fi->size);
@@ -185,16 +186,21 @@ printf("\n Атрибуты доступа: %s%s%s",
       cfattr((fi->attr>>3)&7),
       cfattr((fi->attr>>6)&7));
 
-strftime(timestr,100,"%d-%b-%y %H:%M",localtime(&fi->ctime));
-printf("\n Дата создания: %s",timestr);
-
-strftime(timestr,100,"%d-%b-%y %H:%M",localtime(&fi->mtime));
-printf("\n Дата модификации: %s",timestr);
-
-strftime(timestr,100,"%d-%b-%y %H:%M",localtime(&fi->atime));
-printf("\n Дата последнего доступа: %s\n",timestr);
+if (localtime_r(&fi->ctime,&lt) != 0)  {
+ strftime(timestr,100,"%d-%b-%y %H:%M",localtime(&fi->ctime));
+ printf("\n Дата создания: %s",timestr);
 }
 
+if (localtime_r(&fi->mtime,&lt) != 0)  {
+ strftime(timestr,100,"%d-%b-%y %H:%M",localtime(&fi->mtime));
+ printf("\n Дата модификации: %s",timestr);
+}
+
+if (localtime_r(&fi->atime,&lt) != 0)  {
+ strftime(timestr,100,"%d-%b-%y %H:%M",localtime(&fi->atime));
+ printf("\n Дата последнего доступа: %s\n",timestr);
+}
+}
 
 //****************************************************
 //* Вывод списка файлов указанного каталога 
@@ -559,7 +565,7 @@ strcpy(mkdir_cmd+6,dirname);
 for(i=0;i<strlen(dmode);i++) {
   switch (dmode[i]) {
     case 'r':
-      mkdir_cmd[4]|=0x1;
+      mkdir_cmd[4]|=0x4;
       break;
 
     case 'w':
@@ -567,7 +573,7 @@ for(i=0;i<strlen(dmode);i++) {
       break;
 
     case 'x':
-      mkdir_cmd[4]|=0x4;
+      mkdir_cmd[4]|=0x1;
       break;
 
     default:
