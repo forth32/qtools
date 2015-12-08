@@ -281,10 +281,26 @@ int send_cmd_np(unsigned char* incmdbuf, int blen, unsigned char* iobuf) {
 // Открытие и настройка последовательного порта
 //*************************************
 
-int open_port(char* devname)
-{
+int open_port(char* devname) {
+  
+//============= Linux ========================  
 #ifndef WIN32
-siofd = open(devname, O_RDWR | O_NOCTTY |O_SYNC);
+
+int i,dflag=1;
+char devstr[200]={0};
+
+// Вместо полного имени устройства разрешается передавать только номер ttyUSB-порта
+
+// Проверяем имя устройства на наличие нецифровых символов
+for(i=0;i<strlen(devname);i++) {
+  if ((devname[i]<'0') || (devname[i]>'9')) dflag=0;
+}
+// Если в строке - только цифры, добавляем префикс /dev/ttyUSB
+if (dflag) strcpy(devstr,"/dev/ttyUSB");
+// копируем имя устройства
+strcat(devstr,devname);
+
+siofd = open(devstr, O_RDWR | O_NOCTTY |O_SYNC);
 if (siofd == -1) return 0;
 
 bzero(&sioparm, sizeof(sioparm)); // готовим блок атрибутов termios
@@ -296,6 +312,8 @@ sioparm.c_cc[VTIME]=30; // timeout
 sioparm.c_cc[VMIN]=0;  
 tcsetattr(siofd, TCSANOW, &sioparm);
 return 1;
+
+//============= Win32 ========================  
 #else
     char device[20] = "\\\\.\\COM";
     DCB dcbSerialParams = {0};
