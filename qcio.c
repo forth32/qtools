@@ -187,8 +187,10 @@ printf("\n Размер сектора: %u байт",sectorsize);fflush(stdout);
 printf("\n Размер страницы: %u байт (%u секторов)",pagesize,spp);fflush(stdout);
 printf("\n Размер OOB: %u байт",oobsize); fflush(stdout);
 printf("\n Тип ECC: %s",(cfg1&(1<<27))?"BCH":"R-S"); fflush(stdout);
-if (nand_ecc_cfg != 0xffff) printf(", %i бит",(cfg1&(1<<27))?(((ecccfg>>4)&3)?(((ecccfg>>4)&3)+1)*4:4):4);fflush(stdout);
-printf("\n Размер ЕСС: %u байт",(ecccfg>>8)&0x1f);
+if ((nand_ecc_cfg != 0xffff) && (ecccfg != 0)) { 
+  printf(", %i бит",(cfg1&(1<<27))?(((ecccfg>>4)&3)?(((ecccfg>>4)&3)+1)*4:4):4);fflush(stdout);
+  printf("\n Размер ЕСС: %u байт",(ecccfg>>8)&0x1f);
+}  
 
 printf("\n Размер spare: %u байт",(cfg0>>23)&0xf);
 
