@@ -13,7 +13,7 @@ unsigned int read_block(int block,int cwsize,FILE* out) {
 
 unsigned char iobuf[14096];  
 unsigned int page,sec;
-unsigned int st,badflag=0;
+unsigned int badflag=0;
 
 // цикл по страницам
 for(page=0;page<ppb;page++)  {
@@ -22,8 +22,7 @@ for(page=0;page<ppb;page++)  {
   for(sec=0;sec<spp;sec++) {
    mempoke(nand_exec,0x1); 
    nandwait();
-   st=mempeek(nand_buffer_status)&0xffff0000;
-   if (st != 0xff0000) badflag=st;
+   badflag+=test_badblock();
    // выгребаем порцию данных
    memread(iobuf,sector_buf, cwsize);
    fwrite(iobuf,1,cwsize,out);
@@ -38,7 +37,7 @@ return badflag;
 unsigned int read_block_resequence(int block, FILE* out) {
 unsigned char iobuf[4096];  
 unsigned int page,sec;
-unsigned int st,badflag=0;
+unsigned int badflag=0;
 
 // цикл по страницам
 for(page=0;page<ppb;page++)  {
@@ -48,8 +47,7 @@ for(page=0;page<ppb;page++)  {
   for(sec=0;sec<spp;sec++) {
    mempoke(nand_exec,0x1); 
    nandwait();
-   st=mempeek(nand_buffer_status)&0xffff0000;
-   if (st != 0xff0000) badflag=st;
+   badflag+=test_badblock();
    // выгребаем порцию данных
    memread(iobuf,sector_buf,sectorsize+4);
    if (sec != (spp-1)) 
@@ -81,7 +79,7 @@ for (block=start;block<(start+len);block++) {
   printf("\r Блок: %08x",block); fflush(stdout);
   if (rflag != 2) badflag=read_block(block,cwsize,out);
   else            badflag=read_block_resequence(block,out); 
-  if (badflag != 0) printf(" - Badblock %08x\n",badflag);   
+  if (badflag != 0) printf(" - Badblock\n");   
 } 
 printf("\n"); 
 }
@@ -352,7 +350,7 @@ for(i=0;i<npar;i++) {
                badflag=read_block_resequence(block,out);
 	      break;
 	 }  
-        if (badflag != 0) printf(" - Badblock %08x\n",badflag);
+        if (badflag != 0) printf(" - Badblock \n");
         }
      // Обрезка всех FF хвоста
       fclose(out);
