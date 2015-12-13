@@ -150,8 +150,8 @@ replybuf[incount++]=c;
 if (masslen != 0) {
  res=read(siofd,replybuf+1,masslen-1);
  if (res != (masslen-1)) {
-   printf("\nСлишком короткий ответ от модема: %i байт, ожидалось %i байт\n",res+1,masslen);
-   dump(replybuf,res+1,0);
+//   printf("\nСлишком короткий ответ от модема: %i байт, ожидалось %i байт\n",res+1,masslen);
+//   dump(replybuf,res+1,0);
    return 0;
  }  
  incount+=masslen-1; // у нас в буфере уже есть masslen байт
