@@ -38,7 +38,8 @@ for (i=0;i<len;i+=16) {
 
 int memread(char* membuf,int adr, int len) {
 char iobuf[11600];
-
+int tries;       // число попыток повтора команды
+int errcount=0;      // счктчик ошибок
 
 // параметры апплета чтения - смащения:  
 const int adroffset=0x2E;  // адрес записи
@@ -58,21 +59,29 @@ int blklen=1000;
 *((unsigned int*)&cmdbuf[lenoffset])=blklen;  
 
 // Чтение блоками по 1000 байт  
-for(i=0;i<len;i+=1000)  {  
+for(i=0;i<len;i+=1000)  {
+ tries=20; // число попыток чтениия блока данных  
  *((unsigned int*)&cmdbuf[adroffset])=i+adr;  //вписываем адрес
  if ((i+1000) > len) {
+ // последний блок данных - может быть коротким  
    blklen=len-i;
    *((unsigned int*)&cmdbuf[lenoffset])=blklen;  //вписываем длину
- }  
- iolen=send_cmd_massdata(cmdbuf,sizeof(cmdbuf),iobuf,blklen+4);
- if (iolen <(blklen+4)) {
-   printf("\n Ошибка в процессе обработки команды чтения, требуется %i байт, получено %i\n",blklen,iolen);
-   memcpy(membuf+i,iobuf+5,blklen);
-   return 0;
- }  
- memcpy(membuf+i,iobuf+5,blklen);
-} 
-return 1;
+ }
+ 
+ // делаем несколько попыток послать команду и прочитать данные
+ while (tries>0) {
+  iolen=send_cmd_massdata(cmdbuf,sizeof(cmdbuf),iobuf,blklen+4);
+  if (iolen <(blklen+4)) tries--;  // короткий ответ от загрузчика
+  else break; // нормальный ответ - заканчиваем с этим блоком данных
+ }
+ if (tries == 0) { 
+    printf("\n Ошибка в процессе обработки команды чтения памяти, требуется %i байт, получено %i\n",blklen,iolen);
+    memset(membuf+i,0xeb,blklen);
+    errcount++;
+ }   
+ else memcpy(membuf+i,iobuf+5,blklen);
+}
+return !errcount;
 }
 
 //***********************************8

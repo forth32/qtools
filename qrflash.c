@@ -328,6 +328,10 @@ for(i=0;i<npar;i++) {
         else                   sprintf(filename,"%02u-%s.oob",i,partname);  
         if (filename[4] == ':') filename[4]='-';    // заменяем : на -
         out=fopen(filename,"wb");  // открываем выходной файл
+	if (out == 0) {
+	  printf("\n Ошибка открытия выходного файла %s\n",filename);
+	  return;
+	}  
         for(block=start;block<(start+len);block++) {
           printf("\r * R: блок %08x (%i%%)",block-start,(block-start+1)*100/len); fflush(stdout);
 	  
