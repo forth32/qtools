@@ -58,6 +58,9 @@ int i,iolen;
 int blklen=1000;
 *((unsigned int*)&cmdbuf[lenoffset])=blklen;  
 
+///////////////////
+//printf("\n!ms adr=%08x len=%08x",adr,len);
+
 // Чтение блоками по 1000 байт  
 for(i=0;i<len;i+=1000)  {
  tries=20; // число попыток чтениия блока данных  
@@ -71,7 +74,11 @@ for(i=0;i<len;i+=1000)  {
  // делаем несколько попыток послать команду и прочитать данные
  while (tries>0) {
   iolen=send_cmd_massdata(cmdbuf,sizeof(cmdbuf),iobuf,blklen+4);
-  if (iolen <(blklen+4)) tries--;  // короткий ответ от загрузчика
+  if (iolen <(blklen+4)) {
+     // короткий ответ от загрузчика
+     tries--; 
+//     printf("\n!! %i < %i",iolen,blklen+4);
+  }
   else break; // нормальный ответ - заканчиваем с этим блоком данных
  }
  if (tries == 0) { 

@@ -229,6 +229,7 @@ x                 - выход из программы\n\
    break;
 
   case 'r':
+   hello(0);
    sptr=strtok(cmdline+1," "); // блок
    if (sptr == 0) {printf("\n Не указан # блока"); return;}
    sscanf(sptr,"%x",&block);
@@ -248,11 +249,13 @@ x                 - выход из программы\n\
    
    
   case 's': 
+   hello(0);
    memread(membuf,sector_buf,0x23c);
    dump(membuf,0x23c,0); 
    break;
 
-  case 'n': 
+  case 'n':
+   hello(0);
    memread(membuf,nand_cmd,0x100);
    printf("\n* 000 NAND_FLASH_CMD         = %08x",*((unsigned int*)&membuf[0]));
    printf("\n* 004 NAND_ADDR0             = %08x",*((unsigned int*)&membuf[4]));
@@ -292,6 +295,7 @@ x                 - выход из программы\n\
    break;
 
   case 'k':
+    hello(0);
     decode_cfg0();
     printf("\n");
     decode_cfg1();

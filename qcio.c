@@ -16,6 +16,8 @@ unsigned int oobsize=0;
 unsigned int bad_loader=0;
 unsigned int flash16bit=0; // 0 - 8-битная флешка, 1 - 16-битная
 
+unsigned int badsector;    // сектор, содержащий дефектный блок
+unsigned int badflag;      // маркер дефектного блока
 
 //****************************************************************
 //* Ожидание завершения операции, выполняемой контроллером nand  *
@@ -569,13 +571,13 @@ return 1;
 
 int test_badblock() {
 
-unsigned int st,badflag=0;
+unsigned int st,r,badflag=0;
 
 // Старшие 2 байта регистра nand_buffer_status отражают прочитанный с флешки маркер. 
 // Для 8-битных флешек  используется только младший байт, для 16-битных - оба байта
-st=mempeek(nand_buffer_status)&0xffff0000;
+st=r=mempeek(nand_buffer_status)&0xffff0000;
 if (flash16bit == 0) {
-  if (st != 0xff0000) badflag=1;
+  if (st != 0xff0000) { badflag=1;  printf("\nst=%08x",r);}
 }  
 else  if (st != 0xffff0000) badflag=1;
 return badflag;
