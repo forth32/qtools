@@ -91,6 +91,7 @@ void defect_list(int start, int len) {
   
 FILE* out; 
 int blk,pg;
+int badcount=0;
 
 out=fopen("badblock.lst","w");
 fprintf(out,"Список дефектных блоков");
@@ -110,11 +111,13 @@ for(blk=start;blk<len;blk++) {
     if (test_badblock()) {
      printf(" - badblock (страница %i)\n",pg);
      fprintf(out,"\n%08x",blk);
+     badcount++;
      break;  // дальнейшая проверка бессмысленна
     }
  }    //page
 }     // blk
 fclose (out);
+printf("\n * Всего дефектных блоков: %i\n",badcount);
 }
  
 
