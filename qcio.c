@@ -106,7 +106,8 @@ else {
     nandwait();
   }  
 }  
-return 1;
+if (test_badblock()) return 0;
+return 1;  
 }
 
 //**********************************************8
@@ -577,7 +578,10 @@ unsigned int st,r,badflag=0;
 // Для 8-битных флешек  используется только младший байт, для 16-битных - оба байта
 st=r=mempeek(nand_buffer_status)&0xffff0000;
 if (flash16bit == 0) {
-  if (st != 0xff0000) { badflag=1;  printf("\nst=%08x",r);}
+  if (st != 0xff0000) { 
+    badflag=1;  
+//     printf("\nst=%08x",r);    
+  }
 }  
 else  if (st != 0xffff0000) badflag=1;
 return badflag;

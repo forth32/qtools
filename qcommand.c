@@ -244,8 +244,10 @@ x                 - выход из программы\n\
    sscanf(sptr,"%x",&sect);
    if (sect>spp-1)  {printf("\n Слишком большой # сектора"); return;}
    
-   flash_read(block,page,sect);
-//   break;
+   if (!flash_read(block,page,sect)) printf("\n    *** badblock ***\n");
+   memread(membuf,sector_buf,0x23c);
+   dump(membuf,0x23c,0); 
+   break;
    
    
   case 's': 
