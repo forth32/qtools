@@ -100,7 +100,7 @@ if (out == 0) {
   return;
 }
 printf("\nПостроение списка дефектных блоков в интервале %08x - %08x\n",start,start+len);
-for(blk=start;blk<len;blk++) {
+for(blk=start;blk<(start+len);blk++) {
  printf("\r Проверка блока %08x",blk); fflush(stdout);
  for(pg=0;pg<ppb;pg++) {
     nand_reset(); // сброс
@@ -117,7 +117,7 @@ for(blk=start;blk<len;blk++) {
  }    //page
 }     // blk
 fclose (out);
-printf("\n * Всего дефектных блоков: %i\n",badcount);
+printf("\r * Всего дефектных блоков: %i\n",badcount);
 }
  
 
