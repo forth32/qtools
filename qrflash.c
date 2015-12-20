@@ -90,7 +90,7 @@ printf("\n");
 void defect_list(int start, int len) {
   
 FILE* out; 
-int blk,pg;
+int blk,pg=0;
 int badcount=0;
 
 out=fopen("badblock.lst","w");
@@ -102,19 +102,20 @@ if (out == 0) {
 printf("\nПостроение списка дефектных блоков в интервале %08x - %08x\n",start,start+len);
 for(blk=start;blk<(start+len);blk++) {
  printf("\r Проверка блока %08x",blk); fflush(stdout);
- for(pg=0;pg<ppb;pg++) {
+// for(pg=0;pg<ppb;pg++) {
     nand_reset(); // сброс
     setaddr(blk,pg);
     mempoke(nand_cmd,0x34); // чтение data+ecc+spare
     mempoke(nand_exec,0x1);
     nandwait();
     if (test_badblock()) {
-     printf(" - badblock (страница %i)\n",pg);
+//     printf(" - badblock (страница %i)\n",pg);
+     printf(" - badblock\n");
      fprintf(out,"\n%08x",blk);
      badcount++;
-     break;  // дальнейшая проверка бессмысленна
+//     break;  // дальнейшая проверка бессмысленна
     }
- }    //page
+// }    //page
 }     // blk
 fclose (out);
 printf("\r * Всего дефектных блоков: %i\n",badcount);
