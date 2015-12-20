@@ -23,8 +23,13 @@ for(page=0;page<ppb;page++)  {
    mempoke(nand_exec,0x1); 
    nandwait();
    badflag+=test_badblock();
-   // выгребаем порцию данных
-   memread(iobuf,sector_buf, cwsize);
+   if (!badflag)
+   // хороший блок - выгребаем порцию данных
+     memread(iobuf,sector_buf, cwsize);
+   else 
+   // плохой блок - целиком заполняем его 0xbb
+     memset(iobuf,0xbb,cwsize);
+   // записываем результат в выходной файл
    fwrite(iobuf,1,cwsize,out);
   }
  } 
@@ -48,8 +53,12 @@ for(page=0;page<ppb;page++)  {
    mempoke(nand_exec,0x1); 
    nandwait();
    badflag+=test_badblock();
-   // выгребаем порцию данных
-   memread(iobuf,sector_buf,sectorsize+4);
+   if (!badflag)
+   // хороший блок - выгребаем порцию данных
+     memread(iobuf,sector_buf, sectorsize+4);
+   else 
+   // плохой блок - целиком заполняем его 0xbb
+     memset(iobuf,0xbb,sectorsize+4);
    if (sec != (spp-1)) 
      // Для непоследних секторов
      fwrite(iobuf,1,sectorsize+4,out);    // Тело сектора + 4 байта OBB
