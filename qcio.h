@@ -6,6 +6,7 @@ extern unsigned int maxblock;    // Общее число блоков флеш�
 extern unsigned int oobsize;
 extern unsigned int bad_loader;
 extern unsigned int flash16bit; // 0 - 8-битная флешка, 1 - 16-битная
+extern unsigned int badposition;
 
 // индекс в таблице чипcетов
 extern int chip_type; 
@@ -85,3 +86,5 @@ unsigned int get_controller();
 int is_chipset(char* name);
 int dload_sahara();
 int test_badblock();
+void hardware_bad_on();
+void hardware_bad_off();

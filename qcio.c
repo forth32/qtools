@@ -18,6 +18,7 @@ unsigned int flash16bit=0; // 0 - 8-битная флешка, 1 - 16-битна
 
 unsigned int badsector;    // сектор, содержащий дефектный блок
 unsigned int badflag;      // маркер дефектного блока
+unsigned int badposition;  // позиция маркера дефектных блоков
 
 //****************************************************************
 //* Ожидание завершения операции, выполняемой контроллером nand  *
@@ -206,17 +207,45 @@ else {
 printf("\n Размер spare: %u байт",(cfg0>>23)&0xf);
 
 printf("\n Положение маркера дефектных блоков: ");
-i=(cfg1>>6)&0x3ff;
-if (i == 0) printf(" маркер отсутствует");
+badposition=(cfg1>>6)&0x3ff;
+if (badposition == 0) printf(" маркер отсутствует");
 else {
   if (((cfg1>>16)&1) == 0) printf("user");
   else printf("spare");
-  printf("+%x",i);
+  printf("+%x",badposition);
 }
 
 printf("\n Общий размер флеш-памяти = %u блоков (%i MB)",maxblock,maxblock*ppb/1024*pagesize/1024);fflush(stdout);
 printf("\n");
 }
+
+//**********************************************
+//* Отключение аппаратного контроля бедблоков
+//**********************************************
+void hardware_bad_off() {
+
+int cfg1;
+
+cfg1=mempeek(nand_cfg1);
+cfg1 &= ~(0x3ff<<6);
+mempoke(nand_cfg1,cfg1);
+}
+
+//**********************************************
+//* Включение аппаратного контроля бедблоков
+//**********************************************
+void hardware_bad_on() {
+
+int cfg1;
+
+cfg1=mempeek(nand_cfg1);
+cfg1 &= ~(0x3ff<<6);
+cfg1 |= (badposition <<6)&0x3ff;
+mempoke(nand_cfg1,cfg1);
+}
+
+
+
 
 //*************************************
 //* чтение таблицы разделов из flash
