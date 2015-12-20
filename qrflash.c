@@ -92,6 +92,10 @@ void defect_list(int start, int len) {
 FILE* out; 
 int blk,pg=0;
 int badcount=0;
+int vptable=0; // флаг валидности таблицы разделов
+int i,npar;
+int pstart,plen;
+unsigned char ptable[1100]; // таблица разделов
 
 out=fopen("badblock.lst","w");
 fprintf(out,"Список дефектных блоков");
@@ -99,23 +103,38 @@ if (out == 0) {
   printf("\n Невозможно создать файл badblock.lst\n");
   return;
 }
+
+// загружаем таблицу разделов
+load_ptable(ptable);
+if (strncmp(ptable,"\xAA\x73\xEE\x55\xDB\xBD\x5E\xE3",8) == 0) vptable=1;
+npar=*((unsigned int*)&ptable[12]);
+
+
 printf("\nПостроение списка дефектных блоков в интервале %08x - %08x\n",start,start+len);
 for(blk=start;blk<(start+len);blk++) {
  printf("\r Проверка блока %08x",blk); fflush(stdout);
-// for(pg=0;pg<ppb;pg++) {
     nand_reset(); // сброс
     setaddr(blk,pg);
     mempoke(nand_cmd,0x34); // чтение data+ecc+spare
     mempoke(nand_exec,0x1);
     nandwait();
     if (test_badblock()) {
-//     printf(" - badblock (страница %i)\n",pg);
-     printf(" - badblock\n");
+     printf(" - badblock");
      fprintf(out,"\n%08x",blk);
-     badcount++;
-//     break;  // дальнейшая проверка бессмысленна
+     if (vptable) 
+       // поиск раздела, в котором лежит этот блок
+       for(i=0;i<npar;i++) {
+         pstart=*((unsigned int*)&ptable[32+28*i]);   // адрес блока начала раздела
+         plen=*((unsigned int*)&ptable[36+28*i]);     // размер раздела
+	 if ((blk>pstart) && (blk<(pstart+plen))) {
+	   printf(" (%s+%x)",ptable+16+28*i+2,blk-pstart);
+	   fprintf(out," (%s+%x)",ptable+16+28*i,blk-pstart);
+	   break;
+	 }  
     }
-// }    //page
+     badcount++;
+     printf("\n");
+    }
 }     // blk
 fclose (out);
 printf("\r * Всего дефектных блоков: %i\n",badcount);
