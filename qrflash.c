@@ -115,6 +115,19 @@ printf("\n");
 }
 
 //*********************************
+//*  Проверка дефектности блока
+//*********************************
+int check_block(int blk) {
+
+nand_reset(); // сброс
+setaddr(blk,0);
+mempoke(nand_cmd,0x34); // чтение data+ecc+spare
+mempoke(nand_exec,0x1);
+nandwait();
+return test_badblock();
+}  
+
+//*********************************
 //* Построение списка бедблоков
 //*********************************
 void defect_list(int start, int len) {
@@ -143,12 +156,7 @@ npar=*((unsigned int*)&ptable[12]);
 printf("\nПостроение списка дефектных блоков в интервале %08x - %08x\n",start,start+len);
 for(blk=start;blk<(start+len);blk++) {
  printf("\r Проверка блока %08x",blk); fflush(stdout);
-    nand_reset(); // сброс
-    setaddr(blk,pg);
-    mempoke(nand_cmd,0x34); // чтение data+ecc+spare
-    mempoke(nand_exec,0x1);
-    nandwait();
-    if (test_badblock()) {
+ if (check_block(blk)) {
      printf(" - badblock");
      fprintf(out,"\n%08x",blk);
      if (vptable) 
@@ -363,7 +371,6 @@ if (bad_processing_flag==BAD_UNDEF) {
   else bad_processing_flag=BAD_SKIP;               // для чтения разделов
 }  
 
-printf("\n badflag=%i",bad_processing_flag);
 #ifdef WIN32
 if (*devname == '\0')
 {
