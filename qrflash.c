@@ -15,50 +15,61 @@ enum {
 };
 
 int bad_processing_flag=BAD_UNDEF;
+unsigned char blockbuf[220000];
 
+//********************************************************************************
+//* Загрузка блока в блочный буфер
+//*
+//*  возвращает 0, если блок дефектный, или 1, если он нормально прочитался
+//********************************************************************************
+unsigned int load_block(int blk, int size) {
 
-//*************************************
-//* Чтение блока данных
-//*************************************
+int pg;  
+if (bad_processing_flag == BAD_DISABLE) hardware_bad_off();
+mempoke(nand_cmd,0x34); // чтение data+ecc+spare
+if (check_block(blk)) {
+  // обнаружен бедблок
+  if (bad_processing_flag != BAD_IGNORE) {
+    memset(iobuf,0xbb,size*ppb); // заполняем блочный буфер заполнителем
+    if (bad_processing_flag == BAD_DISABLE) hardware_bad_on();
+    return 0; // возвращаем признак бедблока
+  }  	
+// хороший блок - читаем его  
+for(pg=0;pg<ppb;pg++) {
+  setaddr(blk,pg);
+  mempoke(nand_exec,0x1); 
+  nandwait();
+  mempoke(nand_exec,0x1); 
+  nandwait();
+  memread(blockbuf+pg*cwsize,sector_buf, cwsize);
+}  
+if (bad_processing_flag == BAD_DISABLE) hardware_bad_on();
+return 1; // заебись - блок прочитан
+}
+  
+//***************************************
+//* Чтение блока данных в выходной файл
+//***************************************
 unsigned int read_block(int block,int cwsize,FILE* out) {
 
-unsigned char iobuf[14096];  
-unsigned int page,sec;
 unsigned int badflag=0;
 
-if (bad_processing_flag == BAD_DISABLE) hardware_bad_off();
-// цикл по страницам
-for(page=0;page<ppb;page++)  {
-  setaddr(block,page);
-  // по секторам  
-  for(sec=0;sec<spp;sec++) {
-   mempoke(nand_exec,0x1); 
-   nandwait();
-   badflag+=test_badblock();
-   if (!badflag || bad_processing_flag == BAD_IGNORE)
-   // хороший блок, или в режиме игнорирования бедов - выгребаем порцию данных
-     memread(iobuf,sector_buf, cwsize);
-   else { 
-     // пропуск плохих блоков
-     if (bad_processing_flag == BAD_SKIP) continue; 
-    // плохой блок - целиком заполняем его 0xbb
-     memset(iobuf,0xbb,cwsize);
-   }  
-   // записываем результат в выходной файл
-   fwrite(iobuf,1,cwsize,out);
-  }
- } 
-if (bad_processing_flag == BAD_DISABLE) hardware_bad_on();
-return badflag; 
+badflag=load_block(block,cwsize);
+if (badflag || (bad_processing_flag != BAD_SKIP) {
+  // блок прочитался, или не прочитался, но мы бедблоки пропускаем
+   fwrite(blockbuf,1,cwsize*ppb,out); // записываем его в файл
+}
+return !badflag;
 } 
 
 //****************************************************************
 //* Чтение блока данных с восстановлением китайского изврата
 //****************************************************************
 unsigned int read_block_resequence(int block, FILE* out) {
-unsigned char iobuf[4096];  
 unsigned int page,sec;
-unsigned int badflag=0;
+unsigned int badflag;
+
+badflag=load_block(block,cwsize);
 
 if (bad_processing_flag == BAD_DISABLE) hardware_bad_off();
 // цикл по страницам
@@ -190,8 +201,8 @@ int res;
 unsigned char c;
 unsigned char* sptr;
 unsigned int start=0,len=0,opt;
-unsigned int cwsize;
 unsigned int partlist[60]; // список разделов, разрешенных для чтения
+unsigned int cwsize;  // размер порции данных, читаемых из секторного буфера за один раз
 
 FILE* out;
 FILE* part=0;
