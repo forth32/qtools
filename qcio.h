@@ -88,3 +88,4 @@ int dload_sahara();
 int test_badblock();
 void hardware_bad_on();
 void hardware_bad_off();
+int check_block(int blk);

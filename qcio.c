@@ -617,4 +617,16 @@ return badflag;
 }
 
 
+//*********************************
+//*  Проверка дефектности блока
+//*********************************
+int check_block(int blk) {
+
+nand_reset(); // сброс
+setaddr(blk,0);
+mempoke(nand_cmd,0x34); // чтение data+ecc+spare
+mempoke(nand_exec,0x1);
+nandwait();
+return test_badblock();
+}  
   
