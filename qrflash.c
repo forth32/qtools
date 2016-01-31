@@ -28,20 +28,23 @@ unsigned int load_block(int blk, int cwsize) {
 int pg,sec;  
 if (bad_processing_flag == BAD_DISABLE) hardware_bad_off();
 else if (bad_processing_flag != BAD_IGNORE) {
-  // обнаружен бедблок
    if (check_block(blk)) {
+    // обнаружен бедблок
     memset(blockbuf,0xbb,cwsize*spp*ppb); // заполняем блочный буфер заполнителем
     return 0; // возвращаем признак бедблока
   }
 } 
 // хороший блок, или нам насрать на бедблоки - читаем блок 
+nand_reset();
 mempoke(nand_cmd,0x34); // чтение data+ecc+spare
 for(pg=0;pg<ppb;pg++) {
   setaddr(blk,pg);
   for (sec=0;sec<spp;sec++) {
    mempoke(nand_exec,0x1); 
    nandwait();
-   memread(blockbuf+pg*pagesize+sec*cwsize,sector_buf, cwsize);
+   memread(blockbuf+(pg*spp+sec)*cwsize,sector_buf, cwsize);
+//   printf("\n--- blk %x  pg %i  sec  %i ---\n",blk,pg,sec);
+//   dump(blockbuf+(pg*spp+sec)*cwsize,cwsize,0);
   } 
 }  
 if (bad_processing_flag == BAD_DISABLE) hardware_bad_on();
@@ -66,40 +69,27 @@ return !okflag;
 //****************************************************************
 //* Чтение блока данных с восстановлением китайского изврата
 //****************************************************************
-unsigned int read_block_resequence(int block, int cwsize, FILE* out) {
+unsigned int read_block_resequence(int block, FILE* out) {
 unsigned int page,sec;
-unsigned int badflag;
+unsigned int okflag;
 char iobuf[4096];
 
-badflag=load_block(block,cwsize);
+okflag=load_block(block,sectorsize+4);
+if (!okflag && (bad_processing_flag == BAD_IGNORE)) return 1; // обнаружен бедблок
 
 // цикл по страницам
 for(page=0;page<ppb;page++)  {
-
-  setaddr(block,page);
   // по секторам  
   for(sec=0;sec<spp;sec++) {
-   mempoke(nand_exec,0x1); 
-   nandwait();
-   badflag+=test_badblock();
-   if (!badflag || bad_processing_flag == BAD_IGNORE)
-   // хороший блок, или в режиме игнорирования бедов - выгребаем порцию данных
-     memread(iobuf,sector_buf, sectorsize+4);
-   else {
-     // пропуск плохих блоков
-     if (bad_processing_flag == BAD_SKIP) continue; 
-   // плохой блок - целиком заполняем его 0xbb
-     memset(iobuf,0xbb,sectorsize+4);
-   }  
    if (sec != (spp-1)) 
      // Для непоследних секторов
-     fwrite(iobuf,1,sectorsize+4,out);    // Тело сектора + 4 байта OBB
+     fwrite(blockbuf+(page*spp+sec)*(sectorsize+4),1,sectorsize+4,out);    // Тело сектора + 4 байта OBB
    else 
      // для последнего сектора
-     fwrite(iobuf,1,sectorsize-4*(spp-1),out);   // Тело сектора - хвост oob
+     fwrite(blockbuf+(page*spp+sec)*(sectorsize+4),1,sectorsize-4*(spp-1),out);   // Тело сектора - хвост oob
   }
  } 
-return badflag; 
+return 0; 
 } 
 
 
@@ -119,7 +109,7 @@ printf("\n Формат данных: %u+%i\n",sectorsize,cwsize-sectorsize);
 for (block=start;block<(start+len);block++) {
   printf("\r Блок: %08x",block); fflush(stdout);
   if (rflag != 2) badflag=read_block(block,cwsize,out);
-  else            badflag=read_block_resequence(block,cwsize,out); 
+  else            badflag=read_block_resequence(block,out); 
   if (badflag != 0) printf(" - Badblock\n");   
 } 
 printf("\n"); 
@@ -488,7 +478,7 @@ for(i=0;i<npar;i++) {
 	           badflag=read_block(block,cwsize,out);
 	       else 
 	       // чтение китайсколинуксовых разделов
-	           badflag=read_block_resequence(block,cwsize,out);
+	           badflag=read_block_resequence(block,out);
 	       break;
 	       
 	    case 1: // стандартный формат  
@@ -496,7 +486,7 @@ for(i=0;i<npar;i++) {
 	      break;
 	      
 	    case 2: // китайсколинуксовый формат  
-               badflag=read_block_resequence(block,cwsize,out);
+               badflag=read_block_resequence(block,out);
 	      break;
 	 }  
         if (badflag != 0) printf(" - Badblock \n");
