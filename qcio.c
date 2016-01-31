@@ -185,11 +185,12 @@ cfg1=mempeek(nand_cfg1);
 if (nand_ecc_cfg != 0xffff) ecccfg=mempeek(nand_ecc_cfg);
 else ecccfg=0;
 get_flash_config();
-printf("\n Флеш-память: %s %s, %s",flash_mfr,(rbuf[0x2d] != 0x65)?((char*)(rbuf+0x2d)):"",flash_descr); fflush(stdout);
 printf("\n Версия протокола: %i",rbuf[0x22]); fflush(stdout);
+printf("\n Флеш-память: %s %s, %s",flash_mfr,(rbuf[0x2d] != 0x65)?((char*)(rbuf+0x2d)):"",flash_descr); fflush(stdout);
 //printf("\n Максимальный размер пакета: %i байта",*((unsigned int*)&rbuf[0x24]));fflush(stdout);
 printf("\n Размер сектора: %u байт",sectorsize);fflush(stdout);
 printf("\n Размер страницы: %u байт (%u секторов)",pagesize,spp);fflush(stdout);
+printf("\n Число страниц в блоке: %u",ppb);fflush(stdout);
 printf("\n Размер OOB: %u байт",oobsize); fflush(stdout);
 
 // Определяем тип ЕСС

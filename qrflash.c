@@ -21,28 +21,28 @@ unsigned char blockbuf[220000];
 //* Загрузка блока в блочный буфер
 //*
 //*  возвращает 0, если блок дефектный, или 1, если он нормально прочитался
+//* cwsize - размер читаемого сектора (включая ООВ, если надо)
 //********************************************************************************
-unsigned int load_block(int blk, int size) {
+unsigned int load_block(int blk, int cwsize) {
 
-int pg;  
+int pg,sec;  
 if (bad_processing_flag == BAD_DISABLE) hardware_bad_off();
-mempoke(nand_cmd,0x34); // чтение data+ecc+spare
-if (check_block(blk)) {
+else if (bad_processing_flag != BAD_IGNORE) {
   // обнаружен бедблок
-  if (bad_processing_flag != BAD_IGNORE) {
-    memset(blockbuf,0xbb,size*ppb); // заполняем блочный буфер заполнителем
-    if (bad_processing_flag == BAD_DISABLE) hardware_bad_on();
+   if (check_block(blk)) {
+    memset(blockbuf,0xbb,cwsize*spp*ppb); // заполняем блочный буфер заполнителем
     return 0; // возвращаем признак бедблока
   }
-}  
-// хороший блок - читаем его  
+} 
+// хороший блок, или нам насрать на бедблоки - читаем блок 
+mempoke(nand_cmd,0x34); // чтение data+ecc+spare
 for(pg=0;pg<ppb;pg++) {
   setaddr(blk,pg);
-  mempoke(nand_exec,0x1); 
-  nandwait();
-  mempoke(nand_exec,0x1); 
-  nandwait();
-  memread(blockbuf+pg*size,sector_buf, size);
+  for (sec=0;sec<spp;sec++) {
+   mempoke(nand_exec,0x1); 
+   nandwait();
+   memread(blockbuf+pg*pagesize+sec*cwsize,sector_buf, cwsize);
+  } 
 }  
 if (bad_processing_flag == BAD_DISABLE) hardware_bad_on();
 return 1; // заебись - блок прочитан
@@ -53,14 +53,14 @@ return 1; // заебись - блок прочитан
 //***************************************
 unsigned int read_block(int block,int cwsize,FILE* out) {
 
-unsigned int badflag=0;
+unsigned int okflag=0;
 
-badflag=load_block(block,cwsize);
-if (badflag || (bad_processing_flag != BAD_SKIP)) {
+okflag=load_block(block,cwsize);
+if (okflag || (bad_processing_flag != BAD_SKIP)) {
   // блок прочитался, или не прочитался, но мы бедблоки пропускаем
-   fwrite(blockbuf,1,cwsize*ppb,out); // записываем его в файл
+   fwrite(blockbuf,1,cwsize*spp*ppb,out); // записываем его в файл
 }
-return !badflag;
+return !okflag;
 } 
 
 //****************************************************************
@@ -73,7 +73,6 @@ char iobuf[4096];
 
 badflag=load_block(block,cwsize);
 
-if (bad_processing_flag == BAD_DISABLE) hardware_bad_off();
 // цикл по страницам
 for(page=0;page<ppb;page++)  {
 
@@ -100,7 +99,6 @@ for(page=0;page<ppb;page++)  {
      fwrite(iobuf,1,sectorsize-4*(spp-1),out);   // Тело сектора - хвост oob
   }
  } 
-if (bad_processing_flag == BAD_DISABLE) hardware_bad_on();
 return badflag; 
 } 
 
@@ -480,7 +478,7 @@ for(i=0;i<npar;i++) {
 	  return;
 	}  
         for(block=start;block<(start+len);block++) {
-          printf("\r * R: блок %08x (%i%%)",block-start,(block-start+1)*100/len); fflush(stdout);
+          printf("\r * R: блок %06x [start+%03x] (%i%%)",block,block-start,(block-start+1)*100/len); fflush(stdout);
 	  
     //	  Собственно чтение блока
 	  switch (rflag) {
