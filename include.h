@@ -1,3 +1,5 @@
+typedef int int32;
+typedef unsigned char uint8;
 #ifndef __INCLUDE_H__
     #define __INCLUDE_H__
 

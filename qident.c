@@ -1,5 +1,6 @@
 #include "include.h"
 
+
 //@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 //* Идентификация чипсетов устройств (с DMSS-протоколом)
 //
@@ -10,10 +11,24 @@ unsigned char iobuf[2048];
 unsigned int iolen;
 
 char id_cmd[2]={0,0};
+char flashid_cmd[4]={0x4b, 0x13, 0x15, 0};
 
 unsigned short chip_code;
 int chip_id;
 int opt;
+
+struct  {
+  int32 hdr;
+  int32 diag_errno;            /* Error code if error, 0 otherwise  */
+  int32 total_no_of_blocks;    /* Total number of blocks in the device */
+  int32 no_of_pages_per_block; /* Number of pages in a block */
+  int32 page_size;             /* Size of page data region in bytes */
+  int32 total_page_size;       /* Size of total page_size */
+  int32 maker_id;              /* Device maker ID */
+  int32 device_id;             /* Device ID */
+  uint8 device_type;           /* 0 indicates NOR device 1 NAND */
+  uint8 device_name[15];       /* Device name */
+} fid;
 
 #ifndef WIN32
 char devname[20]="/dev/ttyUSB0";
@@ -82,4 +97,22 @@ if (chip_id == -1) {
 set_chipset(chip_id);
 printf("\n Чипсет: %s  (%08x)\n",get_chipname(),nand_cmd); fflush(stdout);
 
+// Определяем тип и параметры флешки
+iolen=send_cmd_base(flashid_cmd,4,iobuf,0);
+if (iolen == 0) {
+  printf("\n Ошибка идентификации flash\n");
+  return;
+}
+
+memcpy(&fid,iobuf,sizeof(fid));
+if (fid.diag_errno != 0) {
+  printf("\n Ошибка идентификации flash\n");
+  return;
+}
+printf("\n Flash: %s %s, vid=%02x  pid=%02x",(fid.device_type?"NAND":"NOR"),fid.device_name,fid.maker_id,fid.device_id);
+//printf("\n Размер EFS:      %i блоков",fid.total_no_of_blocks);
+printf("\n Страниц на блок: %i",fid.no_of_pages_per_block);
+printf("\n Размер страницы: %i",fid.page_size);
+printf("\n Размер ООВ:      %i",fid.total_page_size-fid.page_size);
+printf("\n");
 } 
