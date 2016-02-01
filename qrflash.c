@@ -15,7 +15,7 @@ enum {
 };
 
 int bad_processing_flag=BAD_UNDEF;
-unsigned char blockbuf[220000];
+unsigned char *blockbuf;
 
 //********************************************************************************
 //* Загрузка блока в блочный буфер
@@ -382,6 +382,9 @@ if ((truncflag == 1)&&(xflag == 1)) {
   printf("\nКлючи -t и -x несовместимы\n");
   return;
 }  
+
+blockbuf=(unsigned char*)malloc(300000);
+
 hello(0);
 cwsize=sectorsize;
 if (xflag) cwsize+=oobsize/spp; // наращиваем размер codeword на размер порции OOB на каждый сектор
