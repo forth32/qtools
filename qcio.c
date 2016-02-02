@@ -24,10 +24,10 @@ unsigned int badposition;  // позиция маркера дефектных �
 //* Ожидание завершения операции, выполняемой контроллером nand  *
 //****************************************************************
 void nandwait() { 
-  if (get_controller() == 0) 
-    while ((mempeek(nand_status)&0xf) != 0);  // MDM
-  else
-    while ((mempeek(nand_status)&0x3) != 0);  // MSM
+   if (get_controller() == 0) 
+     while ((mempeek(nand_status)&0xf) != 0);  // MDM
+   else
+     while ((mempeek(nand_status)&0x3) != 0);  // MSM
 }
 
 

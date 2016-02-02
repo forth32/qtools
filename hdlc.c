@@ -4,7 +4,7 @@
 #define NO_IO
 #include "include.h"
 
-
+static char pdev[500]; // имя последовательного порта
   
 #ifndef WIN32
 struct termios sioparm;
@@ -258,7 +258,8 @@ unsigned char outcmdbuf[14096];
 unsigned int  iolen;
 
 iolen=convert_cmdbuf(incmdbuf,blen,outcmdbuf);  
-if (!send_unframed_buf(outcmdbuf,iolen,0)) return 0; // ошибка передачи команды
+if (!send_unframed_buf(outcmdbuf,iolen,0)) return -1; // ошибка передачи команды
+//dump(outcmdbuf,iolen,0); fflush(stdout);
 return receive_reply(iobuf,datalen);
 }
 
@@ -282,7 +283,9 @@ int send_cmd_np(unsigned char* incmdbuf, int blen, unsigned char* iobuf) {
 //*************************************
 
 int open_port(char* devname) {
-  
+
+strcpy(pdev,devname);   // сохраняем имя порта  
+//printf("\n pdev = %s",pdev);
 //============= Linux ========================  
 #ifndef WIN32
 
@@ -356,6 +359,20 @@ close(siofd);
 CloseHandle(hSerial);
 #endif
 }
+
+//****************************************
+//* Переоткрытие последовательного порта
+//****************************************
+void reopen_port() {
+
+close_port();
+usleep(1000);
+if (!open_port(pdev)) {
+  printf("\n Ошибка открытия порта %s",pdev);
+  exit(1);
+} 
+}
+
 
 //*************************************
 // Настройка таймаутов последовательного порта

@@ -36,7 +36,7 @@ for (i=0;i<len;i+=16) {
 //* Чтение области памяти
 //***********************************8
 
-int memread(char* membuf,int adr, int len) {
+int memread(unsigned char* membuf,int adr, int len) {
 char iobuf[11600];
 int tries;       // число попыток повтора команды
 int errcount=0;      // счктчик ошибок
@@ -76,13 +76,14 @@ for(i=0;i<len;i+=1000)  {
   iolen=send_cmd_massdata(cmdbuf,sizeof(cmdbuf),iobuf,blklen+4);
   if (iolen <(blklen+4)) {
      // короткий ответ от загрузчика
-     tries--; 
-//     printf("\n!! %i < %i",iolen,blklen+4);
+     tries--;
+     usleep(1000);
+//     printf("\n!t%i! %i < %i",tries,iolen,blklen+4);
   }
   else break; // нормальный ответ - заканчиваем с этим блоком данных
  }
  if (tries == 0) { 
-    printf("\n Ошибка в процессе обработки команды чтения памяти, требуется %i байт, получено %i\n",blklen,iolen);
+    printf("\n Ошибка обработки команды чтения памяти, требуется %i байт, получено %i adr=%08x\n",blklen,iolen,adr);
     memset(membuf+i,0xeb,blklen);
     errcount++;
  }   
