@@ -18,7 +18,7 @@ udsize=(mempeek(nand_cfg0)&(0x3ff<<9))>>9;
 addr=mempeek(nand_addr0)>>16;
 if (addr == 0) { 
   // если адреса таблицы нет в регистре - ищем его
-  load_ptable(buf); 
+  if (!load_ptable(buf)) return; 
   addr=mempeek(nand_addr0)>>16;
 }  
 blk=addr/ppb;

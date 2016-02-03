@@ -54,7 +54,7 @@ int flash_read(int block, int page, int sect);
 void setaddr(int block, int page);
 void nandwait();
 void hello(int mode);
-void load_ptable(unsigned char* ptable);
+int load_ptable(unsigned char* ptable);
 extern int siofd;
 void port_timeout(int timeout);
 int send_cmd_massdata(unsigned char* incmdbuf, int blen, unsigned char* iobuf, unsigned int datalen);

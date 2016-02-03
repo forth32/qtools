@@ -137,10 +137,11 @@ if (out == 0) {
 }
 
 // загружаем таблицу разделов
-load_ptable(ptable);
-if (strncmp(ptable,"\xAA\x73\xEE\x55\xDB\xBD\x5E\xE3",8) == 0) vptable=1;
-npar=*((unsigned int*)&ptable[12]);
-
+if (load_ptable(ptable)) 
+ if (strncmp(ptable,"\xAA\x73\xEE\x55\xDB\xBD\x5E\xE3",8) == 0) {
+   vptable=1;
+   npar=*((unsigned int*)&ptable[12]);
+ }
 
 printf("\nПостроение списка дефектных блоков в интервале %08x - %08x\n",start,start+len);
 for(blk=start;blk<(start+len);blk++) {
@@ -389,8 +390,12 @@ hello(0);
 cwsize=sectorsize;
 if (xflag) cwsize+=oobsize/spp; // наращиваем размер codeword на размер порции OOB на каждый сектор
 
-if (partflag == 2) load_ptable(ptable); // загружаем таблицу разделов
-
+if (partflag == 2) 
+  // загружаем таблицу разделов
+  if (!load_ptable(ptable)) { 
+    printf("\n Таблица разделов не найдена. Завершаем работу.\n");
+    return;
+  }
 mempoke(nand_cfg1,mempeek(nand_cfg1)&0xfffffffe|eccflag); // ECC on/off
 //mempoke(nand_cs,4); // data mover
 //mempoke(nand_cs,0); // data mover

@@ -208,7 +208,6 @@ else {
 printf("\n Размер spare: %u байт",(cfg0>>23)&0xf);
 
 printf("\n Положение маркера дефектных блоков: ");
-badposition=(cfg1>>6)&0x3ff;
 if (badposition == 0) printf(" маркер отсутствует");
 else {
   if (((cfg1>>16)&1) == 0) printf("user");
@@ -241,7 +240,7 @@ int cfg1;
 
 cfg1=mempeek(nand_cfg1);
 cfg1 &= ~(0x3ff<<6);
-cfg1 |= (badposition <<6)&0x3ff;
+cfg1 |= (badposition &0x3ff)<<6;
 mempoke(nand_cfg1,cfg1);
 }
 
@@ -251,7 +250,7 @@ mempoke(nand_cfg1,cfg1);
 //*************************************
 //* чтение таблицы разделов из flash
 //*************************************
-void load_ptable(unsigned char* buf) {
+int load_ptable(unsigned char* buf) {
 
 unsigned int udsize=512;
 unsigned int blk,pg;
@@ -275,11 +274,10 @@ for (blk=0;blk<12;blk++) {
     mempoke(nand_exec,1);     // сектор 1 - продолжение таблицы
     nandwait();
     memread(buf+udsize,sector_buf, udsize);
-    return; // все - таблица найдна, более тут делать нечего
+    return 1; // все - таблица найдна, более тут делать нечего
   }
 }  
-printf("\n Таблица разделов не найдена. Завершаем работу.");
-exit(1);
+return 0;  
 }
 
 //**********************************
@@ -503,6 +501,7 @@ if (nand_cmd == 0xa0a00000) {
   cfg1|=(0x1d1<<6); // BAD_BLOCK_BYTE_NUM
   mempoke(nand_cfg1,cfg1);
 }  
+badposition=(cfg1>>6)&0x3ff;
 
 // проверяем признак 16-битной флешки
 if ((cfg1&2) != 0) flash16bit=1;
