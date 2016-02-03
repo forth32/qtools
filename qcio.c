@@ -111,6 +111,7 @@ if (test_badblock()) return 0;
 return 1;  
 }
 
+
 //**********************************************8
 //* Процедура активации загрузчика hello
 //*
@@ -629,4 +630,46 @@ mempoke(nand_exec,0x1);
 nandwait();
 return test_badblock();
 }  
+
+//*********************************
+//* Запись bad-маркера
+//*********************************
+void write_badmark(unsigned int blk, int val) {
   
+char buf[700];
+const int udsize=0x23c;
+int i;
+
+hardware_bad_off();
+memset(buf,udsize,val);
+
+memwrite(sector_buf, buf, udsize);
+nand_reset();
+setaddr(blk,0);
+mempoke(nand_cmd,0x39); // запись data+ecc+spare
+for (i=0;i<spp;i++) {
+ mempoke(nand_exec,0x1);
+ nandwait();
+}
+hardware_bad_on();
+}
+
+
+//*********************************
+//* Установка bad-маркера
+//*********************************
+void mark_bad(unsigned int blk) {
+
+write_badmark(blk,0);
+}
+
+
+//*********************************
+//* Снятие bad-маркера
+//*********************************
+void unmark_bad(unsigned int blk) {
+  
+write_badmark(blk,0xff);
+}
+
+

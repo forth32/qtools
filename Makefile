@@ -6,7 +6,7 @@ OBJS     = hdlc.o  qcio.o memio.o chipconfig.o
 
 .PHONY: all clean
 
-all:    qcommand qrmem qrflash qdload mibibsplit qwflash qwdirect qefs qnvram qblinfo qident qterminal
+all:    qcommand qrmem qrflash qdload mibibsplit qwflash qwdirect qefs qnvram qblinfo qident qterminal qbadblock
 
 clean: 
 	rm *.o
@@ -59,5 +59,8 @@ qident:      qident.o $(OBJS)
 	gcc $^ -o $@ $(LIBS)
 
 qterminal:   qterminal.o $(OBJS)
+	gcc $^ -o $@ $(LIBS)
+
+qbadblock:   qbadblock.o $(OBJS)
 	gcc $^ -o $@ $(LIBS)
 	
