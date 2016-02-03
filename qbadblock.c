@@ -167,7 +167,10 @@ if (dflag) {
 //# Пометка блока как дефектного
 //###################################################
 if (mflag) {
-  mark_bad(mflag);
+  if (mark_bad(mflag)) {
+   printf("\n Блок %x отмечен как дефектный\n",mflag);
+  }
+  else printf("\n Блок %x уже является дефектным\n",mflag);	
   return;
 }
 
@@ -175,7 +178,10 @@ if (mflag) {
 //# Снятие с блока дефектного маркера
 //###################################################
 if (uflag) {
-  unmark_bad(mflag);
+  if (unmark_bad(uflag)) {
+     printf("\n Маркер блока %x удален\n",uflag);
+  }
+  else printf("\n Блок %x не является дефектным\n",uflag);
   return;
 }
 }

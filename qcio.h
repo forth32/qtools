@@ -90,6 +90,6 @@ void hardware_bad_on();
 void hardware_bad_off();
 int check_block(int blk);
 void reopen_port();
-void mark_bad(unsigned int blk);
-void unmark_bad(unsigned int blk);
+int mark_bad(unsigned int blk);
+int unmark_bad(unsigned int blk);
 

@@ -305,6 +305,7 @@ void block_erase(int block) {
   
 int oldcfg;  
   
+nand_reset();
 mempoke(nand_addr0,block*ppb);         // младшая часть адреса - # страницы
 mempoke(nand_addr1,0);                 // старшая часть адреса - всегда 0
 
@@ -636,40 +637,65 @@ return test_badblock();
 //*********************************
 void write_badmark(unsigned int blk, int val) {
   
-char buf[700];
-const int udsize=0x23c;
+char buf[1000];
+const int udsize=0x220;
 int i;
+unsigned int cfg1bak,cfgeccbak,cfgecctemp;
+
+cfg1bak=mempeek(nand_cfg1);
+cfgeccbak=mempeek(nand_ecc_cfg);
+mempoke(nand_ecc_cfg,mempeek(nand_ecc_cfg)|1); 
+mempoke(nand_cfg1,mempeek(nand_cfg1)|1); 
 
 hardware_bad_off();
-memset(buf,udsize,val);
+memset(buf,val,udsize);
 
-memwrite(sector_buf, buf, udsize);
 nand_reset();
+nandwait();
+
 setaddr(blk,0);
 mempoke(nand_cmd,0x39); // запись data+ecc+spare
 for (i=0;i<spp;i++) {
- mempoke(nand_exec,0x1);
+ memwrite(sector_buf, buf, udsize);
+ mempoke(nand_exec,1);
  nandwait();
 }
 hardware_bad_on();
+mempoke(nand_cfg1,cfg1bak);
+mempoke(nand_ecc_cfg,cfgeccbak);
 }
 
 
-//*********************************
+//************************************************
 //* Установка bad-маркера
-//*********************************
-void mark_bad(unsigned int blk) {
+//* -> 0 - блок и так был дефектным
+//*    1 - был нормальным и сделан дефектным
+//**********************************************
+int mark_bad(unsigned int blk) {
 
-write_badmark(blk,0);
+flash_read(blk,0,0);  
+if (!test_badblock()) {  
+ write_badmark(blk,0);
+ return 1;
+}
+return 0;
 }
 
 
-//*********************************
+//************************************************
 //* Снятие bad-маркера
-//*********************************
-void unmark_bad(unsigned int blk) {
+//* -> 0 - блок не был дефектным
+//*    1 - был дефектным и сделан нормальным
+//************************************************
+int unmark_bad(unsigned int blk) {
   
-write_badmark(blk,0xff);
+
+flash_read(blk,0,0);  
+if (test_badblock()) {  
+ block_erase(blk);
+ return 1;
+}
+return 0;
 }
 
 
