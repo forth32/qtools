@@ -673,8 +673,8 @@ mempoke(nand_ecc_cfg,cfgeccbak);
 //**********************************************
 int mark_bad(unsigned int blk) {
 
-flash_read(blk,0,0);  
-if (!test_badblock()) {  
+//flash_read(blk,0,0);  
+if (!check_block(blk)) {  
  write_badmark(blk,0);
  return 1;
 }
@@ -690,8 +690,8 @@ return 0;
 int unmark_bad(unsigned int blk) {
   
 
-flash_read(blk,0,0);  
-if (test_badblock()) {  
+//flash_read(blk,0,0);  
+if (check_block(blk)) {  
  block_erase(blk);
  return 1;
 }
