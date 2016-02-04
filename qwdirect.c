@@ -339,21 +339,23 @@ port_timeout(1000);
 for(block=startblock;block<(startblock+flen);block++) {
   // проверяем, если надо, дефектность блока
   badflag=0;
-  if (!uxflag && !ubflag) badflag=check_block(block);
+  if (!uxflag && !ubflag)  badflag=check_block(block);
   // целевой блок - дефектный
-  if (badflag)
+  if (badflag) {
+//    printf("\n %x - badflag\n",block);
     // пропускаем дефектный блок и идем дальше
     if (!umflag && !ubflag) {
       flen++;   // сдвигаем границу завершения вводного файла - блок мы пропустили, данные раздвигаются
-      printf(" Блок %x дефектный - пропускаем\n",block);
+      printf("\n Блок %x дефектный - пропускаем\n",block);
       continue;
     }  
+  }  
   // стираем блок
   if (!badflag || ubflag)  block_erase(block);
               
   // дополнительная настройка чипсетов с ВСН
   if (is_chipset("MDM9x25") || is_chipset("MDM9x3x")) { // 9x25 или 9x3x
-	cfgecctemp=mempeek(nand_ecc_cfg); // конфигурация с учётом включения/отключения ECC
+    cfgecctemp=mempeek(nand_ecc_cfg); // конфигурация с учётом включения/отключения ECC
     mempoke(nand_ecc_cfg,(mempeek(nand_ecc_cfg))|2); // сброс движка BCH
     mempoke(nand_ecc_cfg,cfgecctemp); // восстановление конфигурации BCH
   } 
@@ -361,8 +363,7 @@ for(block=startblock;block<(startblock+flen);block++) {
   // цикл по страницам
   for(page=0;page<ppb;page++) {
 
-	memset(oobuf,0xff,sizeof(oobuf));
-    
+    memset(oobuf,0xff,sizeof(oobuf));
     // читаем весь дамп страницы
     if (wmode == w_linout) { 
 	if (fread(srcbuf,1,pagesize,in) < pagesize) goto endpage;  
@@ -385,6 +386,7 @@ for(block=startblock;block<(startblock+flen);block++) {
 	printf("\n Блок %x: на flash дефект не обнаружен, завершаем работу!",block);
 	return;
       }
+      if (umflag && badflag && page == 0) printf("\r Блок %x - дефекты соответствуют, продолжаем запись\n",block);
     }  
     // разбираем дамп по буферам
     switch (wmode) {

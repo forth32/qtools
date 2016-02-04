@@ -92,5 +92,5 @@ int check_block(int blk);
 void reopen_port();
 int mark_bad(unsigned int blk);
 int unmark_bad(unsigned int blk);
-int test_badpattern(char* buf);
+int test_badpattern(unsigned char* buf);
 
