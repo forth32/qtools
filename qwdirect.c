@@ -61,7 +61,8 @@ unsigned int block,page,sector;
 unsigned int startblock=0;
 unsigned int bsize;
 unsigned int fileoffset=0;
-unsigned int uxflag=0, ucflag=0, usflag=0, umflag=0, ubflag=0;
+int badflag;
+int uxflag=0, ucflag=0, usflag=0, umflag=0, ubflag=0;
 int wmode=0; // режим записи
 
 #define w_standart 0
@@ -254,7 +255,9 @@ cfg0bak=mempeek(nand_cfg0);
 cfg1bak=mempeek(nand_cfg1);
 cfgeccbak=mempeek(nand_ecc_cfg);
 
+//-------------------------------------------
 // режим стирания
+//-------------------------------------------
 if (cflag) {
   printf("\n");
   for (block=startblock;block<(startblock+cflag);block++) {
@@ -324,7 +327,7 @@ switch (wmode) {
     break;
 
   case w_linout: 
-    printf("линуксовый формат на флешке\n");
+     printf("линуксовый формат на флешке\n");
     set_linux_format();
     break;
 }   
@@ -334,8 +337,21 @@ port_timeout(1000);
 // цикл по блокам
 
 for(block=startblock;block<(startblock+flen);block++) {
+  // проверяем, если надо, дефектность блока
+  badflag=0;
+  if (!uxflag && !ubflag) badflag=check_block(block);
+  // целевой блок - дефектный
+  if (badflag)
+    // пропускаем дефектный блок и идем дальше
+    if (!umflag && !ubflag) {
+      flen++;   // сдвигаем границу завершения вводного файла - блок мы пропустили, данные раздвигаются
+      printf(" Блок %x дефектный - пропускаем\n",block);
+      continue;
+    }  
   // стираем блок
-  block_erase(block);
+  if (!badflag || ubflag)  block_erase(block);
+              
+  // дополнительная настройка чипсетов с ВСН
   if (is_chipset("MDM9x25") || is_chipset("MDM9x3x")) { // 9x25 или 9x3x
 	cfgecctemp=mempeek(nand_ecc_cfg); // конфигурация с учётом включения/отключения ECC
     mempoke(nand_ecc_cfg,(mempeek(nand_ecc_cfg))|2); // сброс движка BCH
@@ -350,11 +366,28 @@ for(block=startblock;block<(startblock+flen);block++) {
     // читаем весь дамп страницы
     if (wmode == w_linout) { 
 	if (fread(srcbuf,1,pagesize,in) < pagesize) goto endpage;  
-	} else {
-	    if (fread(srcbuf,1,pagesize+(spp*oobsize),in) < (pagesize+(spp*oobsize))) goto endpage; // образ страницы - page+oob
-	}
+    } 
+    else {
+        if (fread(srcbuf,1,pagesize+(spp*oobsize),in) < (pagesize+(spp*oobsize))) goto endpage; // образ страницы - page+oob
+    }
+    // srcbuf прочитан - проверяем, не бедблок ли там
+    if (test_badpattern(srcbuf)) {
+      // там действительно бедблок
+      if (usflag) continue;  // -us - пропускаем этот блок, постранично
+      if (ucflag) {
+	// создание бедблока
+	mark_bad(block);
+	if (page == 0) printf("\r Блок %x отмечен как дефектный в соответствии с входным файлом!\n",block);
+	continue;
+      }
+      if (umflag && !badflag) {
+	// входной бедблок не соответствует бедблоку на флешке
+	printf("\n Блок %x: на flash дефект не обнаружен, завершаем работу!",block);
+	return;
+      }
+    }  
     // разбираем дамп по буферам
-	switch (wmode) {
+    switch (wmode) {
       case w_standart:
       case w_linux:
       case w_image:
@@ -414,18 +447,18 @@ for(block=startblock;block<(startblock+flen);block++) {
              memcpy(datacmd,databuf+(spp-1)*(sectorsize+4),sectorsize-4*(spp-1)); // данные последнего сектора - укорачиваем
 	  break;
 	  
-		case w_standart:
+        case w_standart:
 	 // стандартный формат - только сектора по 512 байт, без ООВ
           memcpy(datacmd,databuf+sector*sectorsize,sectorsize); 
 	  break;
 	  
-		case w_image:
+	case w_image:
 	 // сырой образ - data+oob, ECC не вычисляется
           memcpy(datacmd,databuf+sector*sectorsize,sectorsize);       // data
           memcpy(datacmd+sectorsize,oobuf+sector*oobsize,oobsize);    // oob
 	  break;
 
-		case w_yaffs:
+	case w_yaffs:
 	 // образ yaffs - записываем только данные 516-байтными блоками 
 	 //  и yaffs-тег в конце последнего блока
 	 // входной файл имеет формат page+oob, но при этом тег лежит с позиции 0 OOB 
@@ -439,7 +472,7 @@ for(block=startblock;block<(startblock+flen);block++) {
 		  }
 	  break;
 
-		case w_linout:
+	case w_linout:
 	 // записываем только данные 516-байтными блоками 
           if (sector < (spp-1))  
 	 //первые n секторов

@@ -649,6 +649,7 @@ mempoke(nand_cfg1,mempeek(nand_cfg1)|1);
 
 hardware_bad_off();
 memset(buf,val,udsize);
+buf[0]=0xeb;   // признак искусственно созданного бедблока
 
 nand_reset();
 nandwait();
@@ -698,4 +699,17 @@ if (check_block(blk)) {
 return 0;
 }
 
+//****************************************************
+//* Проверка буфера на наличие заполнителя бедблоков
+//****************************************************
+int test_badpattern(char* buf) {
+  
+int i;
+for(i=0;i<512;i++) {
+  if (buf[i] != 0xbb) return 0;
+}
+return 1;
+}
 
+  
+  
