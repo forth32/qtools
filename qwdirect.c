@@ -61,6 +61,7 @@ unsigned int block,page,sector;
 unsigned int startblock=0;
 unsigned int bsize;
 unsigned int fileoffset=0;
+unsigned int uxflag=0, ucflag=0, usflag=0, umflag=0, ubflag=0;
 int wmode=0; // режим записи
 
 #define w_standart 0
@@ -69,7 +70,7 @@ int wmode=0; // режим записи
 #define w_image    3
 #define w_linout   4
 
-while ((opt = getopt(argc, argv, "hp:k:b:f:vc:z:l:o:")) != -1) {
+while ((opt = getopt(argc, argv, "hp:k:b:f:vc:z:l:o:u:")) != -1) {
   switch (opt) {
    case 'h': 
     printf("\n  Утилита предназначена для записи сырого образа flash через регистры контроллера\n\
@@ -86,6 +87,11 @@ while ((opt = getopt(argc, argv, "hp:k:b:f:vc:z:l:o:")) != -1) {
 -z #      - размер OOB на одну страницу, в байтах (перекрывает автоопределенный размер)\n\
 -l #      - число записываемых блоков, по умолчанию - до конца входного файла\n\
 -o #      - смещение в блоках в исходном файле до начала записываемого участка\n\
+-ux       - отключить аппаратный контроль дефектных блоков\n\
+-us       - пропускать дефектные блоки, отмеченные во входном файле\n\
+-uc       - симулировать дефектные блоки входного файла\n\
+-um       - проверять соответствие дефектных блоков файла и флешки\n\
+-ub       - не проверять дефектность блоков флешки перед записью (ОПАСНО!)\n\
 -v        - проверка записанных данных после записи\n\
 -c n      - только стереть n блоков, начиная от начального.\n\
 \n");
@@ -155,12 +161,54 @@ while ((opt = getopt(argc, argv, "hp:k:b:f:vc:z:l:o:")) != -1) {
      }
      break;
      
+   case 'u':  
+     switch (*optarg) {
+       case 'x':
+         uxflag=1;
+	 break;
+	 
+       case 's':
+         usflag=1;
+	 break;
+	 
+       case 'c':
+         ucflag=1;
+	 break;
+	 
+       case 'm':
+         umflag=1;
+	 break;
+	 
+       case 'b':
+         ubflag=1;
+	 break;
+	 
+       default:
+	printf("\n Неправильное значение ключа -u\n");
+	return;
+     }
+     break;
+     
    case '?':
    case ':':  
      return;
   }
 }  
 
+if (uxflag+usflag+ucflag+umflag > 1) {
+  printf("\n Ключи -ux, -us, -uc, -um несовместимы между собой\n");
+  return;
+}  
+
+if (uxflag+ubflag > 1) {
+  printf("\n Ключи -ux и -ub несовместимы между собой\n");
+  return;
+}  
+
+if (uxflag && (wmode != w_image)) {
+  printf("\n Ключ -ux допустим только в режиме -fi\n");
+  return;
+}  
 
 #ifdef WIN32
 if (*devname == '\0')
@@ -211,6 +259,11 @@ if (cflag) {
   printf("\n");
   for (block=startblock;block<(startblock+cflag);block++) {
     printf("\r Стирание блока %03x",block); 
+    if (!ubflag) 
+      if (check_block(block)) {
+	printf(" - badblock, стирание запрещено\n");
+	continue; 
+      }	
     block_erase(block);
   }  
   printf("\n");
