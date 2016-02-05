@@ -53,11 +53,24 @@ for (i=0;i<fl;i++) {
  if ((i >= 0x1000) && (i%4 == 0) && (tablefound == 0)) { // таблица выровнена по границе слова и ещё не обработана
 	daddr=*((unsigned int*)&buf[i]); // адрес заглушки
 	if ((daddr<0x10000) || (daddr>0xffff0000)) continue;
-	if ( (daddr != *((unsigned int*)&buf[i-4])) && (daddr == *((unsigned int*)&buf[i+8])) && (daddr == *((unsigned int*)&buf[i+16])) && (daddr == *((unsigned int*)&buf[i+24])) && (daddr == *((unsigned int*)&buf[i+32])) && (daddr == *((unsigned int*)&buf[i+40]))) {
+	if ( (daddr != *((unsigned int*)&buf[i-4])) && 
+	  (daddr == *((unsigned int*)&buf[i+8])) && 
+	  (daddr == *((unsigned int*)&buf[i+16])) && 
+	  (daddr == *((unsigned int*)&buf[i+24])) && 
+	  (daddr == *((unsigned int*)&buf[i+32])) && 
+	  (daddr == *((unsigned int*)&buf[i+40])) &&
+	  (daddr == *((unsigned int*)&buf[i+48])) &&
+	  (daddr == *((unsigned int*)&buf[i+56])) && 
+	  (daddr == *((unsigned int*)&buf[i+64])) &&
+	  (daddr == *((unsigned int*)&buf[i+72])) &&
+	  (daddr == *((unsigned int*)&buf[i+80])) &&
+	  (daddr == *((unsigned int*)&buf[i+88]))
+	) {
 		// таблица найдена	
 		tablefound=1;
 		// цикл выбра команд из таблицы
 		ncmd=0;
+//		printf("\n--f--");
 		for (j=0;j<0x100;j++) {
 			if (*((unsigned int*)&buf[i-4+4*j]) != daddr) {
 			if ((*((unsigned int*)&buf[i-4+4*j])&0xfffc0000) != (daddr&0xfffc0000)) break; // это не адрес, конец таблицы
