@@ -383,11 +383,16 @@ for(block=startblock;block<(startblock+flen);block++) {
       }
       if (umflag && !badflag) {
 	// входной бедблок не соответствует бедблоку на флешке
-	printf("\n Блок %x: на flash дефект не обнаружен, завершаем работу!",block);
+	printf("\n Блок %x: на flash дефект не обнаружен, завершаем работу!\n",block);
 	return;
       }
       if (umflag && badflag && page == 0) printf("\r Блок %x - дефекты соответствуют, продолжаем запись\n",block);
-    }  
+    }
+    else if (umflag && badflag) {
+	printf("\n Блок %x: на flash обнаружен неожиданный дефект, завершаем работу!\n",block);
+	return;
+    }
+      
     // разбираем дамп по буферам
     switch (wmode) {
       case w_standart:
@@ -404,7 +409,7 @@ for(block=startblock;block<(startblock+flen);block++) {
       // для режима yaffs - формат входного файла pagesize+obb 
 		memcpy(databuf,srcbuf,sectorsize*spp);
 		memcpy(oobuf,srcbuf+sectorsize*spp,oobsize*spp);
-	break;
+      break;
 
       case w_linout:
       // для этого режима - во входном файле только данные с размером pagesize 
