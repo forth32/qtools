@@ -496,9 +496,13 @@ for(block=startblock;block<(startblock+flen);block++) {
 		printf("\n Ошибка передачи секторного буфера\n");
 		return;
       }	
+      // если надо, отключаем контроль бедблоков
+      if (uxflag) hardware_bad_off();
       // выполняем команду записи и ждем ее завершения
       mempoke(nand_exec,0x1);
       nandwait(); 
+      // включаем обратно контроль бедблоков
+      if (uxflag) hardware_bad_on();
      }  // конец цикла записи по секторам
      if (!vflag) continue;   // верификация не требуется
     // верификация данных
