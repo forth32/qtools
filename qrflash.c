@@ -75,7 +75,7 @@ unsigned int okflag;
 char iobuf[4096];
 
 okflag=load_block(block,sectorsize+4);
-if (!okflag && (bad_processing_flag == BAD_IGNORE)) return 1; // обнаружен бедблок
+if (!okflag && (bad_processing_flag == BAD_SKIP)) return 1; // обнаружен бедблок
 
 // цикл по страницам
 for(page=0;page<ppb;page++)  {
@@ -302,7 +302,7 @@ if (bad_processing_flag==BAD_UNDEF) {
   if (partflag == 0) bad_processing_flag=BAD_FILL; // для чтения диапазона блоков
   else bad_processing_flag=BAD_SKIP;               // для чтения разделов
 }  
-
+printf("\n BADpflag = %i",bad_processing_flag);
 #ifdef WIN32
 if (*devname == '\0')
 {
@@ -431,8 +431,14 @@ for(i=0;i<npar;i++) {
                badflag=read_block_resequence(block,out);
 	      break;
 	 }  
-        if (badflag != 0) printf(" - Badblock \n");
-        }
+        if (badflag != 0) {
+	  printf(" - дефектный блок");
+	  if (bad_processing_flag == BAD_SKIP) printf (", пропускаем");
+	  if (bad_processing_flag == BAD_IGNORE) printf (", читаем как есть");
+	  if (bad_processing_flag == BAD_FILL) printf (", отмечаем в выходном файле");
+	  printf("\n");
+	}  
+       }
      // Обрезка всех FF хвоста
       fclose(out);
       if (truncflag) {
