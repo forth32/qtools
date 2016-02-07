@@ -284,13 +284,14 @@ int send_cmd_np(unsigned char* incmdbuf, int blen, unsigned char* iobuf) {
 
 int open_port(char* devname) {
 
-strcpy(pdev,devname);   // сохраняем имя порта  
 //printf("\n pdev = %s",pdev);
 //============= Linux ========================  
 #ifndef WIN32
 
 int i,dflag=1;
 char devstr[200]={0};
+
+strcpy(pdev,devname);   // сохраняем имя порта  
 
 // Вместо полного имени устройства разрешается передавать только номер ttyUSB-порта
 
@@ -321,6 +322,7 @@ return 1;
     char device[20] = "\\\\.\\COM";
     DCB dcbSerialParams = {0};
 
+	strcpy(pdev,devname);   // сохраняем имя порта  
     strcat(device, devname);
     
     hSerial = CreateFileA(device, GENERIC_READ | GENERIC_WRITE, 0, 0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);

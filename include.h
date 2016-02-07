@@ -31,6 +31,7 @@ typedef unsigned char uint8;
 		#define S_IFDIR 40000
 		#define S_IFBLK 60000
 		#define S_ISDIR(m) (((m) & S_IFMT) == S_IFDIR)
+		#define usleep(n) Sleep(n/1000)
     #endif
     #include "qcio.h"
 #endif
