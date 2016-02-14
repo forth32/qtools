@@ -250,7 +250,9 @@ for(nfile=1;;nfile++) {
    if (dentry.entry_type == 1) {
      // данная запись является каталогом - обрабатываем вложенный подкаталог
      tspace++;
+     efs_closedir(dirp);
      show_tree(lmode,targetname); 
+     dirp=efs_opendir(dirname);
      tspace--;
    }  
  }
@@ -298,7 +300,7 @@ for(nfile=1;;nfile++) {
  if (efs_readdir(dirp, nfile, &dentry) == -1) continue; // при ошибке чтения очередной структуры
  if (dentry.name[0] == 0) break;   // конец списка
  ftype=chr_filetype(dentry.mode);
- if ((dentry.mode&S_IFDIR) == S_IFDIR) { 
+ if ((dentry.entry_type) == 1) { 
    // Формируем список подкаталогов
    strcpy(dnlist[ndir++],dentry.name);
  }  
