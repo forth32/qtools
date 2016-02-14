@@ -124,7 +124,6 @@ printf("%s",name);
 char* cfattr(int mode) {
   
 static char str[5]={0,0,0,0,0};
-int i;
 
 memset(str,'-',3);
 if ((mode&4) != 0) str[0]='r';
@@ -200,8 +199,69 @@ if (localtime_r(&fi->atime,&lt) != 0)  {
 }
 
 //****************************************************
+//* Вывод дерева файлов указанного каталога 
+//*  lmode - режим вывода fl_*:
+//*     fl_tree   - дерево
+//*     fl_ftree, - дерево с файлами
+
+//*  fname - начальный путь, по умолчанию /
+//****************************************************
+void show_tree (int lmode, char* fname) {
+  
+struct efs_dirent dentry; // описатель элемента каталога
+unsigned char dirname[100];	
+int dirp=0;  // указатель на открытый каталог
+
+int i,nfile;
+char targetname[200];
+
+if (strlen(fname) == 0) strcpy(dirname,"/"); // по умолчанию открываем корневой каталог
+else strcpy(dirname,fname);
+
+// chdir
+dirp=efs_opendir(dirname);
+if (dirp == 0) {
+  printf("\n ! Доступ в каталог %s запрещен, errno=%i\n",dirname,efs_get_errno());
+  return;
+}
+
+// Цикл выборки записей каталога
+for(nfile=1;;nfile++) {
+ // выбираем следующую запись
+ if (efs_readdir(dirp, nfile, &dentry) == -1) continue; // при ошибке чтения очередной структуры
+ if (dentry.name[0] == 0) break;   // конец списка
+
+ // Определяем полное имя файла
+   strcpy(targetname,dirname);
+//   strcat(targetname,"/");
+   strcat(targetname,dentry.name); // пропускаем начальный "/"
+   if(dentry.entry_type == 1) strcat (targetname,"/"); // это каталог
+ 
+   if ((lmode == fl_tree) && (dentry.entry_type != 1)) continue; // пропускаем регулярные файлы в режиме дерева каталогов
+
+   if (fullpathflag) printspace(targetname);
+   else {
+     for(i=strlen(targetname)-2;i>=0;i--) {
+       if (targetname[i] == '/') break;
+     } 
+     i++;
+     printspace(targetname+i);
+   }  
+   if (dentry.entry_type == 1) {
+     // данная запись является каталогом - обрабатываем вложенный подкаталог
+     tspace++;
+     show_tree(lmode,targetname); 
+     tspace--;
+   }  
+ }
+efs_closedir(dirp); 
+}
+
+//****************************************************
 //* Вывод списка файлов указанного каталога 
 //*  lmode - режим вывода fl_*
+//*   fl_list - краткий листинг файлов
+//*   fl_full - полный листинг файлов
 //*  fname - начальный путь, по умолчанию /
 //****************************************************
 void show_files (int lmode, char* fname) {
@@ -215,8 +275,6 @@ int dirp=0;  // указатель на открытый каталог
 
 int i,nfile;
 time_t* filetime;
-unsigned int filesize;
-unsigned int fileattr,filelcnt;
 char timestr[100];
 char ftype;
 char targetname[200];
@@ -225,105 +283,54 @@ int filecnt=0;
 if (strlen(fname) == 0) strcpy(dirname,"/"); // по умолчанию открываем корневой каталог
 else strcpy(dirname,fname);
 
-// закрываем каталог, если ранее он был открыт
-efs_closedir(1);
 // chdir
 dirp=efs_opendir(dirname);
 if (dirp == 0) {
-  printf("\n ! Доступ в каталог %s запрещен\n",dirname);
+  printf("\n ! Доступ в каталог %s запрещен, errno=%i\n",dirname,efs_get_errno());
+//  printf("\n ! Доступ в каталог %s запрещен\n",dirname);
   return;
 }
 
 if (lmode == fl_full) printf("\n *** Каталог %s ***",dirname);
 // поиск файлов
 for(nfile=1;;nfile++) {
- *((int*)&cmdfile[8])=nfile;
- iolen=send_cmd_base(cmdfile,12,iobuf,0);
- if(iobuf[0x28] == 0) break; // конец списка
- filecnt++;
-//  printf("\n");
-//  dump(iobuf,128,0);
-//  printf("\n");
- 
- 
- // разбираем блок атрибутов
- // формат блока:
- //------------------------------------------
- // pkt+10 - счетчик ссылок
- // pkt+14 - атрибуты
- // pkt+18 - размер
- // pkt+1c - дата создания
- // pkt+20 - дата модификации
- // pkt+24 - дата последнего доступа
- // pkt+28 и до конца пакета - имя файла (заканчивается 0)
- //
- filelcnt=*((unsigned int*)&iobuf[0x10]);
- fileattr=*((unsigned int*)&iobuf[0x14]);
- filesize=*((unsigned int*)&iobuf[0x18]);
- filetime=(time_t*)&iobuf[0x1c];
-//   printf("\n filetime = %08x",(int)*filetime);
- ftype=chr_filetype(fileattr);
- if ((fileattr&S_IFDIR) == S_IFDIR) { 
+ // выбираем следующую запись
+ if (efs_readdir(dirp, nfile, &dentry) == -1) continue; // при ошибке чтения очередной структуры
+ if (dentry.name[0] == 0) break;   // конец списка
+ ftype=chr_filetype(dentry.mode);
+ if ((dentry.mode&S_IFDIR) == S_IFDIR) { 
    // Формируем список подкаталогов
-   strcpy(dnlist[ndir++],iobuf+0x28);
+   strcpy(dnlist[ndir++],dentry.name);
  }  
 
  // Определяем полное имя файла
    strcpy(targetname,dirname);
 //   strcat(targetname,"/");
-   strcat(targetname,iobuf+0x28); // пропускаем начальный "/"
+   strcat(targetname,dentry.name); // пропускаем начальный "/"
    if(ftype == 'D') strcat (targetname,"/");
  
- // Режим дерева
- if ((lmode == fl_tree) || (lmode == fl_ftree)) {
-   if ((lmode == fl_tree) && (ftype != 'D')) continue; // пропускаем регулярные файлы в режиме дерева каталогов
-   
-
-   if (fullpathflag) printspace(targetname);
-   else {
-     for(i=strlen(targetname)-2;i>=0;i--) {
-       if (targetname[i] == '/') break;
-     } 
-     i++;
-     printspace(targetname+i);
-   }  
-   if (ftype == 'D') {
-     tspace++;
-     show_files(lmode,targetname); // обрабатываем вложенный подкаталог
-     efs_closedir(dirp);
-     dirp=efs_opendir(dirname);
-     tspace--;
-   }  
-   continue;    
- }
  
  // режим простого списка файлов
  if (lmode == fl_list) {
    printf("\n%s",targetname);
    if ((ftype == 'D') && (recurseflag == 1)) { 
      show_files(lmode,targetname);
-     // reset
-     iolen=send_cmd_base(closedir,8,iobuf,0);
-     // chdir
-     iolen=send_cmd_base(chdir,strlen(dirname)+6,iobuf,0);
    } 
    continue;
  }
  
  // режим полного списка файлов
-//   printf("\n filetime = %08x",(int)*filetime);
 if (localtime_r(filetime,&lt) != 0) 
  strftime(timestr,100,"%d-%b-%y %H:%M",&lt);
 else strcpy(timestr,"---------------");
- printf("\n%c%s%s%s %2i %9i %s %s",
+ printf("\n%c%s%s%s %9i %s %s",
       ftype,
-      cfattr(fileattr&7),
-      cfattr((fileattr>>3)&7),
-      cfattr((fileattr>>6)&7),
-      filelcnt,
-      filesize,
+      cfattr(dentry.mode&7),
+      cfattr((dentry.mode>>3)&7),
+      cfattr((dentry.mode>>6)&7),
+      dentry.size,
       timestr,
-      iobuf+0x28);
+      dentry.name);
 }
 
 // данный каталог обработан - обрабатываем вложенные подкаталоги в режиме полного просмотра
@@ -338,7 +345,10 @@ if (lmode == fl_full) {
     show_files(lmode,targetname);
    }
 }  
+
+efs_closedir(dirp);  
 }
+
 
 //**************************************************   
 //* Открытие EFS-файла 
@@ -431,7 +441,6 @@ long filesize;
 char write_cmd[600]={0x4b, 0x13, 0x05, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 
 char iobuf[4096];
-int iolen;
 
 closefile();
 
@@ -475,7 +484,7 @@ for (i=0;i<(filesize);i+=512) {
    blk=filesize-i;
  }
  memcpy(write_cmd+12,fbuf+i,blk);
- iolen=send_cmd_base(write_cmd,blk+12,iobuf,0);
+ send_cmd_base(write_cmd,blk+12,iobuf,0);
 #ifndef WIN32
  usleep(3000);
 #else
@@ -592,7 +601,7 @@ iolen=send_cmd_base(rmdir_cmd,strlen(dirname)+5,iobuf,0);
 //@@@@@@@@@@@@ Головная программа
 void main(int argc, char* argv[]) {
 
-unsigned int opt;
+unsigned int opt,i;
 struct fileinfo fi;
   
 enum{
@@ -843,7 +852,7 @@ if (!open_port(devname))  {
    return; 
 }
 
-
+for(i=1;i<10;i++) efs_closedir(i);
 //////////////////
 
 switch (mode) {
@@ -872,7 +881,8 @@ switch (mode) {
         break;
 	
       case 2: // каталог
-        show_files(lmode,argv[optind]);
+        if ((lmode == fl_tree) || (lmode == fl_ftree)) show_tree(lmode,argv[optind]);
+	else show_files(lmode,argv[optind]);
 	break;
     }    
     break;

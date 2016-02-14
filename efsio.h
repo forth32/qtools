@@ -49,15 +49,15 @@ struct efs_dirent {
   int32  atime;            /* Time of last access                          */
   int32  mtime;            /* Time of last modification                    */
   int32  ctime;            /* Time of last status change                   */
-  char   entry_name[80];    /* Name of directory entry (not full pathname)  */
+  char   name[100];         /* Name of directory entry (not full pathname)  */
 };
-
-extern static int efs_errno;
 
 
 int send_efs_cmd(int cmd,void* reqbuf,int reqlen, void* respbuf);
 int efs_stat(char* filename, struct fileinfo* fi);
 int efs_opendir(char* path);
 int efs_closedir(int dirp);
-int efs_readdir(int dirp);
+int efs_readdir(int dirp, int seq,struct efs_dirent* rsp);
+int efs_get_errno();
+
 

@@ -1,6 +1,6 @@
 CC       = gcc
 LIBS     = -lreadline
-CFLAGS   = -O2 -g -Wno-unused-result
+CFLAGS   = -O2 -g -Wno-unused-result -Wunused
 
 OBJS     = hdlc.o  qcio.o memio.o chipconfig.o
 
