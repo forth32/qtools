@@ -3,6 +3,7 @@
 #endif
 #include "include.h"
 #include <time.h>
+#include "efsio.h"
 
 //%%%%%%%%%  Общие переменные %%%%%%%%%%%%%%%%
 
@@ -35,47 +36,9 @@ enum {
   fl_full     // полный листинг файлов
 };  
 
- // Формат пакета состояния файла
- //------------------------------------------
- // pkt+08 - атрибуты
- // pkt+0c - размер
- // pkt+10 - счетчик ссылок
- // pkt+14 - дата создания
- // pkt+18 - дата модификации
- // pkt+1c - дата последнего доступа
-
-struct fileinfo {
-  unsigned int attr;
-  unsigned int size;
-  unsigned int filecnt;
-  time_t ctime;
-  time_t mtime;
-  time_t atime;
-};
   
 int tspace; // отступ для формирования дерева файлов
 
-//****************************************************
-//*   Получение блока описания файла
-//* 
-//*   Возвращаемое значение - тип файла:
-//*
-//*  0 - файл не найден
-//*  1 - файл регулярный или item
-//*  2 - каталог
-//*
-//****************************************************
-int getfileinfo(char* filename, struct fileinfo* fi) {
-  
-unsigned char cmd_fileinfo[100]={0x4b, 0x13, 0x0f, 0x00};
-
-strcpy(cmd_fileinfo+4,filename);
-iolen=send_cmd_base(cmd_fileinfo,strlen(filename)+5, iobuf, 0);
-if (iobuf[4] != 0) return 0; // файл не найден 
-memcpy(fi,iobuf+8,24);
-if (S_ISDIR(fi->attr)) return 2;
-return 1;
-}
 
 //****************************************************
 //* Чтение дампа EFS (efs.mbn)
@@ -83,7 +46,7 @@ return 1;
 
 void back_efs() {
 
-unsigned char cmd_efsh1[16]=  {0x4B, 0x13,0x19, 0};
+unsigned char cmd_efs_dump_prepare[16]=  {0x4B, 0x13,0x19, 0};
 unsigned char cmd_efsopen[16]=  {0x4B, 0x13,0x16, 0};
 unsigned char cmd_efsdata[16]={0x4B, 0x13,0x17,0,0,0,0,0,0,0,0,0};
 unsigned char cmd_efsclose[16]=  {0x4B, 0x13,0x18, 0};
@@ -92,7 +55,7 @@ FILE* out;
 
 // настройка на альтернативную EFS
 if (altflag) {
- cmd_efsh1[1]=0x3e;
+ cmd_efs_dump_prepare[1]=0x3e;
  cmd_efsopen[1]=0x3e;
  cmd_efsdata[1]=0x3e;
  cmd_efsclose[1]=0x3e;
@@ -103,7 +66,7 @@ else if (!fixname) strcpy(filename,"efs.mbn");
    
 out=fopen(filename,"w");
   
-iolen=send_cmd_base(cmd_efsh1, 4, iobuf, 0);
+iolen=send_cmd_base(cmd_efs_dump_prepare, 4, iobuf, 0);
 if ((iolen != 11) || test_zero(iobuf+3,5)) {
   printf("\n Неправильный ответ на команду 19\n");
   dump(iobuf,iolen,0);
@@ -171,16 +134,50 @@ return str;
 }
 
 //****************************************************
+//*  Получение символического описания атрибута файла
+//****************************************************
+char* str_filetype(int attr,char* buf) {
+  
+strcpy(buf,"Unknown");
+     if ((attr&S_IFMT) == S_IFIFO)  strcpy(buf,"fifo");
+else if ((attr&S_IFMT) == S_IFCHR)  strcpy(buf,"Character device");
+else if ((attr&S_IFMT) == S_IFDIR)  strcpy(buf,"Directory");
+else if ((attr&S_IFMT) == S_IFBLK)  strcpy(buf,"Block device");
+else if ((attr&S_IFMT) == S_IFREG)  strcpy(buf,"Regular file");
+else if ((attr&S_IFMT) == S_IFLNK)  strcpy(buf,"Symlink");
+else if ((attr&S_IFMT) == S_IFSOCK) strcpy(buf,"Socket");
+else if ((attr&S_IFMT) == S_IFITM)  strcpy(buf,"Item File");
+return buf;
+}
+
+//****************************************************
+//*  Получение односимвольного описания атрибута файла
+//****************************************************
+char chr_filetype(int attr) {
+  
+     if ((attr&S_IFMT) == S_IFIFO)   return 'p';
+else if ((attr&S_IFMT) == S_IFCHR)   return 'c';
+else if ((attr&S_IFMT) == S_IFDIR)   return 'd';
+else if ((attr&S_IFMT) == S_IFBLK)   return 'b';
+else if ((attr&S_IFMT) == S_IFREG)   return '-';
+else if ((attr&S_IFMT) == S_IFLNK)   return 'l';
+else if ((attr&S_IFMT) == S_IFSOCK)  return 's';
+else if ((attr&S_IFMT) == S_IFITM)   return 'i';
+return '-';
+}
+
+//****************************************************
 //* Вывод детальной информации о регулярном файле
 //****************************************************
 void show_fileinfo(char* filename, struct fileinfo* fi) {
-
+  
 char timestr[100];
 struct tm lt;      // структура для сохранения преобразованной даты
+char sfbuf[50]; // буфер для сохранения описания типа файла
 
 printf("\n Имя файла: %s",filename);
 printf("\n Размер   : %i байт",fi->size);
-printf("\n Тип файла: %s",((fi->attr&S_IFBLK) == S_IFBLK)?"Item":"Regular");
+printf("\n Тип файла: %s",str_filetype(fi->attr,sfbuf));
 printf("\n Атрибуты доступа: %s%s%s",
       cfattr(fi->attr&7),
       cfattr((fi->attr>>3)&7),
@@ -204,19 +201,17 @@ if (localtime_r(&fi->atime,&lt) != 0)  {
 
 //****************************************************
 //* Вывод списка файлов указанного каталога 
-//*  mode - режим вывода fl_*
-//*  dirname - начальный путь, по умолчанию /
+//*  lmode - режим вывода fl_*
+//*  fname - начальный путь, по умолчанию /
 //****************************************************
 void show_files (int lmode, char* fname) {
   
-char chdir[120]={0x4b, 0x13, 0x0b, 0x00, 0x2f, 0};
-char cmdfile[]= {0x4b, 0x13, 0x0c, 0x00, 0x01, 0, 0, 0, 0, 0, 0, 0};
-char closedir[]={0x4b, 0x13, 0x0d, 00, 1, 00, 00, 00};
-
+struct efs_dirent dentry; // описатель элемента каталога
 char dnlist[200][100]; // список каталогов
 unsigned short ndir=0;
 unsigned char dirname[100];	
 struct tm lt;      // структура для сохранения преобразованной даты
+int dirp=0;  // указатель на открытый каталог
 
 int i,nfile;
 time_t* filetime;
@@ -227,15 +222,14 @@ char ftype;
 char targetname[200];
 int filecnt=0;
 
-if (strlen(fname) == 0) strcpy(dirname,"/");
+if (strlen(fname) == 0) strcpy(dirname,"/"); // по умолчанию открываем корневой каталог
 else strcpy(dirname,fname);
 
-strcat(chdir+5,dirname);
-// reset
-iolen=send_cmd_base(closedir,8,iobuf,0);
+// закрываем каталог, если ранее он был открыт
+efs_closedir(1);
 // chdir
-iolen=send_cmd_base(chdir,strlen(dirname)+6,iobuf,0);
-if ((iolen == 0) || (memcmp(iobuf,"\x4b\x13\x0b",3) != 0))  {
+dirp=efs_opendir(dirname);
+if (dirp == 0) {
   printf("\n ! Доступ в каталог %s запрещен\n",dirname);
   return;
 }
@@ -268,13 +262,11 @@ for(nfile=1;;nfile++) {
  filesize=*((unsigned int*)&iobuf[0x18]);
  filetime=(time_t*)&iobuf[0x1c];
 //   printf("\n filetime = %08x",(int)*filetime);
- ftype='-';
+ ftype=chr_filetype(fileattr);
  if ((fileattr&S_IFDIR) == S_IFDIR) { 
-   ftype='D';
    // Формируем список подкаталогов
    strcpy(dnlist[ndir++],iobuf+0x28);
  }  
- if ((fileattr&S_IFBLK) == S_IFBLK) ftype='I';
 
  // Определяем полное имя файла
    strcpy(targetname,dirname);
@@ -298,10 +290,8 @@ for(nfile=1;;nfile++) {
    if (ftype == 'D') {
      tspace++;
      show_files(lmode,targetname); // обрабатываем вложенный подкаталог
-     // reset
-     iolen=send_cmd_base(closedir,8,iobuf,0);
-     // chdir
-     iolen=send_cmd_base(chdir,strlen(dirname)+6,iobuf,0);
+     efs_closedir(dirp);
+     dirp=efs_opendir(dirname);
      tspace--;
    }  
    continue;    
@@ -396,7 +386,7 @@ int i,blk;
 char read_cmd[16]={0x4b, 0x13, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00};
 
 closefile();
-switch (getfileinfo(filename,&fi)) {
+switch (efs_stat(filename,&fi)) {
    case 0:
      printf("\nОбъект %s не найден\n",filename);
      return 0;
@@ -453,7 +443,7 @@ else strcat(filename,file);
 
 // проверяем существование файла
 
-switch (getfileinfo(filename,&fi)) {
+switch (efs_stat(filename,&fi)) {
    case 1:
      printf("\nОбъект %s уже существует\n",filename);
      return 0;
@@ -517,7 +507,7 @@ free(fbuf);
 }
 
 //******************************************************
-//*  Чтение единичного файла из EFS в текущий каталог
+//*  Копирование единичного файла из EFS в текущий каталог
 //******************************************************
 void get_file(char* name) {
   
@@ -802,7 +792,7 @@ while ((opt = getopt(argc, argv, "hp:o:ab:g:l:rt:w:e:fm:")) != -1) {
      }  
      mode=MODE_MKDIR;
      if (*optarg != 'd') {
-       printf("\n Недопустимый ключ m%s",*optarg);
+       printf("\n Недопустимый ключ m%c",*optarg);
        return;
      }
      break;
@@ -872,7 +862,7 @@ switch (mode) {
       break;
     }  
     // Проверяем наличие файла, и является ли он каталогом
-    switch (getfileinfo(argv[optind],&fi)) {
+    switch (efs_stat(argv[optind],&fi)) {
       case 0:
         printf("\nОбъект %s не найден\n",argv[optind]);
         break;
