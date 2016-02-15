@@ -86,7 +86,6 @@ char line[300];
 char* tok1, *tok2;
 int index;
 int msmidcount;
-int i;
 
 char vname[50];
 char vval[100];

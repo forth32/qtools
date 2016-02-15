@@ -121,22 +121,13 @@ char cmdbuf[1028]={
 };
 
 unsigned char iobuf[1024];
-unsigned int iolen;
   
 if (len>1000) exit(1);  //   ограничитель на размер буфера
 memcpy(cmdbuf+dataoffset,buf,len);
 *((unsigned int*)&cmdbuf[adroffset])=adr;
 *((unsigned int*)&cmdbuf[lenoffset])=len;
-iolen=send_cmd(cmdbuf,len+dataoffset,iobuf);
-/*
-if ((iolen != 5) || (iobuf[1] != 0x12)) {
-  printf("\n Ошибка команды 11\n");
-  dump(iobuf,iolen,0);
-  printf("\n Исходная команда\n");
-  dump(cmdbuf,len+dataoffset,0);
-  return 0;
-}
-*/
+send_cmd(cmdbuf,len+dataoffset,iobuf);
+
 return 1;
 }
 

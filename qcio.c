@@ -566,10 +566,7 @@ char cmdbuf[]={
   0xad,0xde
 };
 unsigned char iobuf[1024];
-int iolen;
-iolen=send_cmd(cmdbuf,sizeof(cmdbuf),iobuf);
-//printf("\n--ident--\n");
-//dump(iobuf,iolen,0);
+send_cmd(cmdbuf,sizeof(cmdbuf),iobuf);
 if (iobuf[1] != 0xaa) return -1;
 return iobuf[2];
 }
@@ -640,7 +637,7 @@ void write_badmark(unsigned int blk, int val) {
 char buf[1000];
 const int udsize=0x220;
 int i;
-unsigned int cfg1bak,cfgeccbak,cfgecctemp;
+unsigned int cfg1bak,cfgeccbak;
 
 cfg1bak=mempeek(nand_cfg1);
 cfgeccbak=mempeek(nand_ecc_cfg);
