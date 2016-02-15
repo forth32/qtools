@@ -33,7 +33,8 @@ enum {
   fl_tree,    // дерево
   fl_ftree,   // дерево с файлами
   fl_list,    // листинг файлов
-  fl_full     // полный листинг файлов
+  fl_full,    // полный листинг файлов
+  fl_mid      // листинг файлов в формате MC extfs
 };  
 
   
@@ -167,8 +168,11 @@ return '-';
 
 //****************************************************
 //* Преобразование даты в ascii-строку
+//* Формат:
+//* 0 - нормальный
+//* 1 - для Midnight Commander
 //****************************************************
-char* time_to_ascii(int32 time) {
+char* time_to_ascii(int32 time, int format) {
   
 time_t xtime;      // то же самое время, только разрядности time_t
 struct tm lt;      // структура для сохранения преобразованной даты
@@ -176,7 +180,8 @@ static char timestr[100];
 
 xtime=time;
 if (localtime_r(&xtime,&lt) != 0)  {
- strftime(timestr,100,"%d-%b-%y %H:%M",localtime(&xtime));
+ if (format == 0) strftime(timestr,100,"%d-%b-%y %H:%M",localtime(&xtime));
+ else             strftime(timestr,100,"%m-%d-%y %H:%M",localtime(&xtime));
 }
 else strcpy(timestr,"---------------");
 return timestr;
@@ -198,9 +203,9 @@ printf("\n Атрибуты доступа: %s%s%s",
       cfattr((fi->mode>>3)&7),
       cfattr((fi->mode>>6)&7));
 
-printf("\n Дата создания: %s",time_to_ascii(fi->ctime));
-printf("\n Дата модификации: %s",time_to_ascii(fi->mtime));
-printf("\n Дата последнего доступа: %s\n",time_to_ascii(fi->atime));
+printf("\n Дата создания: %s",time_to_ascii(fi->ctime,0));
+printf("\n Дата модификации: %s",time_to_ascii(fi->mtime,0));
+printf("\n Дата последнего доступа: %s\n",time_to_ascii(fi->atime,0));
 }
 
 
@@ -270,6 +275,7 @@ efs_closedir(dirp);
 //*  lmode - режим вывода fl_*
 //*   fl_list - краткий листинг файлов
 //*   fl_full - полный листинг файлов
+//*   fl_mid  - полный листинг файлов в формате midnight commander
 //*  fname - начальный путь, по умолчанию /
 //****************************************************
 void show_files (int lmode, char* fname) {
@@ -291,11 +297,11 @@ else strcpy(dirname,fname);
 // opendir
 dirp=efs_opendir(dirname);
 if (dirp == 0) {
-  printf("\n ! Доступ в каталог %s запрещен, errno=%i\n",dirname,efs_get_errno());
+  if (lmode != fl_mid) printf("\n ! Доступ в каталог %s запрещен, errno=%i\n",dirname,efs_get_errno());
 //  printf("\n ! Доступ в каталог %s запрещен\n",dirname);
   return;
 }
-if (lmode == fl_full) printf("\n *** Каталог %s ***",dirname);
+if (lmode == fl_full) printf("\n *** Каталог %s ***\n",dirname);
 // поиск файлов
 for(nfile=1;;nfile++) {
  // выбираем следующую запись
@@ -328,22 +334,38 @@ for(nfile=1;;nfile++) {
  }
  
  // режим полного списка файлов
-printf("\n%c%s%s%s %9i %s %s",
+if (lmode == fl_full) 
+  printf("%c%s%s%s %9i %s %s\n",
       ftype,
       cfattr(dentry.mode&7),
       cfattr((dentry.mode>>3)&7),
       cfattr((dentry.mode>>6)&7),
       dentry.size,
-      time_to_ascii(dentry.mtime),
+      time_to_ascii(dentry.mtime,0),
       dentry.name);
-}
 
+
+if (lmode == fl_mid) {
+  if (ftype == 'i') ftype='-';
+  printf("%c%s%s%s",
+      ftype,                          // attr
+      cfattr(dentry.mode&7),          // mode
+      cfattr((dentry.mode>>3)&7),
+      cfattr((dentry.mode>>6)&7));
+
+  printf(" %d root root",ftype == 'd'?2:1);     // nlink, owner
+  printf(" %9d %s %s/%s\n", 
+	 dentry.size,                   // size
+      time_to_ascii(dentry.mtime,1),      // date
+      dirname,	 
+      dentry.name);                     // name
+}
+}
 // данный каталог обработан - обрабатываем вложенные подкаталоги в режиме полного просмотра
 
 efs_closedir(dirp);  
-if (lmode == fl_full) {
-  printf("\n  * Файлов: %i\n",filecnt);
-  if (recurseflag) 
+if (lmode == fl_full) printf("\n  * Файлов: %i\n",filecnt);
+if (((lmode == fl_full) && recurseflag) || (lmode == fl_mid)) {
    for(i=0;i<ndir;i++) {
     strcpy(targetname,dirname);
     strcat(targetname,"/");
@@ -452,8 +474,8 @@ closefile();
 // готовим имя выходного файла
 
 strcpy(filename,path);
-if (strrchr(file,'/') != 0) strcat(filename,strrchr(file,'/')+1);
-else strcat(filename,file);
+//if (strrchr(file,'/') != 0) strcat(filename,strrchr(file,'/')+1);
+//else strcat(filename,file);
 
 // проверяем существование файла
 
@@ -463,8 +485,9 @@ switch (efs_stat(filename,&fi)) {
      return 0;
  
    case 2: // каталог
-     printf("\nОбъект %s является каталогом\n",filename);
-     return 0;
+     strcat(filename,"/");
+     strcat(filename,file);
+     //printf("\nОбъект %s является каталогом\n",filename);
 }    
 
 // читаем файл в буфер
@@ -523,19 +546,42 @@ free(fbuf);
 //******************************************************
 //*  Копирование единичного файла из EFS в текущий каталог
 //******************************************************
-void get_file(char* name) {
+void get_file(char* name, char* dst) {
   
 unsigned int flen;
 char* fnpos;
 FILE* out;
+struct stat fs;
+char filename[200];
 
 flen=readfile(name);
-if (flen == 0) return;
+if (flen == 0) return; // нет файла
+
 // выделяем имя файла из полного пути
 fnpos=strrchr(name,'/');
 if (fnpos == 0) fnpos=name;
 else fnpos++;
-out=fopen(fnpos,"w");
+
+if (dst == 0) {
+  // не указан выходной каталог или файл
+  strcpy(filename,fnpos);
+}
+else {
+  // выходной каталог или файл указан
+  if ((stat(dst,&fs) == 0) && S_ISDIR(fs.st_mode)) {
+    // выходной файл является каталогом
+    strcpy(filename,dst);
+    strcat(filename,"/");
+    strcat(filename,fnpos);
+  }
+  // выходной файл не существует или является регулярным файлом
+  else strcpy(filename,dst);
+}      
+out=fopen(filename,"w");
+if (out == 0) {
+  printf("Ошибка открытия выходного файла\n");
+  exit(1);
+}  
 fwrite(fbuf,1,flen,out);
 fclose(out);
 }
@@ -648,7 +694,7 @@ while ((opt = getopt(argc, argv, "hp:o:ab:g:l:rt:w:e:fm:")) != -1) {
   switch (opt) {
    case 'h': 
     printf("\n  Утилита предназначена для работы с разделом efs \n\
-%s [ключи] [путь или имя файла]\n\
+%s [ключи] [путь или имя файла] [имя выходного файла]\n\
 Допустимы следующие ключи:\n\n\
 * Ключи, определяюще выполняемую операцию:\n\
 -be       - дамп efs\n\n\
@@ -658,7 +704,7 @@ while ((opt = getopt(argc, argv, "hp:o:ab:g:l:rt:w:e:fm:")) != -1) {
 -lf       - показать полный список файлов указанного каталога\n  (Для всех -l ключей можео указать начальный путь к каталогу)\n\n\
 -tt       - просмотр файла в текстовом виде\n\
 -td       - просмотр файла в виде дампа\n\n\
--gf file  - читает указанный файл из EFS в текущий каталог\n\
+-gf file [dst] - читает указанный файл из EFS в файл dst или в текущий каталог\n\
 -wf file path - записывает указанный файл по указанному пути\n\
 -ef file  - удаляет указанный файл\n\
 -ed dir   - удаляет указанный каталог\n\
@@ -713,6 +759,9 @@ while ((opt = getopt(argc, argv, "hp:o:ab:g:l:rt:w:e:fm:")) != -1) {
        case 'f':
          lmode=fl_full;
          break;
+       case 'm':
+         lmode=fl_mid;
+         break;
        default:
 	 printf("\n Неправильно задано значение ключа -l\n");
 	 return;
@@ -742,7 +791,7 @@ while ((opt = getopt(argc, argv, "hp:o:ab:g:l:rt:w:e:fm:")) != -1) {
       }
      break; 
 
-  //  === группа ключей чтения файла (get) ==
+  //  === группа ключей извлечения файла (get) ==
    case 'g':
      if (mode != -1) {
        printf("\n В командной строке задано более 1 ключа режима работы\n");
@@ -836,7 +885,6 @@ while ((opt = getopt(argc, argv, "hp:o:ab:g:l:rt:w:e:fm:")) != -1) {
      return;
   }
 }  
-
 if (mode == -1) {
   printf("\n Не указан ключ выполняемой операции\n");
   return;
@@ -916,7 +964,12 @@ switch (mode) {
 //============================================================================  
 // Извлечение файла
   case MODE_GETFILE:
-    get_file(argv[optind]);
+     if (optind < (argc-2)) {
+      printf("\n Недостаточно параметров в командной строке");
+      break;
+    }  
+    if (optind == (argc-1)) get_file(argv[optind],0);
+    else get_file(argv[optind],argv[optind+1]);	
     break;
     
 //============================================================================  
@@ -964,7 +1017,7 @@ switch (mode) {
     return;
 
 }    
-printf("\n");
+if (lmode != fl_mid) printf("\n");
 
 }
 
