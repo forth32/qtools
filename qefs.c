@@ -277,7 +277,6 @@ struct tm lt;      // структура для сохранения преоб�
 int dirp=0;  // указатель на открытый каталог
 
 int i,nfile;
-time_t* filetime;
 char timestr[100];
 char ftype;
 char targetname[200];
@@ -293,6 +292,7 @@ if (dirp == 0) {
 //  printf("\n ! Доступ в каталог %s запрещен\n",dirname);
   return;
 }
+printf("\n dirp = %d",dirp);
 
 if (lmode == fl_full) printf("\n *** Каталог %s ***",dirname);
 // поиск файлов
@@ -310,20 +310,20 @@ for(nfile=1;;nfile++) {
    strcpy(targetname,dirname);
 //   strcat(targetname,"/");
    strcat(targetname,dentry.name); // пропускаем начальный "/"
-   if(ftype == 'D') strcat (targetname,"/");
+   if(ftype == 'd') strcat (targetname,"/");
  
  
  // режим простого списка файлов
  if (lmode == fl_list) {
    printf("\n%s",targetname);
-   if ((ftype == 'D') && (recurseflag == 1)) { 
+   if ((ftype == 'd') && (recurseflag == 1)) { 
      show_files(lmode,targetname);
    } 
    continue;
  }
  
  // режим полного списка файлов
-if (localtime_r(filetime,&lt) != 0) 
+if (localtime_r(&dentry.mtime,&lt) != 0) 
  strftime(timestr,100,"%d-%b-%y %H:%M",&lt);
 else strcpy(timestr,"---------------");
  printf("\n%c%s%s%s %9i %s %s",
@@ -875,22 +875,22 @@ switch (mode) {
   case MODE_FILELIST:
     tspace=0;
     // путь не указан - работаем с корневым каталогом
-    if (optind == argc)    strcpy(filename,"");
+    if (optind == argc)    strcpy(filename,"/");
     // путь указан
     else strcpy(filename,argv[optind]);
     // Проверяем наличие файла, и является ли он каталогом
     switch (efs_stat(filename,&fi)) {
       case 0:
-        printf("\nОбъект %s не найден\n",argv[optind]);
+        printf("\nОбъект %s не найден\n",filename);
         break;
     
       case 1: // регулярный файл
-        show_efs_filestat(argv[optind],&fi);
+        show_efs_filestat(filename,&fi);
         break;
 	
       case 2: // каталог
-        if ((lmode == fl_tree) || (lmode == fl_ftree)) show_tree(lmode,argv[optind]);
-	else show_files(lmode,argv[optind]);
+        if ((lmode == fl_tree) || (lmode == fl_ftree)) show_tree(lmode,filename);
+	else show_files(lmode,filename);
 	break;
     }    
     break;
