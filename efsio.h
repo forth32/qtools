@@ -116,5 +116,12 @@ int efs_opendir(char* path);
 int efs_closedir(int dirp);
 int efs_readdir(int dirp, int seq,struct efs_dirent* rsp);
 int efs_get_errno();
+int efs_open(char* filename, int oflag);
+int efs_read(int fd, char* buf, int size, int offset);
+int efs_close(int fd);
+int efs_write(int fd,char* buf, int size, int offset);
+int efs_rmdir(char* dirname);
+
+
 
 

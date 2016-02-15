@@ -376,39 +376,6 @@ if (((lmode == fl_full) && recurseflag) || (lmode == fl_mid)) {
 
 }
 
-
-//**************************************************   
-//* Открытие EFS-файла 
-//*
-// mode=0 - чтение
-//      1 - запись
-//**************************************************
-int efs_open(char* filename, int mode) {
-
-char open_cmd[2][100]={
-  {0x4b, 0x13, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x24, 0x01, 0x00, 0x00},
-  {0x4b, 0x13, 0x02, 0x00, 0x41, 0x02, 0x00, 0x00, 0xb6, 0x01, 0x00, 0x00}
-};  
-
-strcpy(open_cmd[mode]+0xc,filename);
-iolen=send_cmd_base(open_cmd[mode],13+strlen(filename),iobuf,0);
-if (*((unsigned int*)&iobuf[4]) != 0) {
-  printf("\n Ошибка открытия EFS-файла %s",filename);
-  dump(iobuf,iolen,0);
-  free(fbuf);
-  return 0;
-}
-return 1;
-}
-
-//**************************************************   
-//* Закрытие файла
-//**************************************************   
-void closefile() {
-
-char close_cmd[]={0x4b, 0x13, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00}; 
-send_cmd_base(close_cmd,8,iobuf,0);
-}
   
   
 //**************************************************   
@@ -418,11 +385,9 @@ unsigned int readfile(char* filename) {
 
 struct efs_filestat fi;
 int i,blk;
+int fd;
 
-// 4b 13 04 00 00 00 00 00 ss ss ss ss oo oo oo oo
-char read_cmd[16]={0x4b, 0x13, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00};
-
-closefile();
+efs_close(1);
 switch (efs_stat(filename,&fi)) {
    case 0:
      printf("\nОбъект %s не найден\n",filename);
@@ -437,19 +402,18 @@ if (fi.size == 0) {
   return 0;
 }
 fbuf=malloc(fi.size);
-if (!efs_open(filename,0)) return 0;
+fd=efs_open(filename,O_RDONLY);
+if (fd == -1) {
+  printf("\nОшибка открытия файла %s",filename);
+  return 0;
+}
 
 blk=512;
 for (i=0;i<(fi.size);i+=512) {
- *((unsigned int*)&read_cmd[0x0c])=i;
- if ((i+512) > fi.size) {
-   blk=fi.size-i;
-   *((unsigned int*)&read_cmd[8])=blk;
- }
- iolen=send_cmd_base(read_cmd,16,iobuf,0);
- memcpy(fbuf+i,iobuf+0x14,blk);
+ if ((i+512) > fi.size) blk=fi.size-i;
+ efs_read(fd, fbuf+i, blk, i);
 }
-closefile();
+efs_close(fd);
 return fi.size;
 }
 
@@ -463,19 +427,13 @@ struct efs_filestat fi;
 int i,blk;
 FILE* in;
 long filesize;
+int fd;
 
-// 4b 13 05 00 00 00 00 00 ss ss ss ss oo oo oo oo
-char write_cmd[600]={0x4b, 0x13, 0x05, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
-
-char iobuf[4096];
-
-closefile();
+efs_close(1);
 
 // готовим имя выходного файла
 
 strcpy(filename,path);
-//if (strrchr(file,'/') != 0) strcat(filename,strrchr(file,'/')+1);
-//else strcat(filename,file);
 
 // проверяем существование файла
 
@@ -487,7 +445,6 @@ switch (efs_stat(filename,&fi)) {
    case 2: // каталог
      strcat(filename,"/");
      strcat(filename,file);
-     //printf("\nОбъект %s является каталогом\n",filename);
 }    
 
 // читаем файл в буфер
@@ -503,27 +460,24 @@ fseek(in,0,SEEK_SET);
 fread(fbuf,1,filesize,in);
 fclose(in);
 
-if (!efs_open(filename,1)) return 0;
+fd=efs_open(filename,O_CREAT);
+if (fd == -1) {
+  printf("\nОшибка открытия файла %s на запись",filename);
+  return 0;
+}
 
 blk=512;
 for (i=0;i<(filesize);i+=512) {
- *((unsigned int*)&write_cmd[8])=i;
  if ((i+512) > filesize) {
    blk=filesize-i;
  }
- memcpy(write_cmd+12,fbuf+i,blk);
- send_cmd_base(write_cmd,blk+12,iobuf,0);
-#ifndef WIN32
+ efs_write(fd, fbuf+i, blk, i);
  usleep(3000);
-#else
- Sleep(3);
-#endif
 }
 free(fbuf);
-closefile();
+efs_close(fd);
 return 1;
 }
-////////////////////////////////////////////////////////////////////////////////////
 
 
 //***************************************
@@ -633,18 +587,6 @@ for(i=0;i<strlen(dmode);i++) {
 }  
 //dump(mkdir_cmd,32,0);
 iolen=send_cmd_base(mkdir_cmd,strlen(dirname)+7,iobuf,0);
-}
-
-//******************************************************
-//*  Удаление каталога
-//******************************************************
-void efs_rmdir(char* dirname) {
-  
-char rmdir_cmd[600]={0x4b, 0x13, 0x0a, 0x00};
-  
-memset(rmdir_cmd+4,0,580);
-strcpy(rmdir_cmd+4,dirname);
-iolen=send_cmd_base(rmdir_cmd,strlen(dirname)+5,iobuf,0);
 }
 
 
