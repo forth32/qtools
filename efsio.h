@@ -88,9 +88,9 @@ struct efs_filestat {
   int32 mode;              /* File mode                                    */
   int32 size;              /* File size in bytes                           */
   int32 nlink;             /* Number of links                              */
-  time_t atime;             /* Time of last access                          */
-  time_t mtime;             /* Time of last modification                    */
-  time_t ctime;             /* Time of last status change                   */
+  int32 atime;             /* Time of last access                          */
+  int32 mtime;             /* Time of last modification                    */
+  int32 ctime;             /* Time of last status change                   */
 };
 
 
@@ -103,9 +103,9 @@ struct efs_dirent {
   int32  entry_type;       /* 0 if file, 1 if directory, 2 if symlink      */
   int32  mode;             /* File mode                                    */
   int32  size;             /* File size in bytes                           */
-  time_t atime;            /* Time of last access                          */
-  time_t mtime;            /* Time of last modification                    */
-  time_t ctime;            /* Time of last status change                   */
+  int32 atime;            /* Time of last access                          */
+  int32 mtime;            /* Time of last modification                    */
+  int32 ctime;            /* Time of last status change                   */
   char   name[100];         /* Name of directory entry (not full pathname)  */
 };
 
