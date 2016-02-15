@@ -168,7 +168,7 @@ return '-';
 //****************************************************
 //* Вывод детальной информации о регулярном файле
 //****************************************************
-void show_fileinfo(char* filename, struct fileinfo* fi) {
+void show_efs_filestat(char* filename, struct efs_filestat* fi) {
   
 char timestr[100];
 struct tm lt;      // структура для сохранения преобразованной даты
@@ -176,11 +176,12 @@ char sfbuf[50]; // буфер для сохранения описания ти�
 
 printf("\n Имя файла: %s",filename);
 printf("\n Размер   : %i байт",fi->size);
-printf("\n Тип файла: %s",str_filetype(fi->attr,sfbuf));
+printf("\n Тип файла: %s",str_filetype(fi->mode,sfbuf));
+printf("\n Счетчик ссылок: %d",fi->nlink);
 printf("\n Атрибуты доступа: %s%s%s",
-      cfattr(fi->attr&7),
-      cfattr((fi->attr>>3)&7),
-      cfattr((fi->attr>>6)&7));
+      cfattr(fi->mode&7),
+      cfattr((fi->mode>>3)&7),
+      cfattr((fi->mode>>6)&7));
 
 if (localtime_r(&fi->ctime,&lt) != 0)  {
  strftime(timestr,100,"%d-%b-%y %H:%M",localtime(&fi->ctime));
@@ -337,6 +338,7 @@ else strcpy(timestr,"---------------");
 
 // данный каталог обработан - обрабатываем вложенные подкаталоги в режиме полного просмотра
 
+efs_closedir(dirp);  
 if (lmode == fl_full) {
   printf("\n  * Файлов: %i\n",filecnt);
   if (recurseflag) 
@@ -348,7 +350,6 @@ if (lmode == fl_full) {
    }
 }  
 
-efs_closedir(dirp);  
 }
 
 
@@ -391,7 +392,7 @@ send_cmd_base(close_cmd,8,iobuf,0);
 //**************************************************   
 unsigned int readfile(char* filename) {	
 
-struct fileinfo fi;
+struct efs_filestat fi;
 int i,blk;
 
 // 4b 13 04 00 00 00 00 00 ss ss ss ss oo oo oo oo
@@ -434,7 +435,7 @@ return fi.size;
 //**************************************************   
 unsigned int write_file(char* file, char* path) {	
 
-struct fileinfo fi;
+struct efs_filestat fi;
 int i,blk;
 FILE* in;
 long filesize;
@@ -604,7 +605,8 @@ iolen=send_cmd_base(rmdir_cmd,strlen(dirname)+5,iobuf,0);
 void main(int argc, char* argv[]) {
 
 unsigned int opt,i;
-struct fileinfo fi;
+struct efs_filestat fi;
+char filename[100];
   
 enum{
   MODE_BACK_EFS,
@@ -854,32 +856,36 @@ if (!open_port(devname))  {
    return; 
 }
 
+// Закрываем все открытые хендлы каталогов
+
 for(i=1;i<10;i++) efs_closedir(i);
-//////////////////
+
+// Запуск нужных процедур в зависимости от режима работы
 
 switch (mode) {
-  
+
+//============================================================================  
 // Дамп EFS  
   case MODE_BACK_EFS:
     back_efs();
     break;
 
+//============================================================================  
 // просмотр каталога    
   case MODE_FILELIST:
     tspace=0;
     // путь не указан - работаем с корневым каталогом
-    if (optind == argc) {
-      show_files(lmode,"");
-      break;
-    }  
+    if (optind == argc)    strcpy(filename,"");
+    // путь указан
+    else strcpy(filename,argv[optind]);
     // Проверяем наличие файла, и является ли он каталогом
-    switch (efs_stat(argv[optind],&fi)) {
+    switch (efs_stat(filename,&fi)) {
       case 0:
         printf("\nОбъект %s не найден\n",argv[optind]);
         break;
     
       case 1: // регулярный файл
-        show_fileinfo(argv[optind],&fi);
+        show_efs_filestat(argv[optind],&fi);
         break;
 	
       case 2: // каталог
@@ -889,6 +895,7 @@ switch (mode) {
     }    
     break;
 
+//============================================================================  
 // Просмотр файлов
   case MODE_TYPE:
     if (optind == argc) {
@@ -898,10 +905,14 @@ switch (mode) {
     list_file(argv[optind],tmode);
     break;
 
+//============================================================================  
+// Извлечение файла
   case MODE_GETFILE:
     get_file(argv[optind]);
     break;
     
+//============================================================================  
+// Запись файла
   case MODE_WRITEFILE:
     if (optind != (argc-2)) {
       printf("\n Недостаточно параметров в командной строке");
@@ -910,6 +921,8 @@ switch (mode) {
     write_file(argv[optind],argv[optind+1]);
     break;
 
+//============================================================================  
+// Удаление файла
   case MODE_DELFILE:
     if (optind == argc) {
       printf("\n Не указано имя файла");
@@ -926,6 +939,8 @@ switch (mode) {
     }	
     break;
 
+//============================================================================  
+// Создание каталога
   case MODE_MKDIR:
     if (optind == argc) {
       printf("\n Недостаточно параметров в командной строке");
@@ -935,6 +950,7 @@ switch (mode) {
     else 	            efs_mkdir(argv[optind],argv[optind+1]);
     break;
     
+//============================================================================  
   default:
     printf("\n Не указан ключ выполняемой операции\n");
     return;
