@@ -404,7 +404,8 @@ if (fd == -1) {
 blk=512;
 for (i=0;i<(fi.size);i+=512) {
  if ((i+512) > fi.size) blk=fi.size-i;
- efs_read(fd, fbuf+i, blk, i);
+ if (efs_read(fd, fbuf+i, blk, i)<=0) 
+   return 0; // ошибка чтения
 }
 efs_close(fd);
 return fi.size;
@@ -484,7 +485,10 @@ void list_file(char* filename,int mode) {
 unsigned int flen;
 
 flen=readfile(filename);
-if (flen == 0) return;
+if (flen == 0) {
+  printf("Ошибка чтения файла %s",filename);
+  return;
+}  
 if (!mode) fwrite(fbuf,flen,1,stdout);
 else dump(fbuf,flen,0);
 free(fbuf);
@@ -502,7 +506,10 @@ struct stat fs;
 char filename[200];
 
 flen=readfile(name);
-if (flen == 0) return; // нет файла
+if (flen == 0) {
+  printf("Ошибка чтения файла %s",filename);
+  return;
+}  
 
 // выделяем имя файла из полного пути
 fnpos=strrchr(name,'/');
