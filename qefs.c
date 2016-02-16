@@ -7,7 +7,6 @@
 
 //%%%%%%%%%  Общие переменные %%%%%%%%%%%%%%%%
 
-unsigned int altflag=0;   // флаг альтернативной EFS
 unsigned int fixname=0;   // индикатор явного уазания имени файла
 char filename[50];        // имя выходного файла
 
@@ -108,15 +107,30 @@ printf("%s",name);
 //*********************************************
 //*  Вывод атрибута доступа файла
 //*********************************************
-char* cfattr(int mode) {
-  
-static char str[5]={0,0,0,0,0};
+static char atrstr[15];
 
+void fattr(int mode, char* str) {
+  
 memset(str,'-',3);
+str[3]=0;
 if ((mode&4) != 0) str[0]='r';
 if ((mode&2) != 0) str[1]='w';
 if ((mode&1) != 0) str[2]='x';
-return str;
+}
+
+//*********************************************
+char* cfattr(int mode) {
+
+char str[5];
+  
+atrstr[0]=0;
+fattr((mode>>6)&7,str);
+strcat(atrstr,str);
+fattr((mode>>3)&7,str);
+strcat(atrstr,str);
+fattr(mode&7,str);
+strcat(atrstr,str);
+return atrstr;
 }
 
 //****************************************************
@@ -184,11 +198,7 @@ printf("\n Имя файла: %s",filename);
 printf("\n Размер   : %i байт",fi->size);
 printf("\n Тип файла: %s",str_filetype(fi->mode,sfbuf));
 printf("\n Счетчик ссылок: %d",fi->nlink);
-printf("\n Атрибуты доступа: %s%s%s",
-      cfattr(fi->mode&7),
-      cfattr((fi->mode>>3)&7),
-      cfattr((fi->mode>>6)&7));
-
+printf("\n Атрибуты доступа: %s",cfattr(fi->mode));
 printf("\n Дата создания: %s",time_to_ascii(fi->ctime,0));
 printf("\n Дата модификации: %s",time_to_ascii(fi->mtime,0));
 printf("\n Дата последнего доступа: %s\n",time_to_ascii(fi->atime,0));
@@ -321,23 +331,21 @@ for(nfile=1;;nfile++) {
  
  // режим полного списка файлов
 if (lmode == fl_full) 
-  printf("%c%s%s%s %9i %s %s\n",
+  printf("%08x @ %c%s %9i %s %s\n",
+      dentry.mode,	 
       ftype,
-      cfattr(dentry.mode&7),
-      cfattr((dentry.mode>>3)&7),
-      cfattr((dentry.mode>>6)&7),
+      cfattr(dentry.mode),
       dentry.size,
       time_to_ascii(dentry.mtime,0),
       dentry.name);
 
-
+// РЕжим midnight Commander
+  
 if (lmode == fl_mid) {
   if (ftype == 'i') ftype='-';
-  printf("%c%s%s%s",
+  printf("%c%s",
       ftype,                          // attr
-      cfattr(dentry.mode&7),          // mode
-      cfattr((dentry.mode>>3)&7),
-      cfattr((dentry.mode>>6)&7));
+      cfattr(dentry.mode));           // mode
 
   printf(" %d root root",ftype == 'd'?2:1);     // nlink, owner
   printf(" %9d %s %s/%s\n", 
@@ -749,7 +757,7 @@ while ((opt = getopt(argc, argv, "hp:o:ab:g:l:rt:w:e:fm:")) != -1) {
     break;
 
    case 'a':
-     altflag=1;
+     set_altflag(1);
      break;
      
    case 'r':

@@ -10,6 +10,9 @@
 // Хранилище последнего кода ошибки
 static int efs_errno;
 
+// Признак работы с альтернативной EFS
+unsigned int efs_altflag=0;   // флаг альтернативной EFS
+
 //****************************************************
 //* Получение errno
 //****************************************************
@@ -17,6 +20,12 @@ int efs_get_errno() {
   return efs_errno;
 }  
 
+//****************************************************
+//* Установка альтернативного флга
+//****************************************************
+void set_altflag(int val) {
+ efs_altflag=val;
+} 
 
 //****************************************************
 //* Отправка EFS-команды
@@ -35,6 +44,7 @@ int iolen;
 char iobuf[4096];
 
 cmdbuf[2]=cmd;
+if (efs_altflag) cmdbuf[1]=0x3e;
 if (reqbuf != 0) memcpy(cmdbuf+4,reqbuf,reqlen);
 iolen=send_cmd_base((unsigned char*)cmdbuf,reqlen+4, iobuf, 0);
 if (iolen == 0) {

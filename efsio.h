@@ -136,6 +136,7 @@ int efs_prep_factimage();
 int efs_factimage_start();
 int efs_factimage_read(int state, int sent, int map, int data, struct efs_factimage_rsp* rsp);
 int efs_factimage_end();
+void set_altflag(int val);
 
 
 
