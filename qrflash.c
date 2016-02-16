@@ -72,7 +72,6 @@ return !okflag;
 unsigned int read_block_resequence(int block, FILE* out) {
 unsigned int page,sec;
 unsigned int okflag;
-char iobuf[4096];
 
 okflag=load_block(block,sectorsize+4);
 if (!okflag && (bad_processing_flag == BAD_SKIP)) return 1; // обнаружен бедблок
@@ -120,13 +119,10 @@ printf("\n");
 //@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 void main(int argc, char* argv[]) {
   
-unsigned char iobuf[2048];
 unsigned char partname[17]={0}; // имя раздела
 unsigned char filename[300]="qflash.bin";
-unsigned int i,sec,bcnt,iolen,page,block,filepos,lastpos;
-int res;
+unsigned int i,block,filepos,lastpos;
 unsigned char c;
-unsigned char* sptr;
 unsigned int start=0,len=0,opt;
 unsigned int partlist[60]; // список разделов, разрешенных для чтения
 unsigned int cwsize;  // размер порции данных, читаемых из секторного буфера за один раз
@@ -296,6 +292,11 @@ printf("\n * Для режима неформатированного чтени
   }
 }  
 
+// Проверяем на запуск без ключей
+if ((start == 0) && (len == 0) && !xflag) {
+  printf("\n Не указан ни один ключ режима работы\n");
+  return;
+}  
 
 // Определяем значение ключа -u по умолчанию
 if (bad_processing_flag==BAD_UNDEF) {
@@ -303,6 +304,7 @@ if (bad_processing_flag==BAD_UNDEF) {
   else bad_processing_flag=BAD_SKIP;               // для чтения разделов
 }  
 printf("\n BADpflag = %i",bad_processing_flag);
+
 #ifdef WIN32
 if (*devname == '\0')
 {
