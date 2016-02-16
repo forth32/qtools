@@ -35,7 +35,7 @@ int iolen;
 char iobuf[4096];
 
 cmdbuf[2]=cmd;
-memcpy(cmdbuf+4,reqbuf,reqlen);
+if (reqbuf != 0) memcpy(cmdbuf+4,reqbuf,reqlen);
 iolen=send_cmd_base((unsigned char*)cmdbuf,reqlen+4, iobuf, 0);
 if (iolen == 0) {
   efs_errno=9998;
@@ -304,4 +304,71 @@ if (iolen == -1) return -1;
 efs_errno=lerrno;
 return lerrno;  
 }
+
+//******************************************************
+//* Подготовка к снятию полного дампа EFS
+//******************************************************
+int efs_prep_factimage() {
+  
+int iolen;
+int lerrno;
+
+iolen=send_efs_cmd(EFS2_DIAG_PREP_FACT_IMAGE,0,0,&lerrno);
+if (iolen == -1) return -1;
+efs_errno=lerrno;
+return lerrno;  
+}
+
+//******************************************************
+//* Запуск чтения полного дампа EFS
+//******************************************************
+int efs_factimage_start() {
+
+int iolen;
+int lerrno;
+
+iolen=send_efs_cmd(EFS2_DIAG_FACT_IMAGE_START,0,0,&lerrno);
+if (iolen == -1) return -1;
+efs_errno=lerrno;
+return lerrno;  
+}
+
+//******************************************************
+//* Чтение очередного сегмента  EFS
+//******************************************************
+int efs_factimage_read(int state, int sent, int map, int data, struct efs_factimage_rsp* rsp) {  
+
+struct {
+  int8 stream_state;        /* Initialize to 0 */
+  int8 info_cluster_sent;   /* Initialize to 0 */
+  int16 cluster_map_seqno;  /* Initialize to 0 */
+  int32 cluster_data_seqno; /* Initialize to 0 */
+} req;
+
+int iolen;
+
+req.stream_state=state;
+req.info_cluster_sent=sent;
+req.cluster_map_seqno=map;
+req.cluster_data_seqno=data;
+iolen=send_efs_cmd(EFS2_DIAG_FACT_IMAGE_READ,&req,sizeof(req),rsp);
+if (iolen == -1) return -1;
+efs_errno=rsp->diag_errno;
+return efs_errno;  
+}
+
+//******************************************************
+//* Завершение дампа EFS
+//******************************************************
+int efs_factimage_end() {
+
+int iolen;
+int lerrno;
+
+iolen=send_efs_cmd(EFS2_DIAG_FACT_IMAGE_END,0,0,&lerrno);
+if (iolen == -1) return -1;
+efs_errno=lerrno;
+return lerrno;  
+}
+
 

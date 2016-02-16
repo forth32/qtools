@@ -47,65 +47,51 @@ int tspace; // отступ для формирования дерева фай�
 
 void back_efs() {
 
-unsigned char cmd_efs_dump_prepare[16]=  {0x4B, 0x13,0x19, 0};
-unsigned char cmd_efsopen[16]=  {0x4B, 0x13,0x16, 0};
-unsigned char cmd_efsdata[16]={0x4B, 0x13,0x17,0,0,0,0,0,0,0,0,0};
-unsigned char cmd_efsclose[16]=  {0x4B, 0x13,0x18, 0};
 
 FILE* out;
+struct efs_factimage_rsp rsp;
+rsp.stream_state=0;
+rsp.info_cluster_sent=0;
+rsp.cluster_map_seqno=0;
+rsp.cluster_data_seqno=0;
 
-// настройка на альтернативную EFS
-if (altflag) {
- cmd_efs_dump_prepare[1]=0x3e;
- cmd_efsopen[1]=0x3e;
- cmd_efsdata[1]=0x3e;
- cmd_efsclose[1]=0x3e;
- if (!fixname) strcpy(filename,"efs_alt.mbn");
-  }
-// настройка на стандартную EFS
-else if (!fixname) strcpy(filename,"efs.mbn");
-   
+strcpy(filename,"efs.mbn");
 out=fopen(filename,"w");
-  
-iolen=send_cmd_base(cmd_efs_dump_prepare, 4, iobuf, 0);
-if ((iolen != 11) || test_zero(iobuf+3,5)) {
-  printf("\n Неправильный ответ на команду 19\n");
-  dump(iobuf,iolen,0);
+if (out == 0) {
+  printf("\nОшибка открытия выходного файла %s\n",filename);
+  return;
+}  
+
+if (efs_prep_factimage() != 0) {
+  printf("\n Ошибка входа в режим Factory Image, код %d\n",efs_get_errno());
   fclose(out);
   return;
 }
 
-iolen=send_cmd_base(cmd_efsopen, 4, iobuf, 0);
-if ((iolen != 11) || test_zero(iobuf+3,5)) {
-  printf("\n Неправильный ответ на команду открытия (16)\n");
-  dump(iobuf,iolen,0);
+if (efs_factimage_start() != 0) {
+  printf("\n Ошибка запуска чтения EFS, код %d\n",efs_get_errno());
   fclose(out);
   return;
 }
+
 printf("\n");
 
 // главный цикл получения efs.mbn
 while(1) {
-  iolen=send_cmd_base(cmd_efsdata, 12, iobuf, 0);
-  if (iolen != 532) {
-    printf("\n Неправильный ответ на команду 4b 13 17\n");
-    dump(iobuf,iolen,0);
+  printf("\r Чтение: sent=%i map=%i data=%i",rsp.info_cluster_sent,rsp.cluster_map_seqno,rsp.cluster_data_seqno);
+  fflush(stdout);
+  if (efs_factimage_read(rsp.stream_state, rsp.info_cluster_sent, rsp.cluster_map_seqno, 
+                    rsp.cluster_data_seqno, &rsp) != 0) {  
+    printf("\n Ошибка чтения, код=%d\n",efs_get_errno());
     return;
   }
-  printf("\r Читаем раздел: %i   блок: %08x",*((unsigned int*)&iobuf[8]),*((unsigned int*)&iobuf[12]));
-  fflush(stdout);
-  if (iobuf[8] == 0) break;
-  fwrite(iobuf+16,512,1,out);
-  memcpy(cmd_efsdata+4,iobuf+8,8);
+  if (rsp.stream_state == 0) break; // конец потока данных
+  fwrite(rsp.page,512,1,out);
 }
 // закрываем EFS
-iolen=send_cmd_base(cmd_efsclose,4,iobuf,0);
-if ((iolen != 11) || test_zero(iobuf+3,5)) {
-  printf("\n Неправильный ответ на команду закрытия (18)\n");
-  dump(iobuf,iolen,0);
-  fclose(out);
-
-}
+efs_factimage_end();
+fclose(out);
+  
 }
 
 //***************************************************
