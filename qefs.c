@@ -331,8 +331,7 @@ for(nfile=1;;nfile++) {
  
  // режим полного списка файлов
 if (lmode == fl_full) 
-  printf("%08x @ %c%s %9i %s %s\n",
-      dentry.mode,	 
+  printf ("%c%s %9i %s %s\n",
       ftype,
       cfattr(dentry.mode),
       dentry.size,
