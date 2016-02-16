@@ -208,7 +208,7 @@ struct {
   uint32 offset;           /* Requested offset in bytes from the origin    */
   int32  bytes_read;       /* bytes read if successful, -1 otherwise       */
   int32  diag_errno;       /* Error code if error, 0 otherwise             */
-  char   data[size];       /* The data read out                            */
+  char   data[2048];       /* The data read out                            */
 } rsp;
 
 req.fd=fd;
@@ -217,6 +217,7 @@ req.offset=offset;
 iolen=send_efs_cmd(EFS2_DIAG_READ,&req,sizeof(req),&rsp);
 if (iolen == -1) return -1;
 efs_errno=rsp.diag_errno;
+if (rsp.bytes_read <=0) return -1;
 memcpy(buf,rsp.data,rsp.bytes_read);
 return rsp.bytes_read;
 }
