@@ -285,7 +285,6 @@ int dirp=0;  // указатель на открытый каталог
 int i,nfile;
 char ftype;
 char targetname[200];
-int filecnt=0;
 
 if (strlen(fname) == 0) strcpy(dirname,"/"); // по умолчанию открываем корневой каталог
 else strcpy(dirname,fname);
@@ -357,7 +356,7 @@ if (lmode == fl_mid) {
 // данный каталог обработан - обрабатываем вложенные подкаталоги в режиме полного просмотра
 
 efs_closedir(dirp);  
-if (lmode == fl_full) printf("\n  * Файлов: %i\n",filecnt);
+if (lmode == fl_full) printf("\n  * Файлов: %i\n",nfile);
 if (((lmode == fl_full) && recurseflag) || (lmode == fl_mid)) {
    for(i=0;i<ndir;i++) {
     strcpy(targetname,dirname);
