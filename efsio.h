@@ -121,6 +121,8 @@ int efs_read(int fd, char* buf, int size, int offset);
 int efs_close(int fd);
 int efs_write(int fd,char* buf, int size, int offset);
 int efs_rmdir(char* dirname);
+int efs_unlink(char* name);
+int efs_mkdir(char* name, int mode);
 
 
 

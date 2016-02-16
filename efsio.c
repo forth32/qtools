@@ -137,7 +137,7 @@ iolen=send_efs_cmd(EFS2_DIAG_READDIR,&req,sizeof(req),rsp);
 if (iolen == -1) return -1;
 efs_errno=rsp->diag_errno;
 //printf("\n rsp: dirp=%i seq=%i entry=%i mode=%08x name=%s",rsp->dirp,rsp->seqno,rsp->entry_type,rsp->mode,rsp->name); fflush(stdout);
-return 0;
+return efs_errno;
 }
 
 //**************************************************   
@@ -223,7 +223,7 @@ int iolen;
 iolen=send_efs_cmd(EFS2_DIAG_CLOSE,&lfd,4,&lerrno);
 if (iolen == -1) return -1;
 efs_errno=lerrno;
-return 0;
+return lerrno;
 }
 
 
@@ -264,9 +264,44 @@ int efs_rmdir(char* dirname) {
 int iolen;
 int lerrno;
 
-iolen=send_efs_cmd(EFS2_DIAG_RMDIR,dirname,strlen(dirname),&lerrno);
+iolen=send_efs_cmd(EFS2_DIAG_RMDIR,dirname,strlen(dirname)+1,&lerrno);
 if (iolen == -1) return -1;
 efs_errno=lerrno;
-return 0;  
+return lerrno;  
+}
+
+//******************************************************
+//*  Удаление файла по имени
+//******************************************************
+int efs_unlink(char* name) {
+
+int iolen;
+int lerrno;
+  
+iolen=send_efs_cmd(EFS2_DIAG_UNLINK,name,strlen(name)+1,&lerrno);
+if (iolen == -1) return -1;
+efs_errno=lerrno;
+return lerrno;  
+} 
+
+//******************************************************
+//*  Создание каталога
+//******************************************************
+int efs_mkdir(char* name, int mode) {
+
+int iolen;
+int lerrno;
+
+struct {
+  int16 mode;              /* The creation mode                            */
+  char  name[100];         /* Pathname (null-terminated string)            */
+} req;
+  
+req.mode=mode;
+strcpy(req.name, name);
+iolen=send_efs_cmd(EFS2_DIAG_MKDIR,&req,strlen(name)+3,&lerrno);
+if (iolen == -1) return -1;
+efs_errno=lerrno;
+return lerrno;  
 }
 

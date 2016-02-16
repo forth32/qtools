@@ -540,54 +540,6 @@ fwrite(fbuf,1,flen,out);
 fclose(out);
 }
 
-//******************************************************
-//*  Удаление файла по имени
-//******************************************************
-void erase_file(char* name) {
-
-char erase_cmd[600]={0x4b, 0x13, 0x08, 0x00};
-
-memset(erase_cmd+4,0,590);
-strcpy(erase_cmd+4,name);
-iolen=send_cmd_base(erase_cmd,strlen(name)+5,iobuf,0);
-
-} 
-
-//******************************************************
-//*  Создание каталога
-//******************************************************
-void efs_mkdir(char* dirname, char* dmode) {
-  
-char mkdir_cmd[600]={0x4b, 0x13, 0x09, 0x00,0x0,0};
-int i;
-
-// вписываем имя файла
-memset(mkdir_cmd+6,0,580);
-strcpy(mkdir_cmd+6,dirname);
-
-// вписываем права доступа
-for(i=0;i<strlen(dmode);i++) {
-  switch (dmode[i]) {
-    case 'r':
-      mkdir_cmd[4]|=0x4;
-      break;
-
-    case 'w':
-      mkdir_cmd[4]|=0x2;
-      break;
-
-    case 'x':
-      mkdir_cmd[4]|=0x1;
-      break;
-
-    default:
-      printf("\n Неправильно указаны права доступа: %s",dmode);
-      return;
-  }
-}  
-//dump(mkdir_cmd,32,0);
-iolen=send_cmd_base(mkdir_cmd,strlen(dirname)+7,iobuf,0);
-}
 
 
 //@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
@@ -650,7 +602,7 @@ while ((opt = getopt(argc, argv, "hp:o:ab:g:l:rt:w:e:fm:")) != -1) {
 -wf file path - записывает указанный файл по указанному пути\n\
 -ef file  - удаляет указанный файл\n\
 -ed dir   - удаляет указанный каталог\n\
--md dir [r][w][x]  - создает каталог с указанными правами доступа\n\n\
+-md dir   - создает каталог с указанными правами доступа\n\n\
 * Ключи-модификаторы:\n\
 -r        - обработка всех подкаталогов при выводе листинга\n\
 -f        - вывод полного пути к каждому каталогу при просмотре дерева\n\
@@ -933,7 +885,7 @@ switch (mode) {
     }  
     switch (gmode) {
       case G_FILE:
-        erase_file(argv[optind]);
+        efs_unlink(argv[optind]);
 	break;
 
       case G_DIR:
@@ -949,8 +901,9 @@ switch (mode) {
       printf("\n Недостаточно параметров в командной строке");
       break;
     }  
-    if (optind == (argc-1)) efs_mkdir(argv[optind],"");
-    else 	            efs_mkdir(argv[optind],argv[optind+1]);
+    if (efs_mkdir(argv[optind],7) != 0) {
+      printf("\nОшибка создания каталога %s, код %d",argv[optind],efs_get_errno());
+    }  
     break;
     
 //============================================================================  
