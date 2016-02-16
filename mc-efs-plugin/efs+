@@ -56,7 +56,6 @@ cmd="$1"
 shift
 
 case "$cmd" in
-#  list)    efs_list    "$@" | sort -k 8 ;;
   list)    efs_list    "$@" ;;
   rm)      efs_rm      "$@" ;;
   rmdir)   efs_rmdir   "$@" ;;
