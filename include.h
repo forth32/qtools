@@ -1,11 +1,13 @@
 #ifndef __INCLUDE_H__
     #define __INCLUDE_H__
 
-typedef int int32;
-typedef unsigned int uint32;
-typedef unsigned char uint8;
-typedef char int8;
-typedef short int16;
+#include <stdint.h>
+typedef int32_t int32;
+typedef uint32_t uint32;
+typedef uint8_t uint8;
+typedef int8_t int8;
+typedef int16_t int16;
+
 #define PACKED __attribute__ ((__packed__))
 
     #include <errno.h>
