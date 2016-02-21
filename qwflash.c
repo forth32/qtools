@@ -101,11 +101,9 @@ void main(int argc, char* argv[]) {
 unsigned char iobuf[14048];
 unsigned char scmd[13068]={0x7,0,0,0};
 char ptabraw[4048];
-int ptablen;
 FILE* part;
 int ptflag=0;
 int listmode=0;
-int wcount=0; 
 
 char* fptr;
 #ifndef WIN32
@@ -171,7 +169,7 @@ while ((opt = getopt(argc, argv, "hp:s:w:mk:f")) != -1) {
          printf("\nОшибка открытия файла таблицы разделов\n");
          return;
        }	 
-       ptablen=fread(ptabraw,1024,1,part); // читаем таблицу разделов из файла
+       fread(ptabraw,1024,1,part); // читаем таблицу разделов из файла
        fclose(part);       
        ptflag=1; 
      break;

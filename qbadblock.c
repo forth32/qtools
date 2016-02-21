@@ -10,7 +10,7 @@
 void defect_list(int start, int len) {
   
 FILE* out; 
-int blk,pg=0;
+int blk;
 int badcount=0;
 int vptable=0; // флаг валидности таблицы разделов
 int i,npar;
@@ -65,7 +65,6 @@ void main(int argc, char* argv[]) {
 unsigned int start=0,len=0,opt;
 int mflag=0, uflag=0, sflag=0;
 int dflag=0;
-int cfg1;
 
 #ifndef WIN32
 char devname[50]="/dev/ttyUSB0";

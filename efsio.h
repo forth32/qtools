@@ -96,7 +96,7 @@ struct efs_filestat {
 
 // элемент описания каталога
 
-struct efs_dirent {
+struct PACKED efs_dirent {
   uint32 dirp;             /* Directory pointer.                           */
   int32  seqno;            /* Sequence number of directory entry           */
   int32  diag_errno;       /* Error code if error, 0 otherwise             */
@@ -109,7 +109,7 @@ struct efs_dirent {
   char   name[100];         /* Name of directory entry (not full pathname)  */
 };
 
-struct efs_factimage_rsp {
+struct PACKED efs_factimage_rsp {
   int32 diag_errno;         /* Error code if error, 0 otherwise */
   int8 stream_state;        /* 1 = more data, 0 = all done      */
   int8 info_cluster_sent;   /* Info cluster sent indicator      */
