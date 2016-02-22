@@ -96,7 +96,7 @@ struct efs_filestat {
 
 // элемент описания каталога
 
-struct PACKED efs_dirent {
+PACKED_ON(efs_dirent) {
   uint32 dirp;             /* Directory pointer.                           */
   int32  seqno;            /* Sequence number of directory entry           */
   int32  diag_errno;       /* Error code if error, 0 otherwise             */
@@ -108,8 +108,9 @@ struct PACKED efs_dirent {
   int32 ctime;            /* Time of last status change                   */
   char   name[100];         /* Name of directory entry (not full pathname)  */
 };
+PACKED_OFF
 
-struct PACKED efs_factimage_rsp {
+PACKED_ON(efs_factimage_rsp) {
   int32 diag_errno;         /* Error code if error, 0 otherwise */
   int8 stream_state;        /* 1 = more data, 0 = all done      */
   int8 info_cluster_sent;   /* Info cluster sent indicator      */
@@ -117,7 +118,7 @@ struct PACKED efs_factimage_rsp {
   int32 cluster_data_seqno; /* Cluster data sequence number     */
   char page[1024];             /* Page data buffer */
 };
-
+PACKED_OFF
 
 int send_efs_cmd(int cmd,void* reqbuf,int reqlen, void* respbuf);
 int efs_stat(char* filename, struct efs_filestat* fi);

@@ -8,7 +8,13 @@ typedef uint8_t uint8;
 typedef int8_t int8;
 typedef int16_t int16;
 
-#define PACKED __attribute__ ((__packed__))
+#ifdef WIN32
+	#define PACKED_ON(name) __pragma(pack(push, 1)) struct name
+	#define PACKED_OFF __pragma(pack(pop))
+#else
+	#define PACKED_ON(name) struct __attribute__ ((__packed__)) name
+	#define PACKED_OFF
+#endif
 
     #include <errno.h>
     #include <fcntl.h>

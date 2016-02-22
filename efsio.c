@@ -246,9 +246,9 @@ int efs_write(int fd,char* buf, int size, int offset) {
 struct {
   int32 fd;                /* File descriptor                              */
   uint32 offset;           /* Offset in bytes from the origin              */
-  char  data[size];           /* The data to be written                       */
-} req;
-
+  char data[65536];        /* The data to be written                       */
+} req;					   /* Значение размера data[] - "от балды".        */
+						   /* Видимо, здесь должен быть макс. размер файла EFS */
 struct  {
   int32 fd;                /* File descriptor                              */
   uint32 offset;           /* Requested offset in bytes from the origin    */
