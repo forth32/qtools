@@ -246,7 +246,7 @@ int efs_write(int fd,char* buf, int size, int offset) {
 struct {
   int32 fd;                /* File descriptor                              */
   uint32 offset;           /* Offset in bytes from the origin              */
-  char data[65536];        /* The data to be written                       */
+  char data[8192];        /* The data to be written                       */
 } req;					   /* Значение размера data[] - "от балды".        */
 						   /* Видимо, здесь должен быть макс. размер файла EFS */
 struct  {
@@ -260,7 +260,7 @@ int iolen;
 req.fd=fd;
 req.offset=offset;
 memcpy(req.data,buf,size);
-iolen=send_efs_cmd(EFS2_DIAG_WRITE,&req,sizeof(req),&rsp);
+iolen=send_efs_cmd(EFS2_DIAG_WRITE,&req,8+size,&rsp);
 if (iolen == -1) return -1;
 efs_errno=rsp.diag_errno;
 return rsp.bytes_written;
