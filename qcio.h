@@ -94,3 +94,8 @@ int mark_bad(unsigned int blk);
 int unmark_bad(unsigned int blk);
 int test_badpattern(unsigned char* buf);
 
+void set_blocksize(unsigned int udsize, unsigned int ss,unsigned int eccs);
+
+void set_udsize(uint32 udsize);
+void set_sparesize(uint32 ss);
+void set_eccsize(uint32 eccs);

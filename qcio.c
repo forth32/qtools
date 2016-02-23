@@ -484,13 +484,16 @@ if (chipsize == 0) {
 
 // Вынимаем параметры конфигурации
 
-sectorsize=512;
+cfg0=mempeek(nand_cfg0);
+
+//sectorsize=512;
+sectorsize=(cfg0&(0x3ff<<9))>>9; //UD_SIZE_BYTES = blocksize
+
 devcfg = (nandid>>24) & 0xff;
 pagesize = 1024 << (devcfg & 0x3); // размер страницы в байтах
 blocksize = 64 << ((devcfg >> 4) & 0x3);  // размер блока в килобайтах
 spp = pagesize/sectorsize; // секторов в странице
 
-cfg0=mempeek(nand_cfg0);
 if ((((cfg0>>6)&7)|((cfg0>>2)&8)) == 0) {
   // для старых чипсетов младшие 2 байта CFG0 надо настраивать руками
   if (!bad_loader) mempoke(nand_cfg0,(cfg0|0x40000|(((spp-1)&8)<<2)|(((spp-1)&7)<<6)));
@@ -708,5 +711,48 @@ for(i=0;i<512;i++) {
 return 1;
 }
 
+//**********************************************************
+//* Установка размера поля данных сектора
+//**********************************************************
+void set_udsize(unsigned int size) {
+
+unsigned int cfg0=mempeek(nand_cfg0);  
+cfg0=(cfg0&(~(0x3ff<<9)))|(size<<9); //UD_SIZE_BYTES = blocksize
+mempoke(nand_cfg0,cfg0);
+}
+
+//**********************************************************
+//* Установка размера поля spare
+//**********************************************************
+void set_sparesize(unsigned int size) {
+
+unsigned int cfg0=mempeek(nand_cfg0);  
+cfg0=cfg0&(~(0xf<<23))|(size<<23); //SPARE_SIZE_BYTES 
+mempoke(nand_cfg0,cfg0);
+}
+
+//**********************************************************
+//* Установка размера поля ECC
+//**********************************************************
+void set_eccsize(unsigned int size) {
+
+unsigned int cfg0=mempeek(nand_cfg0);  
+cfg0=cfg0&(~(0xf<<19))|(size<<19); //ECC_PARITY_SIZE_BYTES = eccs
+mempoke(nand_cfg0,cfg0);
+}
+
   
+//**********************************************************
+//*  Установка формата сектора в конфигурации контроллера
+//*
+//*  udsize - размер данных в байтах
+//*  ss - размер spare в хз каких единицах
+//*  eccs - размер ecc в байтах
+//**********************************************************
+void set_blocksize(unsigned int udsize, unsigned int ss,unsigned int eccs) {
+
+set_udsize(udsize);
+set_sparesize(ss);
+set_eccsize(eccs);
+}
   
