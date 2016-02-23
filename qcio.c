@@ -189,7 +189,7 @@ get_flash_config();
 printf("\n Версия протокола: %i",rbuf[0x22]); fflush(stdout);
 printf("\n Флеш-память: %s %s, %s",flash_mfr,(rbuf[0x2d] != 0x65)?((char*)(rbuf+0x2d)):"",flash_descr); fflush(stdout);
 //printf("\n Максимальный размер пакета: %i байта",*((unsigned int*)&rbuf[0x24]));fflush(stdout);
-printf("\n Размер сектора: %u байт",sectorsize);fflush(stdout);
+printf("\n Размер сектора: %u байт",(cfg0&(0x3ff<<9))>>9);fflush(stdout);
 printf("\n Размер страницы: %u байт (%u секторов)",pagesize,spp);fflush(stdout);
 printf("\n Число страниц в блоке: %u",ppb);fflush(stdout);
 printf("\n Размер OOB: %u байт",oobsize); fflush(stdout);
@@ -486,8 +486,8 @@ if (chipsize == 0) {
 
 cfg0=mempeek(nand_cfg0);
 
-//sectorsize=512;
-sectorsize=(cfg0&(0x3ff<<9))>>9; //UD_SIZE_BYTES = blocksize
+sectorsize=512;
+//sectorsize=(cfg0&(0x3ff<<9))>>9; //UD_SIZE_BYTES = blocksize
 
 devcfg = (nandid>>24) & 0xff;
 pagesize = 1024 << (devcfg & 0x3); // размер страницы в байтах
