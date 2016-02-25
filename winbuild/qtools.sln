@@ -25,6 +25,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "qident", "qident\qident.vcx
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "qbadblock", "qbadblock\qbadblock.vcxproj", "{E7C3223E-79A2-463B-B12A-EF2343B69190}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "qflashparm", "qflashparm\qflashparm.vcxproj", "{51B429D3-38E1-4B2A-B2D7-B10FA9EE632A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -79,6 +81,10 @@ Global
 		{E7C3223E-79A2-463B-B12A-EF2343B69190}.Debug|Win32.Build.0 = Release|Win32
 		{E7C3223E-79A2-463B-B12A-EF2343B69190}.Release|Win32.ActiveCfg = Release|Win32
 		{E7C3223E-79A2-463B-B12A-EF2343B69190}.Release|Win32.Build.0 = Release|Win32
+		{51B429D3-38E1-4B2A-B2D7-B10FA9EE632A}.Debug|Win32.ActiveCfg = Release|Win32
+		{51B429D3-38E1-4B2A-B2D7-B10FA9EE632A}.Debug|Win32.Build.0 = Release|Win32
+		{51B429D3-38E1-4B2A-B2D7-B10FA9EE632A}.Release|Win32.ActiveCfg = Release|Win32
+		{51B429D3-38E1-4B2A-B2D7-B10FA9EE632A}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
