@@ -126,6 +126,7 @@ unsigned char c;
 unsigned int start=0,len=0,opt;
 unsigned int partlist[60]; // список разделов, разрешенных для чтения
 unsigned int cwsize;  // размер порции данных, читаемых из секторного буфера за один раз
+int parttype;
 
 FILE* out;
 FILE* part=0;
@@ -395,9 +396,10 @@ for(i=0;i<npar;i++) {
       len=*((unsigned int*)&ptable[36+28*i]);     // размер
       attr=*((unsigned int*)&ptable[40+28*i])&0xffffff;    // атрибуты
       if (((start+len) >maxblock)||(len == 0xffffffff)) len=maxblock-start; // если длина - FFFF, или выходит за пределы флешки
+      parttype=(attr&0xff00)>>8; 
   // Выводим описание раздела - для всех разделов или для конкретного заказанного
     if ((partnumber == -1) || (partlist[i]==1))  printf("\r%02u  %6x  %6x   %06x    %s   %s\n",i,start,len,attr,
-                                                        ((attr&0xff00) != 0)?"LNX":"STD",partname);
+                                                        (parttype==1)?"LNX":"STD",partname);
   // Читаем раздел - если не указан просто вывод карты. 
     if (listmode == 0) 
       // Все разделы или один конкретный  
