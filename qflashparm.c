@@ -12,11 +12,11 @@ char devname[20]="";
 #endif
 
 // локальные параметры для установки
-int lud=-1, lecc=-1, lspare=-1;
+int lud=-1, lecc=-1, lspare=-1, lbad=-1;
 int sflag=0;
 int opt;
 
-while ((opt = getopt(argc, argv, "hp:s:u:e:")) != -1) {
+while ((opt = getopt(argc, argv, "hp:s:u:e:d:")) != -1) {
   switch (opt) {
    case 'h': 
      printf("\n Утилита предназначена установки параметров NAND-контроллера\n\n\
@@ -24,7 +24,9 @@ while ((opt = getopt(argc, argv, "hp:s:u:e:")) != -1) {
 -p <tty> - указывает имя устройства последовательного порта для общения с загрузчиком\n\
 -s nnn   - установка размера поля spare на сектор\n\
 -u nnn   - установка размера поля данных сектора\n\
--e nnn   - установка размера поля ECC на сектор\n");
+-e nnn   - установка размера поля ECC на сектор\n\
+-d nnn   - установка маркера дефектных блоков на байт nnn\n\
+");
     return;
      
    case 'p':
@@ -43,6 +45,11 @@ while ((opt = getopt(argc, argv, "hp:s:u:e:")) != -1) {
 
    case 'e':
      sscanf(optarg,"%d",&lecc);
+     sflag=1;
+     break;
+    
+   case 'd':
+     sscanf(optarg,"%x",&lbad);
      sflag=1;
      break;
     
@@ -79,5 +86,8 @@ hello(0);
 if (lspare != -1) set_sparesize(lspare);
 if (lud != -1) set_udsize(lud);
 if (lecc != -1) set_eccsize(lecc);
-
+if (lbad != -1) {
+  badposition=lbad;
+  hardware_bad_on();
+}
 } 

@@ -303,7 +303,6 @@ if (bad_processing_flag==BAD_UNDEF) {
   if (partflag == 0) bad_processing_flag=BAD_FILL; // для чтения диапазона блоков
   else bad_processing_flag=BAD_SKIP;               // для чтения разделов
 }  
-printf("\n BADpflag = %i",bad_processing_flag);
 
 #ifdef WIN32
 if (*devname == '\0')
@@ -388,16 +387,17 @@ if ((partnumber != -1) && (partnumber>=npar)) {
   printf("\nНедопустимый номер раздела: %i, всего разделов %u\n",partnumber,npar);
   return;
 }  
-printf("\n #  адрес    размер   атрибуты ------ Имя------\n");     
+printf("\n #  адрес   размер  атрибуты  формат ------ Имя------\n");     
 for(i=0;i<npar;i++) {
    // разбираем элементы таблицы разделов
       strncpy(partname,ptable+16+28*i,16);       // имя
       start=*((unsigned int*)&ptable[32+28*i]);   // адрес
       len=*((unsigned int*)&ptable[36+28*i]);     // размер
-      attr=*((unsigned int*)&ptable[40+28*i]);    // атрибуты
+      attr=*((unsigned int*)&ptable[40+28*i])&0xffffff;    // атрибуты
       if (((start+len) >maxblock)||(len == 0xffffffff)) len=maxblock-start; // если длина - FFFF, или выходит за пределы флешки
   // Выводим описание раздела - для всех разделов или для конкретного заказанного
-    if ((partnumber == -1) || (partlist[i]==1))  printf("\r%02u %08x  %08x  %08x  %s\n",i,start,len,attr,partname);
+    if ((partnumber == -1) || (partlist[i]==1))  printf("\r%02u  %6x  %6x   %06x    %s   %s\n",i,start,len,attr,
+                                                        ((attr&0xff00) != 0)?"LNX":"STD",partname);
   // Читаем раздел - если не указан просто вывод карты. 
     if (listmode == 0) 
       // Все разделы или один конкретный  
