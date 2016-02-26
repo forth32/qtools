@@ -736,9 +736,23 @@ mempoke(nand_cfg0,cfg0);
 //**********************************************************
 void set_eccsize(unsigned int size) {
 
-unsigned int cfg0=mempeek(nand_cfg0);  
-cfg0=cfg0&(~(0xf<<19))|(size<<19); //ECC_PARITY_SIZE_BYTES = eccs
-mempoke(nand_cfg0,cfg0);
+uint32 cfg0, cfg1, ecccfg, bch_mode=0;
+
+cfg1=mempeek(nand_cfg1);
+  
+// Определяем тип ЕСС
+if (((cfg1>>27)&1) != 0) bch_mode=1;
+  
+if (bch_mode) {
+  ecccfg=mempeek(nand_ecc_cfg);
+  ecccfg= (ecccfg&(~(0x1f<<8))|(size<<8));
+  mempoke(nand_ecc_cfg,ecccfg);
+}  
+else {
+  cfg0=mempeek(nand_cfg0);  
+  cfg0=cfg0&(~(0xf<<19))|(size<<19); //ECC_PARITY_SIZE_BYTES = eccs
+  mempoke(nand_cfg0,cfg0);
+} 
 }
 
   
