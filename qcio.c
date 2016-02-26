@@ -240,7 +240,7 @@ void hardware_bad_on() {
 int cfg1;
 
 cfg1=mempeek(nand_cfg1);
-cfg1 &= ~(0x3ff<<6);
+cfg1 &= ~(0x7ff<<6); /* Временно: всегда считается, что маркер - в области данных (cfg1.16 = 0) */
 cfg1 |= (badposition &0x3ff)<<6;
 mempoke(nand_cfg1,cfg1);
 }
