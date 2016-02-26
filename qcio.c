@@ -722,9 +722,16 @@ return 1;
 //**********************************************************
 void set_udsize(unsigned int size) {
 
-unsigned int cfg0=mempeek(nand_cfg0);  
-cfg0=(cfg0&(~(0x3ff<<9)))|(size<<9); //UD_SIZE_BYTES = blocksize
-mempoke(nand_cfg0,cfg0);
+unsigned int tmpreg=mempeek(nand_cfg0);  
+
+tmpreg=(tmpreg&(~(0x3ff<<9)))|(size<<9); // CFG0.UD_SIZE_BYTES
+mempoke(nand_cfg0,tmpreg);
+
+if (((mempeek(nand_cfg1)>>27)&1) != 0) { // BCH ECC
+  tmpreg=mempeek(nand_ecc_cfg);
+  tmpreg=(tmpreg&(~(0x3ff<<16))|(size<<16)); //ECC_CFG.ECC_NUM_DATA_BYTES
+  mempoke(nand_ecc_cfg,tmpreg);
+}  
 }
 
 //**********************************************************
