@@ -15,6 +15,7 @@ char devname[20]="";
 int lud=-1, lecc=-1, lspare=-1, lbad=-1;
 int sflag=0;
 int opt;
+int badloc;
 
 while ((opt = getopt(argc, argv, "hp:s:u:e:d:")) != -1) {
   switch (opt) {
@@ -25,7 +26,7 @@ while ((opt = getopt(argc, argv, "hp:s:u:e:d:")) != -1) {
 -s nnn   - установка размера поля spare на сектор\n\
 -u nnn   - установка размера поля данных сектора\n\
 -e nnn   - установка размера поля ECC на сектор\n\
--d xxx   - установка маркера дефектных блоков на байт xxx (hex)\n\
+-d [L]xxx- установка маркера дефектных блоков на байт xxx (hex), L=U(user) или S(spare)\n\
 ");
     return;
      
@@ -49,7 +50,7 @@ while ((opt = getopt(argc, argv, "hp:s:u:e:d:")) != -1) {
      break;
     
    case 'd':
-     sscanf(optarg,"%x",&lbad);
+     parse_badblock_arg(optarg, &lbad, &badloc);
      sflag=1;
      break;
     
@@ -86,8 +87,5 @@ hello(0);
 if (lspare != -1) set_sparesize(lspare);
 if (lud != -1) set_udsize(lud);
 if (lecc != -1) set_eccsize(lecc);
-if (lbad != -1) {
-  badposition=lbad;
-  hardware_bad_on();
-}
+if (lbad != -1) set_badmark_pos (lbad, badloc);
 } 

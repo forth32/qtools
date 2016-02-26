@@ -65,6 +65,7 @@ void main(int argc, char* argv[]) {
 unsigned int start=0,len=0,opt;
 int mflag=0, uflag=0, sflag=0;
 int dflag=0;
+int badloc=0;
 
 #ifndef WIN32
 char devname[50]="/dev/ttyUSB0";
@@ -83,7 +84,7 @@ while ((opt = getopt(argc, argv, "hp:b:l:dm:u:s:")) != -1) {
 -d - вывести список имеющихся дефектных блоков\n\
 -m blk - пометить блок blk как дефектный\n\
 -u blk - снять с блока blk признак дефектности\n\
--s ### - перманентно установить позицию маркера на байт ###\n\
+-s L### - перманентно установить позицию маркера на байт ###, L=U(user) или S(spare)\n\
 ");
     return;
 
@@ -108,7 +109,7 @@ while ((opt = getopt(argc, argv, "hp:b:l:dm:u:s:")) != -1) {
      break;
 
    case 's':
-     sscanf(optarg,"%x",&sflag);
+     parse_badblock_arg(optarg, &sflag, &badloc);
      break;
 
    case 'd':
@@ -147,10 +148,7 @@ mempoke(nand_exec,0x1);
 nandwait();
 
 // установка позиции маркера бедблока
-if (sflag) {
- badposition=sflag;
- hardware_bad_on();
-}
+if (sflag) set_badmark_pos (sflag, badloc);
 
 //###################################################
 // Режим списка дефектных блоков:

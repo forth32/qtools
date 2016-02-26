@@ -19,6 +19,7 @@ unsigned int flash16bit=0; // 0 - 8-битная флешка, 1 - 16-битна
 unsigned int badsector;    // сектор, содержащий дефектный блок
 unsigned int badflag;      // маркер дефектного блока
 unsigned int badposition;  // позиция маркера дефектных блоков
+unsigned int badplace;     // местоположение маркера: 0-user, 1-spare
 
 //****************************************************************
 //* Ожидание завершения операции, выполняемой контроллером nand  *
@@ -210,11 +211,7 @@ printf("\n Размер spare: %u байт",(cfg0>>23)&0xf);
 
 printf("\n Положение маркера дефектных блоков: ");
 if (badposition == 0) printf(" маркер отсутствует");
-else {
-  if (((cfg1>>16)&1) == 0) printf("user");
-  else printf("spare");
-  printf("+%x",badposition);
-}
+else  printf("%s+%x",badplace?"spare":"user",badposition);
 
 printf("\n Общий размер флеш-памяти = %u блоков (%i MB)",maxblock,maxblock*ppb/1024*pagesize/1024);fflush(stdout);
 printf("\n");
@@ -240,13 +237,21 @@ void hardware_bad_on() {
 int cfg1;
 
 cfg1=mempeek(nand_cfg1);
-cfg1 &= ~(0x7ff<<6); /* Временно: всегда считается, что маркер - в области данных (cfg1.16 = 0) */
-cfg1 |= (badposition &0x3ff)<<6;
+cfg1 &= ~(0x7ff<<6);
+cfg1 |= (badposition &0x3ff)<<6; // смещение до маркера
+cfg1 |= badplace<<16;            // область, где расположен маркер (user/spare)
 mempoke(nand_cfg1,cfg1);
 }
 
+//**********************************************
+//* Установка позиции маркера
+//**********************************************
+void set_badmark_pos (int pos, int place) {
 
-
+badposition=pos;
+badplace=place&1;
+hardware_bad_on();
+}
 
 //*************************************
 //* чтение таблицы разделов из flash
@@ -507,6 +512,7 @@ if (nand_cmd == 0xa0a00000) {
   mempoke(nand_cfg1,cfg1);
 }  
 badposition=(cfg1>>6)&0x3ff;
+badplace=(cfg1>>16)&1;
 
 // проверяем признак 16-битной флешки
 if ((cfg1&2) != 0) flash16bit=1;
@@ -769,4 +775,28 @@ set_udsize(udsize);
 set_sparesize(ss);
 set_eccsize(eccs);
 }
+
+//******************************************************************
+//* Разбор параметров ключа, определяющего позицию бедмаркера
+//*
+//* Формат параметра:
+//*   xxx  - маркер в области данных сектора
+//*   Uxxx - маркер в области данных сектора
+//*   Sxxx - маркер в области ООВ (в spare)
+//*
+//*  badpos - позиция маркера
+//*  badloc - область, где расположен маркер (0-user, 1-spare)
+//******************************************************************
+void parse_badblock_arg(char* arg, int* badpos, int* badloc) {
+
+char* str=arg;
   
+*badloc=0;
+if       (toupper(str[0]) == 'U') str++;
+else if  (toupper(str[0]) == 'S') {
+  *badloc=1;
+  str++;
+}
+
+sscanf(str,"%x",badpos);
+}

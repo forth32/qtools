@@ -7,6 +7,7 @@ extern unsigned int oobsize;
 extern unsigned int bad_loader;
 extern unsigned int flash16bit; // 0 - 8-битная флешка, 1 - 16-битная
 extern unsigned int badposition;
+extern unsigned int badplace;     // местоположение маркера: 0-user, 1-spare
 
 // индекс в таблице чипcетов
 extern int chip_type; 
@@ -99,3 +100,5 @@ void set_blocksize(unsigned int udsize, unsigned int ss,unsigned int eccs);
 void set_udsize(uint32 udsize);
 void set_sparesize(uint32 ss);
 void set_eccsize(uint32 eccs);
+void parse_badblock_arg(char* arg, int* badpos, int* badloc);
+void set_badmark_pos (int pos, int place);
