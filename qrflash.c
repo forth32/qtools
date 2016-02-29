@@ -25,7 +25,8 @@ unsigned char *blockbuf;
 //********************************************************************************
 unsigned int load_block(int blk, int cwsize) {
 
-int pg,sec;  
+int pg,sec;
+int oldudsize,cfg0;
 if (bad_processing_flag == BAD_DISABLE) hardware_bad_off();
 else if (bad_processing_flag != BAD_IGNORE) {
    if (check_block(blk)) {
@@ -35,8 +36,16 @@ else if (bad_processing_flag != BAD_IGNORE) {
   }
 } 
 // хороший блок, или нам насрать на бедблоки - читаем блок 
+
+// устанавливаем udsize на размер читаемого участка
+cfg0=mempeek(nand_cfg0);
+oldudsize=get_udsize();
+set_udsize(cwsize);
+//set_sparesize(0);
+
 nand_reset();
-mempoke(nand_cmd,0x34); // чтение data+ecc+spare
+if (cwsize>(sectorsize+4)) mempoke(nand_cmd,0x34); // чтение data+ecc+spare без коррекции
+else mempoke(nand_cmd,0x33);    // чтение data с коррекцией
 for(pg=0;pg<ppb;pg++) {
   setaddr(blk,pg);
   for (sec=0;sec<spp;sec++) {
@@ -48,6 +57,8 @@ for(pg=0;pg<ppb;pg++) {
   } 
 }  
 if (bad_processing_flag == BAD_DISABLE) hardware_bad_on();
+set_udsize(oldudsize);
+mempoke(nand_cfg0,cfg0);
 return 1; // заебись - блок прочитан
 }
   
@@ -131,7 +142,7 @@ int parttype;
 FILE* out;
 FILE* part=0;
 int partflag=0;  // 0 - сырой флеш, 1 - таблица разделов из файла, 2 - таблица разделов из флеша
-int eccflag=1;  // 1 - отключить ECC,  0 - включить
+int eccflag=0;  // 1 - отключить ECC,  0 - включить
 int partnumber=-1; // флаг выбра раздела для чтения, -1 - все разделы, 1 - по списку
 int rflag=0;     // формат разделов: 0 - авто, 1 - стандартный, 2 - линуксокитайский
 int listmode=0;    // 1- вывод карты разделов
@@ -161,7 +172,7 @@ while ((opt = getopt(argc, argv, "hp:b:l:o:xs:ef:mtk:r:z:u:")) != -1) {
 printf("\n Утилита предназначена для чтения образа флеш-памяти через модифицированный загрузчик\n\
  Допустимы следующие ключи:\n\n\
 -p <tty> - последовательный порт для общения с загрузчиком\n\
--e - включить коррекцию ECC при чтении\n\
+-e - отключить коррекцию ECC при чтении\n\
 -x - читать полный сектор - данные+oob (без ключа - только данные)\n\n\
 -k # - код чипсета (-kl - получить список кодов)\n\
 -z # - размер OOB на страницу, в байтах (перекрывает автоопределенный размер)\n\
@@ -194,6 +205,10 @@ printf("\n * Для режима неформатированного чтени
    case 'p':
     strcpy(devname,optarg);
     break;
+
+   case 'e':
+     eccflag=1;
+     break;
     
    case 'o':
     strcpy(filename,optarg);
@@ -340,14 +355,13 @@ if (partflag == 2)
     printf("\n Таблица разделов не найдена. Завершаем работу.\n");
     return;
   }
+//printf("\n -- eccflag = %i --\n",eccflag);
+mempoke(nand_ecc_cfg,mempeek(nand_ecc_cfg)&0xfffffffe|eccflag); // ECC on/off
 mempoke(nand_cfg1,mempeek(nand_cfg1)&0xfffffffe|eccflag); // ECC on/off
-//mempoke(nand_cs,4); // data mover
-//mempoke(nand_cs,0); // data mover
 
 mempoke(nand_cmd,1); // Сброс всех операций контроллера
 mempoke(nand_exec,0x1);
 nandwait();
-
 
 // устанавливаем код команды
 //if (cwsize == sectorsize) mempoke(nand_cmd,0x32); // чтение только данных
@@ -463,6 +477,11 @@ for(i=0;i<npar;i++) {
       }	
     }	
 }
+
+// восстанавливаем ЕСС
+mempoke(nand_ecc_cfg,mempeek(nand_ecc_cfg)&0xfffffffe); // ECC on BCH
+mempoke(nand_cfg1,mempeek(nand_cfg1)&0xfffffffe); // ECC on R-S
+
 printf("\n"); 
     
 } 

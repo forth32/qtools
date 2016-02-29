@@ -36,6 +36,11 @@ extern unsigned int nand_ecc_cfg;
 extern unsigned int NAND_FLASH_READ_ID; 
 extern unsigned int sector_buf;
 
+extern int bch_mode;        // режим ЕСС: 0=R-S  1=BCH
+extern int ecc_size;              // размер ЕСС
+extern int ecc_bit;               // число бит, корректируемых ECC
+
+
 extern unsigned int nc_stop,nc_read,nc_readall,nc_program,nc_programall,nc_erase,nc_identify;
 
 
@@ -102,3 +107,4 @@ void set_sparesize(uint32 ss);
 void set_eccsize(uint32 eccs);
 void parse_badblock_arg(char* arg, int* badpos, int* badloc);
 void set_badmark_pos (int pos, int place);
+int get_udsize();
