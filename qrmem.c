@@ -22,7 +22,7 @@ char devname[20]="/dev/ttyUSB0";
 char devname[20]="";
 #endif
 
-while ((opt = getopt(argc, argv, "p:a:l:o:hi")) != -1) {
+while ((opt = getopt(argc, argv, "p:a:l:o:h:i")) != -1) {
   switch (opt) {
    case 'h': 
      printf("\n Утилита предназначена для чтения адресного пространства модема\n\n\
