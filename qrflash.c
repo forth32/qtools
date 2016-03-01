@@ -40,8 +40,8 @@ else if (bad_processing_flag != BAD_IGNORE) {
 
 // устанавливаем udsize на размер читаемого участка
 cfg0=mempeek(nand_cfg0);
-oldudsize=get_udsize();
-set_udsize(cwsize);
+//oldudsize=get_udsize();
+//set_udsize(cwsize);
 //set_sparesize(0);
 
 nand_reset();
@@ -54,7 +54,6 @@ cfgecctemp=mempeek(nand_ecc_cfg); // конфигурация с учётом в
 mempoke(nand_ecc_cfg,(mempeek(nand_ecc_cfg))|2); // сброс движка BCH
 mempoke(nand_ecc_cfg,cfgecctemp); // восстановление конфигурации BCH
 }
-
 for(pg=0;pg<ppb;pg++) {
   setaddr(blk,pg);
   for (sec=0;sec<spp;sec++) {
@@ -66,7 +65,7 @@ for(pg=0;pg<ppb;pg++) {
   } 
 }  
 if (bad_processing_flag == BAD_DISABLE) hardware_bad_on();
-set_udsize(oldudsize);
+//set_udsize(oldudsize);
 mempoke(nand_cfg0,cfg0);
 return 1; // заебись - блок прочитан
 }
