@@ -20,6 +20,9 @@ unsigned int badsector;    // сектор, содержащий дефектн�
 unsigned int badflag;      // маркер дефектного блока
 unsigned int badposition;  // позиция маркера дефектных блоков
 unsigned int badplace;     // местоположение маркера: 0-user, 1-spare
+int bch_mode=0;            // режим ЕСС: 0=R-S  1=BCH
+int ecc_size;              // размер ЕСС
+int ecc_bit;               // число бит, корректируемых ECC
 
 //****************************************************************
 //* Ожидание завершения операции, выполняемой контроллером nand  *
@@ -126,7 +129,6 @@ int i;
 unsigned char rbuf[1024];
 char hellocmd[]="\x01QCOM fast download protocol host\x03### ";
 
-int bch_mode=0;
 
 // апплет проверки работоспособности загрузчика
 unsigned char cmdbuf[]={
@@ -134,7 +136,7 @@ unsigned char cmdbuf[]={
   0xc1,0xe5,0x01,0x40,0xa0,0xe3,0x1e,0xff,
   0x2f,0xe1
 };
-unsigned int cfg0,cfg1,ecccfg;
+unsigned int cfg0;
 
 // режим тихой инициализации
 if (mode == 0) {
@@ -154,22 +156,22 @@ if (mode == 0) {
   read(siofd,rbuf,1024);   // вычищаем хвост буера с сообщением об ошибке
 }  
 
-printf(" Отсылка hello...");
 i=send_cmd(hellocmd,strlen(hellocmd),rbuf);
 if (rbuf[1] != 2) {
+   printf(" Отсылка hello...");
    i=send_cmd(hellocmd,strlen(hellocmd),rbuf);
    if (rbuf[1] != 2) {
      printf(" повторный hello возвратил ошибку!\n");
      dump(rbuf,i,0);
      return;
    }  
+   printf("ok");
 }  
 i=rbuf[0x2c];
 rbuf[0x2d+i]=0;
-printf("ok");
 if (mode == 2) {
    // тихий запуск - обходим настройку чипсета
-   printf(", флеш-память: %s\n",rbuf+0x2d);
+   printf("Hello ok, флеш-память: %s\n",rbuf+0x2d);
    return; 
  }  
 ttyflush(); 
@@ -178,149 +180,26 @@ if (!test_loader()) {
   exit(1);
 }  
 
-
-printf("\n Чипсет: %s  (%08x)",get_chipname(),nand_cmd); fflush(stdout);
 if (get_sahara()) disable_bam(); // отключаем NANDc BAM, если работаем с чипсетами нового поколения
 
-cfg0=mempeek(nand_cfg0);
-cfg1=mempeek(nand_cfg1);
-if (nand_ecc_cfg != 0xffff) ecccfg=mempeek(nand_ecc_cfg);
-else ecccfg=0;
 get_flash_config();
-printf("\n Версия протокола: %i",rbuf[0x22]); fflush(stdout);
-printf("\n Флеш-память: %s %s, %s",flash_mfr,(rbuf[0x2d] != 0x65)?((char*)(rbuf+0x2d)):"",flash_descr); fflush(stdout);
-//printf("\n Максимальный размер пакета: %i байта",*((unsigned int*)&rbuf[0x24]));fflush(stdout);
-printf("\n Размер сектора: %u байт",(cfg0&(0x3ff<<9))>>9);fflush(stdout);
-printf("\n Размер страницы: %u байт (%u секторов)",pagesize,spp);fflush(stdout);
-printf("\n Число страниц в блоке: %u",ppb);fflush(stdout);
-printf("\n Размер OOB: %u байт",oobsize); fflush(stdout);
-
-// Определяем тип ЕСС
-if (((cfg1>>27)&1) != 0) bch_mode=1;
-
-if (bch_mode) {
-  printf("\n Тип ECC: BCH, %i бит",((ecccfg>>4)&3) ? (((ecccfg>>4)&3)+1)*4 : 4);
-  printf("\n Размер ЕСС: %u байт",(ecccfg>>8)&0x1f);fflush(stdout);
-}  
-else {
-  printf("\n Тип ECC: R-S, 4 бит");
-  printf("\n Размер ЕСС: %u байт",(cfg0>>19)&0xf);
-} 
-  
+cfg0=mempeek(nand_cfg0);
+printf("\n Версия HELLO-протокола: %i",rbuf[0x22]); 
+printf("\n Чипсет: %s",get_chipname()); 
+printf("\n Базовый адрес NAND-контроллера: %08x",nand_cmd);
+printf("\n Флеш-память: %s %s, %s",flash_mfr,(rbuf[0x2d] != 0x65)?((char*)(rbuf+0x2d)):"",flash_descr);
+//printf("\n Максимальный размер пакета: %i байта",*((unsigned int*)&rbuf[0x24]));
+printf("\n Размер сектора: %u байт",(cfg0&(0x3ff<<9))>>9);
+printf("\n Размер страницы: %u байт (%u секторов)",pagesize,spp);
+printf("\n Число страниц в блоке: %u",ppb);
+printf("\n Размер OOB: %u байт",oobsize); 
+printf("\n Тип ECC: %s, %i бит",bch_mode?"BCH":"R-S",ecc_bit);
+printf("\n Размер ЕСС: %u байт",ecc_size);
 printf("\n Размер spare: %u байт",(cfg0>>23)&0xf);
-
 printf("\n Положение маркера дефектных блоков: ");
-if (badposition == 0) printf(" маркер отсутствует");
-else  printf("%s+%x",badplace?"spare":"user",badposition);
-
-printf("\n Общий размер флеш-памяти = %u блоков (%i MB)",maxblock,maxblock*ppb/1024*pagesize/1024);fflush(stdout);
+printf("%s+%x",badplace?"spare":"user",badposition);
+printf("\n Общий размер флеш-памяти = %u блоков (%i MB)",maxblock,maxblock*ppb/1024*pagesize/1024);
 printf("\n");
-}
-
-//**********************************************
-//* Отключение аппаратного контроля бедблоков
-//**********************************************
-void hardware_bad_off() {
-
-int cfg1;
-
-cfg1=mempeek(nand_cfg1);
-cfg1 &= ~(0x3ff<<6);
-mempoke(nand_cfg1,cfg1);
-}
-
-//**********************************************
-//* Включение аппаратного контроля бедблоков
-//**********************************************
-void hardware_bad_on() {
-
-int cfg1;
-
-cfg1=mempeek(nand_cfg1);
-cfg1 &= ~(0x7ff<<6);
-cfg1 |= (badposition &0x3ff)<<6; // смещение до маркера
-cfg1 |= badplace<<16;            // область, где расположен маркер (user/spare)
-mempoke(nand_cfg1,cfg1);
-}
-
-//**********************************************
-//* Установка позиции маркера
-//**********************************************
-void set_badmark_pos (int pos, int place) {
-
-badposition=pos;
-badplace=place&1;
-hardware_bad_on();
-}
-
-//*************************************
-//* чтение таблицы разделов из flash
-//*************************************
-int load_ptable(unsigned char* buf) {
-
-unsigned int udsize=512;
-unsigned int blk,pg;
-
-if (get_udflag()) udsize=516;
-
-memset(buf,0,1024); // обнуляем таблицу
-
-for (blk=0;blk<12;blk++) {
-  // Ищем блок с картами
-  flash_read(blk, 0, 0);     
-  memread(buf,sector_buf, udsize);
-  if (memcmp(buf,"\xac\x9f\x56\xfe\x7a\x12\x7f\xcd",8) != 0) continue; // сигнатура не найдена - ищем дальше
-
-  // нашли блок с таблицами - теперь ищем страницу с таблицей чтения
-  for (pg=0;pg<ppb;pg++) {
-    flash_read(blk, pg, 0);     
-    memread(buf,sector_buf, udsize);
-    if (memcmp(buf,"\xAA\x73\xEE\x55\xDB\xBD\x5E\xE3",8) != 0) continue; // сигнатура таблицы чтения не найдена
-    // нашли таблицу - читаем хвост
-    mempoke(nand_exec,1);     // сектор 1 - продолжение таблицы
-    nandwait();
-    memread(buf+udsize,sector_buf, udsize);
-    return 1; // все - таблица найдна, более тут делать нечего
-  }
-}  
-return 0;  
-}
-
-//**********************************
-//* Закрытие потока данных раздела
-//**********************************
-int qclose(int errmode) {
-unsigned char iobuf[600];
-unsigned char cmdbuf[]={0x15};
-int iolen;
-
-iolen=send_cmd(cmdbuf,1,iobuf);
-if (!errmode) return 1;
-if (iobuf[1] == 0x16) return 1;
-show_errpacket("close()",iobuf,iolen);
-return 0;
-
-}  
-
-//************************
-//* Стирание блока флешки  
-//************************
-
-void block_erase(int block) {
-  
-int oldcfg;  
-  
-nand_reset();
-mempoke(nand_addr0,block*ppb);         // младшая часть адреса - # страницы
-mempoke(nand_addr1,0);                 // старшая часть адреса - всегда 0
-
-oldcfg=mempeek(nand_cfg0);
-mempoke(nand_cfg0,oldcfg&~(0x1c0));    // устанавливаем CW_PER_PAGE=0, как требует даташит
-
-mempoke(nand_cmd,0x3a); // стирание. Бит Last page установлен
-mempoke(nand_exec,0x1);
-nandwait();
-mempoke(nand_cfg0,oldcfg);   // восстанавливаем CFG0
 }
 
 //**********************************************************
@@ -329,7 +208,10 @@ mempoke(nand_cfg0,oldcfg);   // восстанавливаем CFG0
 void get_flash_config() {
   
 unsigned int cfg0, cfg1, nandid, pid, fid, blocksize, devcfg, chipsize;
+unsigned int ecccfg;
+int linuxcwsize;
 int i;
+int c_badmark_pos; // вычисляемая позиция маркера
 
 struct {
   char* type;   // тектовое описание типа
@@ -490,7 +372,8 @@ if (chipsize == 0) {
 // Вынимаем параметры конфигурации
 
 cfg0=mempeek(nand_cfg0);
-
+cfg1=mempeek(nand_cfg1);
+ecccfg=mempeek(nand_ecc_cfg);
 sectorsize=512;
 //sectorsize=(cfg0&(0x3ff<<9))>>9; //UD_SIZE_BYTES = blocksize
 
@@ -504,15 +387,37 @@ if ((((cfg0>>6)&7)|((cfg0>>2)&8)) == 0) {
   if (!bad_loader) mempoke(nand_cfg0,(cfg0|0x40000|(((spp-1)&8)<<2)|(((spp-1)&7)<<6)));
 }  
 
-// Для чипсета 8200 требуется настройка конфигурации 1 - позиции маркера бедблока
-cfg1=mempeek(nand_cfg1);
-if (nand_cmd == 0xa0a00000) {
-  cfg1&=~(0x7ff<<6);  //сбрасываем BAD_BLOCK_BYTE_NUM и BAD_BLOCK_IN_SPARE_AREA
-  cfg1|=(0x1d1<<6); // BAD_BLOCK_BYTE_NUM
-  mempoke(nand_cfg1,cfg1);
+// Определяем тип и размер ЕСС
+if (((cfg1>>27)&1) != 0) bch_mode=1;
+if (bch_mode) { 
+  // для BCH 
+  ecc_size=(ecccfg>>8)&0x1f; 
+  ecc_bit=((ecccfg>>4)&3) ? (((ecccfg>>4)&3)+1)*4 : 4;
+}
+else {
+  // Для R-S
+  ecc_size=(cfg0>>19)&0xf;
+  ecc_bit=4;
 }  
+
 badposition=(cfg1>>6)&0x3ff;
 badplace=(cfg1>>16)&1;
+
+linuxcwsize=528;
+if (bch_mode && (ecc_bit == 8)) linuxcwsize=532;
+
+// Настройка бедмаркера, если он не автонастроился
+
+c_badmark_pos = (pagesize-(linuxcwsize*(spp-1))+1);
+if (badposition == 0) {
+  printf("\n! Внимание - положение маркера дефектных блоков автоопределено!\n");  
+  badplace=0;
+  badposition=c_badmark_pos;
+}  
+if (badposition != c_badmark_pos) {
+  printf("\n! Внимание - текущее положение маркера дефектных блоков %x не совпадает с расчетным %x!\n",
+     badposition,c_badmark_pos);  
+}
 
 // проверяем признак 16-битной флешки
 if ((cfg1&2) != 0) flash16bit=1;
@@ -526,6 +431,113 @@ if (oobsize == 0) {
 	else oobsize = (8 << ((devcfg >> 2) & 0x1)) * (pagesize >> 9);
 } 
 
+}
+
+
+//**********************************************
+//* Отключение аппаратного контроля бедблоков
+//**********************************************
+void hardware_bad_off() {
+
+int cfg1;
+
+cfg1=mempeek(nand_cfg1);
+cfg1 &= ~(0x3ff<<6);
+mempoke(nand_cfg1,cfg1);
+}
+
+//**********************************************
+//* Включение аппаратного контроля бедблоков
+//**********************************************
+void hardware_bad_on() {
+
+int cfg1;
+
+cfg1=mempeek(nand_cfg1);
+cfg1 &= ~(0x7ff<<6);
+cfg1 |= (badposition &0x3ff)<<6; // смещение до маркера
+cfg1 |= badplace<<16;            // область, где расположен маркер (user/spare)
+mempoke(nand_cfg1,cfg1);
+}
+
+//**********************************************
+//* Установка позиции маркера
+//**********************************************
+void set_badmark_pos (int pos, int place) {
+
+badposition=pos;
+badplace=place&1;
+hardware_bad_on();
+}
+
+//*************************************
+//* чтение таблицы разделов из flash
+//*************************************
+int load_ptable(unsigned char* buf) {
+
+unsigned int udsize=512;
+unsigned int blk,pg;
+
+if (get_udflag()) udsize=516;
+
+memset(buf,0,1024); // обнуляем таблицу
+
+for (blk=0;blk<12;blk++) {
+  // Ищем блок с картами
+  flash_read(blk, 0, 0);     
+  memread(buf,sector_buf, udsize);
+  if (memcmp(buf,"\xac\x9f\x56\xfe\x7a\x12\x7f\xcd",8) != 0) continue; // сигнатура не найдена - ищем дальше
+
+  // нашли блок с таблицами - теперь ищем страницу с таблицей чтения
+  for (pg=0;pg<ppb;pg++) {
+    flash_read(blk, pg, 0);     
+    memread(buf,sector_buf, udsize);
+    if (memcmp(buf,"\xAA\x73\xEE\x55\xDB\xBD\x5E\xE3",8) != 0) continue; // сигнатура таблицы чтения не найдена
+    // нашли таблицу - читаем хвост
+    mempoke(nand_exec,1);     // сектор 1 - продолжение таблицы
+    nandwait();
+    memread(buf+udsize,sector_buf, udsize);
+    return 1; // все - таблица найдна, более тут делать нечего
+  }
+}  
+return 0;  
+}
+
+//**********************************
+//* Закрытие потока данных раздела
+//**********************************
+int qclose(int errmode) {
+unsigned char iobuf[600];
+unsigned char cmdbuf[]={0x15};
+int iolen;
+
+iolen=send_cmd(cmdbuf,1,iobuf);
+if (!errmode) return 1;
+if (iobuf[1] == 0x16) return 1;
+show_errpacket("close()",iobuf,iolen);
+return 0;
+
+}  
+
+//************************
+//* Стирание блока флешки  
+//************************
+
+void block_erase(int block) {
+  
+int oldcfg;  
+  
+nand_reset();
+mempoke(nand_addr0,block*ppb);         // младшая часть адреса - # страницы
+mempoke(nand_addr1,0);                 // старшая часть адреса - всегда 0
+
+oldcfg=mempeek(nand_cfg0);
+mempoke(nand_cfg0,oldcfg&~(0x1c0));    // устанавливаем CW_PER_PAGE=0, как требует даташит
+
+mempoke(nand_cmd,0x3a); // стирание. Бит Last page установлен
+mempoke(nand_exec,0x1);
+nandwait();
+mempoke(nand_cfg0,oldcfg);   // восстанавливаем CFG0
 }
 
 //****************************************
