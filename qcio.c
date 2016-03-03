@@ -333,6 +333,7 @@ struct  {
 	{0x2c, "Micron"},
 	{0xc8, "Elite Semiconductor"},
 	{0x01, "Spansion/AMD"},
+	{0xef, "Winbond"},
 	{0x0, 0}
 };
 
