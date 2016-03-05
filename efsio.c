@@ -120,12 +120,15 @@ int efs_closedir(int dirp) {
   
 int ldirp=dirp;
 int iolen;
+union {
 int rsp;
+char b[32];
+} t;
 
-iolen=send_efs_cmd(EFS2_DIAG_CLOSEDIR,&ldirp,4,&rsp);  
+iolen=send_efs_cmd(EFS2_DIAG_CLOSEDIR,&ldirp,4,&t);  
 if (iolen == -1) return -1;
-efs_errno=rsp;
-return rsp;
+efs_errno=t.rsp;
+return t.rsp;
 }
 
 //****************************************************
