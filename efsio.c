@@ -55,7 +55,9 @@ if (iobuf[0] != 0x4b) {
   efs_errno=9999;
   return -1;
 }  
-memcpy(respbuf,iobuf+4,iolen-4);
+//printf("\n cmd %02x:  resplen=%i\n",cmd,iolen-7);
+//dump(iobuf+4,iolen-7,0);
+memcpy(respbuf,iobuf+4,iolen-7);
 return iolen; // ошибок не было
 }
  
@@ -120,15 +122,12 @@ int efs_closedir(int dirp) {
   
 int ldirp=dirp;
 int iolen;
-union {
 int rsp;
-char b[32];
-} t;
 
-iolen=send_efs_cmd(EFS2_DIAG_CLOSEDIR,&ldirp,4,&t);  
+iolen=send_efs_cmd(EFS2_DIAG_CLOSEDIR,&ldirp,4,&rsp);  
 if (iolen == -1) return -1;
-efs_errno=t.rsp;
-return t.rsp;
+efs_errno=rsp;
+return rsp;
 }
 
 //****************************************************
