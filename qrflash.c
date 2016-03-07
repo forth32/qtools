@@ -145,14 +145,14 @@ return 0;
 //* Чтение блока данных для нефайловых линуксовых разделов
 //*************************************************************
 unsigned int read_block_resequence(int block, FILE* out) {
- read_block_ext(block,out,0);
+ return read_block_ext(block,out,0);
 } 
 
 //*************************************************************
 //* Чтение блока данных для файловых yaffs2 разделов
 //*************************************************************
 unsigned int read_block_yaffs(int block, FILE* out) {
- read_block_ext(block,out,1);
+ return read_block_ext(block,out,1);
 } 
 
 //*****************************
