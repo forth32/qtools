@@ -247,6 +247,7 @@ cfgeccbak=mempeek(nand_ecc_cfg);
 // режим стирания
 //-------------------------------------------
 if (cflag) {
+  if ((startblock+cflag) > maxblock) cflag=maxblock-startblock;
   printf("\n");
   for (block=startblock;block<(startblock+cflag);block++) {
     printf("\r Стирание блока %03x",block); 
@@ -323,7 +324,7 @@ switch (wmode) {
 port_timeout(1000);
 
 // цикл по блокам
-
+if ((startblock+flen) > maxblock) flen=maxblock-startblock;
 for(block=startblock;block<(startblock+flen);block++) {
   // проверяем, если надо, дефектность блока
   badflag=0;
