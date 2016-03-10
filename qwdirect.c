@@ -344,12 +344,7 @@ for(block=startblock;block<(startblock+flen);block++) {
     block_erase(block);
   }  
               
-  // дополнительная настройка чипсетов с ВСН
-  if (is_chipset("MDM9x25") || is_chipset("MDM9x3x")) { // 9x25 или 9x3x
-    cfgecctemp=mempeek(nand_ecc_cfg); // конфигурация с учётом включения/отключения ECC
-    mempoke(nand_ecc_cfg,(mempeek(nand_ecc_cfg))|2); // сброс движка BCH
-    mempoke(nand_ecc_cfg,cfgecctemp); // восстановление конфигурации BCH
-  } 
+  bch_reset();
 
   // цикл по страницам
   for(page=0;page<ppb;page++) {

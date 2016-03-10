@@ -68,8 +68,16 @@ int blk;
 int errcount=0;
 int pg,sec;
 int stat;
+FILE* out; 
 
 printf("\nПостроение списка ошибок ЕСС в интервале %08x - %08x\n",start,start+len);
+
+out=fopen("eccerrors.lst","w");
+fprintf(out,"Список ошибок ЕСС");
+if (out == 0) {
+  printf("\n Невозможно создать файл eccerrors.lst\n");
+  return;
+}
 
 // включаем ЕСС
 mempoke(nand_ecc_cfg,mempeek(nand_ecc_cfg)&0xfffffffe); 
@@ -91,8 +99,14 @@ for(blk=start;blk<(start+len);blk++) {
     stat=check_ecc_status();
     if (stat == 0) continue;
     if ((stat == -1) && (flag == 1)) continue;
-    if (stat == -1) printf("\r!  Блок %x  Страница %d  сектор %d: некорректируемая ошибка чтения\n",blk,pg,sec);
-    else printf("\r!  Блок %x  Страница %d  сектор %d: скорректировано бит: %d\n",blk,pg,sec,stat);
+    if (stat == -1) { 
+      printf("\r!  Блок %x  Страница %d  сектор %d: некорректируемая ошибка чтения\n",blk,pg,sec);
+      fprintf(out,"\r!  Блок %x  Страница %d  сектор %d: некорректируемая ошибка чтения\n",blk,pg,sec);
+    }  
+    else {
+      printf("\r!  Блок %x  Страница %d  сектор %d: скорректировано бит: %d\n",blk,pg,sec,stat);
+      fprintf(out,"\r!  Блок %x  Страница %d  сектор %d: скорректировано бит: %d\n",blk,pg,sec,stat);
+    }  
     errcount++;
    }
  }
