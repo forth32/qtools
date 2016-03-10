@@ -108,3 +108,5 @@ void set_eccsize(uint32 eccs);
 void parse_badblock_arg(char* arg, int* badpos, int* badloc);
 void set_badmark_pos (int pos, int place);
 int get_udsize();
+int check_ecc_status();
+
