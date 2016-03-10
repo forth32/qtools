@@ -7,6 +7,7 @@ typedef uint32_t uint32;
 typedef uint8_t uint8;
 typedef int8_t int8;
 typedef int16_t int16;
+typedef uint16_t uint16;
 
 #ifdef WIN32
 	#define PACKED_ON(name) __pragma(pack(push, 1)) struct name
@@ -47,4 +48,5 @@ typedef int16_t int16;
 		#define usleep(n) Sleep(n/1000)
     #endif
     #include "qcio.h"
+    #include "ptable.h"
 #endif
