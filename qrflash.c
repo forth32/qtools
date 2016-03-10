@@ -71,12 +71,7 @@ nand_reset();
 if (cwsize>(sectorsize+4)) mempoke(nand_cmd,0x34); // чтение data+ecc+spare без коррекции
 else mempoke(nand_cmd,0x33);    // чтение data с коррекцией
 
-  // дополнительная настройка чипсетов с ВСН
-if (is_chipset("MDM9x25") || is_chipset("MDM9x3x")) { // 9x25 или 9x3x
- cfgecctemp=mempeek(nand_ecc_cfg); // конфигурация с учётом включения/отключения ECC
- mempoke(nand_ecc_cfg,(mempeek(nand_ecc_cfg))|2); // сброс движка BCH
- mempoke(nand_ecc_cfg,cfgecctemp); // восстановление конфигурации BCH
-}
+bch_reset();
 for(pg=0;pg<ppb;pg++) {
   setaddr(blk,pg);
   for (sec=0;sec<spp;sec++) {
