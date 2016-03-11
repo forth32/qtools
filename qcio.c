@@ -471,38 +471,6 @@ badplace=place&1;
 hardware_bad_on();
 }
 
-//*************************************
-//* чтение таблицы разделов из flash
-//*************************************
-int load_ptable(unsigned char* buf) {
-
-unsigned int udsize=512;
-unsigned int blk,pg;
-
-if (get_udflag()) udsize=516;
-
-memset(buf,0,1024); // обнуляем таблицу
-
-for (blk=0;blk<12;blk++) {
-  // Ищем блок с картами
-  flash_read(blk, 0, 0);     
-  memread(buf,sector_buf, udsize);
-  if (memcmp(buf,"\xac\x9f\x56\xfe\x7a\x12\x7f\xcd",8) != 0) continue; // сигнатура не найдена - ищем дальше
-
-  // нашли блок с таблицами - теперь ищем страницу с таблицей чтения
-  for (pg=0;pg<ppb;pg++) {
-    flash_read(blk, pg, 0);     
-    memread(buf,sector_buf, udsize);
-    if (memcmp(buf,"\xAA\x73\xEE\x55\xDB\xBD\x5E\xE3",8) != 0) continue; // сигнатура таблицы чтения не найдена
-    // нашли таблицу - читаем хвост
-    mempoke(nand_exec,1);     // сектор 1 - продолжение таблицы
-    nandwait();
-    memread(buf+udsize,sector_buf, udsize);
-    return 1; // все - таблица найдна, более тут делать нечего
-  }
-}  
-return 0;  
-}
 
 //**********************************
 //* Закрытие потока данных раздела

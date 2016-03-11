@@ -153,9 +153,6 @@ struct flash_usr_partition_entry {
 //*************************************************************************
 //* Структура системной таблицы разделов (таблицы чтения)
 //*************************************************************************
-struct flash_partition_table;
-typedef struct flash_partition_table *flash_partable_t;
-
 struct flash_partition_table {
 
   // Сигнатуры таблицы
@@ -168,16 +165,13 @@ struct flash_partition_table {
   uint32 numparts;   
   // Список разделов
   struct flash_partition_entry part_entry[FLASH_NUM_PART_ENTRIES];
+  int8 trash[112]; 
 };
 
 
 //*************************************************************************
 //* Структура пользовательской таблицы разделов (таблицы записи)
 //*************************************************************************
-struct flash_usr_partition_table;
-typedef struct flash_usr_partition_table *flash_usr_partable_t;
-
-
 struct flash_usr_partition_table {
 
   // Сигнатуры таблицы
@@ -191,4 +185,8 @@ struct flash_usr_partition_table {
   struct flash_usr_partition_entry part_entry[FLASH_NUM_PART_ENTRIES];
 };
 
+extern struct flash_partition_table fptable;
+extern int validpart; // валидность таблицы разделов
+
 #endif // __PTABLE_H__
+

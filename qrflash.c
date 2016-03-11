@@ -258,7 +258,8 @@ char devname[50]="/dev/ttyUSB0";
 #else
 char devname[50]="";
 #endif
-unsigned char ptable[1100]; // таблица разделов
+//unsigned char ptable[1100]; // таблица разделов
+printf("\n sizeofpt = %i",sizeof(ptable));
 
 memset(partlist,0,sizeof(partlist)); // очищаем список разрешенных к чтению разделов
 
