@@ -8,47 +8,25 @@
 //****************************************************
 void extract_ptable() {
   
-unsigned int addr,blk,pg,udsize,npar;
-unsigned char buf[4096];
 FILE* out;
 
-// получаем размер юзерских даных сектора
-udsize=(mempeek(nand_cfg0)&(0x3ff<<9))>>9; 
-// вынимаем координаты страницы с таблицей
-addr=mempeek(nand_addr0)>>16;
-if (addr == 0) { 
-  // если адреса таблицы нет в регистре - ищем его
-  if (!load_ptable(buf)) return; 
-  addr=mempeek(nand_addr0)>>16;
-}  
-blk=addr/ppb;
-pg=addr%ppb;
-nandwait(); // ждем окончания всех предыдущих операций
-
-flash_read(blk, pg, 0);  // сектор 0 - начало таблицы разделов  
-memread(buf,sector_buf, udsize);
-
-mempoke(nand_exec,1);     // сектор 1 - продолжение таблицы
-nandwait();
-memread(buf+udsize,sector_buf, udsize);
+// загружаем системную таблицу разделов из MIBIB
+load_ptable("@");
 printf("-----------------------------------------------------");
 // проверяем таблицу
-if (memcmp(buf,"\xAA\x73\xEE\x55\xDB\xBD\x5E\xE3",8) != 0) {
-   printf("\nТаблица разделов режима чтения не найдена\n");
+if (!validpart) {
+   printf("\nСистемная таблица разделов не найдена\n");
    return;
 }
-
-// Определяем размер и записываем таблицу чтения
-npar=*((unsigned int*)&buf[12]); // число разделов в таблице
 out=fopen("ptable/current-r.bin","wb");
 if (out == 0) {
   printf("\n Ошибка открытия выходного файла ptable/current-r.bin");
   return;
 }  
-fwrite(buf,16+28*npar,1,out);
+fwrite(&fptable,sizeof(fptable),1,out);
 printf("\n * Найдена таблица разделов режима чтения");
 fclose (out);
-
+/*
 // Ищем таблицу записи
 for (pg=pg+1;pg<ppb;pg++) {
   flash_read(blk, pg, 0);  // сектор 0 - начало таблицы разделов    
@@ -71,6 +49,9 @@ for (pg=pg+1;pg<ppb;pg++) {
   return;
 }
 printf("\n - Таблица разделов режима записи не найдена");
+*/
+printf("\n");
+  
 }
 
 

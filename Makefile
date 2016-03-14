@@ -38,10 +38,10 @@ qwflash: qwflash.o $(OBJS)
 #qwimage: qwimage.o $(OBJS)
 #	gcc $^ -o $@ $(LIBS)
 
-qdload: qdload.o sahara.o $(OBJS)
+qdload: qdload.o sahara.o $(OBJS)  ptable.o
 	gcc $^ -o $@ $(LIBS)
 
-qwdirect: qwdirect.o $(OBJS)
+qwdirect: qwdirect.o $(OBJS)  ptable.o
 	gcc $^ -o $@ $(LIBS)
 	
 qefs  : qefs.o efsio.o $(OBJS)
@@ -62,7 +62,7 @@ qident:      qident.o $(OBJS)
 qterminal:   qterminal.o $(OBJS)
 	gcc $^ -o $@ $(LIBS)
 
-qbadblock:   qbadblock.o $(OBJS)
+qbadblock:   qbadblock.o $(OBJS)  ptable.o
 	gcc $^ -o $@ $(LIBS)
 
 qflashparm:  qflashparm.o $(OBJS)

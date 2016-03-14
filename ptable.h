@@ -165,7 +165,7 @@ struct flash_partition_table {
   uint32 numparts;   
   // Список разделов
   struct flash_partition_entry part[FLASH_NUM_PART_ENTRIES];
-  int8 trash[112]; 
+//  int8 trash[112]; 
 };
 
 
@@ -185,10 +185,16 @@ struct flash_usr_partition_table {
   struct flash_usr_partition_entry part[FLASH_NUM_PART_ENTRIES];
 };
 
+int load_ptable_flash();
+int load_ptable_file(char* filename);
+int load_ptable(char* name);
 void print_ptable_head();
 int show_part(int pn);
 void list_ptable();
-
+char* part_name(int pn);
+int part_start(int pn);
+int part_len(int pn);
+int block_to_part(int block);
 
 extern struct flash_partition_table fptable;
 extern int validpart; // валидность таблицы разделов
