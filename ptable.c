@@ -3,7 +3,6 @@
 //
 #include "include.h"
 
-// глобальные переменные
 
 // хранилище таблицы разделов флешки
 struct flash_partition_table fptable;
