@@ -95,12 +95,12 @@ struct flash_partition_entry {
   uint32 offset;
 
   // размер раздела в блоках
-  uint32 length;
+  uint32 len;
 
   // атрибуты раздела
-  uint8 attrib1;
-  uint8 attrib2;
-  uint8 attrib3;
+  uint8 attr1;
+  uint8 attr2;
+  uint8 attr3;
 
   // Флешка, на которой находится раздел (0 - первичная, 1 - вторичная)
   uint8 which_flash;
@@ -164,7 +164,7 @@ struct flash_partition_table {
   // Число определенных разделов
   uint32 numparts;   
   // Список разделов
-  struct flash_partition_entry part_entry[FLASH_NUM_PART_ENTRIES];
+  struct flash_partition_entry part[FLASH_NUM_PART_ENTRIES];
   int8 trash[112]; 
 };
 
@@ -182,8 +182,13 @@ struct flash_usr_partition_table {
   // Число определенных разделов
   uint32 numparts;   /* number of partition entries */
   // Список разделов
-  struct flash_usr_partition_entry part_entry[FLASH_NUM_PART_ENTRIES];
+  struct flash_usr_partition_entry part[FLASH_NUM_PART_ENTRIES];
 };
+
+void print_ptable_head();
+int show_part(int pn);
+void list_ptable();
+
 
 extern struct flash_partition_table fptable;
 extern int validpart; // валидность таблицы разделов

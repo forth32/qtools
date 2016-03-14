@@ -258,7 +258,7 @@ char devname[50]="/dev/ttyUSB0";
 #else
 char devname[50]="";
 #endif
-//unsigned char ptable[1100]; // таблица разделов
+unsigned char ptable[1100]; // таблица разделов
 printf("\n sizeofpt = %i",sizeof(ptable));
 
 memset(partlist,0,sizeof(partlist)); // очищаем список разрешенных к чтению разделов
@@ -459,12 +459,6 @@ if (forced_oobsize != -1) {
 }  
 cwsize=sectorsize;
 if (xflag) cwsize+=oobsize/spp; // наращиваем размер codeword на размер порции OOB на каждый сектор
-if (partflag == 2) 
-  // загружаем таблицу разделов
-  if (!load_ptable(ptable)) { 
-    printf("\n Таблица разделов не найдена. Завершаем работу.\n");
-    return;
-  }
 //  dump(ptable,1024,0);
 //printf("\n -- eccflag = %i --\n",eccflag);
 mempoke(nand_ecc_cfg,mempeek(nand_ecc_cfg)&0xfffffffe|eccflag); // ECC on/off
@@ -520,10 +514,24 @@ if (partflag == 0) {
 // Режим чтения по таблице разделов
 //###################################################
 
-if (strncmp(ptable,"\xAA\x73\xEE\x55\xDB\xBD\x5E\xE3",8) != 0) {
-   printf("\nТаблица разделов повреждена\n");
+if (partflag == 2) 
+  // загружаем таблицу разделов из флешки
+  if (!load_ptable(ptable)) { 
+    printf("\n Таблица разделов не найдена. Завершаем работу.\n");
+    return;
+  }
+
+
+if (!validpart) {
+   printf("\nТаблица разделов не найдена или повреждена\n");
    return;
 }
+
+// Режим просмотре таблицы разделов
+if (listmode) {
+  list_ptable();
+  return;
+}  
 
 npar=*((unsigned int*)&ptable[12]);
 printf("\n Версия таблицы разделов: %i",*((unsigned int*)&ptable[8]));

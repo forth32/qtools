@@ -20,6 +20,7 @@ hdlc.o: hdlc.c
 sahara.o: sahara.c
 chipconfig.o: chipconfig.c
 memio.o: memio.c
+ptable.o: ptable.c
 #	$(CC) -c qcio.c
 
 qcommand: qcommand.o  $(OBJS)
@@ -28,7 +29,7 @@ qcommand: qcommand.o  $(OBJS)
 qrmem: qrmem.o $(OBJS)
 	gcc $^ -o $@ $(LIBS)
 
-qrflash: qrflash.o $(OBJS)
+qrflash: qrflash.o $(OBJS) ptable.o
 	gcc $^ -o $@ $(LIBS)
 
 qwflash: qwflash.o $(OBJS)
