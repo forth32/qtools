@@ -813,7 +813,7 @@ int check_ecc_status() {
 int bs;
 
 bs=mempeek(nand_buffer_status);
-if (((bs&0x100) != 0) && ((mempeek(nand_cmd+0xfc) & 0x40) != 0)) return -1; // некорректируемая ошибка
+if (((bs&0x100) != 0) && ((mempeek(nand_cmd+0xec) & 0x40) == 0)) return -1; // некорректируемая ошибка
 return bs&0x1f; // 	число корректируемых ошибок
 }
 
