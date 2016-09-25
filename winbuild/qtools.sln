@@ -27,6 +27,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "qbadblock", "qbadblock\qbad
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "qflashparm", "qflashparm\qflashparm.vcxproj", "{51B429D3-38E1-4B2A-B2D7-B10FA9EE632A}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "qterminal", "qterminal\qterminal.vcxproj", "{B5A2A5F3-40A3-4DB7-98B9-13C0234AA809}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -85,6 +87,10 @@ Global
 		{51B429D3-38E1-4B2A-B2D7-B10FA9EE632A}.Debug|Win32.Build.0 = Release|Win32
 		{51B429D3-38E1-4B2A-B2D7-B10FA9EE632A}.Release|Win32.ActiveCfg = Release|Win32
 		{51B429D3-38E1-4B2A-B2D7-B10FA9EE632A}.Release|Win32.Build.0 = Release|Win32
+		{B5A2A5F3-40A3-4DB7-98B9-13C0234AA809}.Debug|Win32.ActiveCfg = Release|Win32
+		{B5A2A5F3-40A3-4DB7-98B9-13C0234AA809}.Debug|Win32.Build.0 = Release|Win32
+		{B5A2A5F3-40A3-4DB7-98B9-13C0234AA809}.Release|Win32.ActiveCfg = Release|Win32
+		{B5A2A5F3-40A3-4DB7-98B9-13C0234AA809}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
