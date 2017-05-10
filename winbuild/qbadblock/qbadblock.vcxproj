@@ -86,6 +86,7 @@
     <ClCompile Include="..\..\getopt.c" />
     <ClCompile Include="..\..\hdlc.c" />
     <ClCompile Include="..\..\memio.c" />
+    <ClCompile Include="..\..\ptable.c" />
     <ClCompile Include="..\..\qbadblock.c" />
     <ClCompile Include="..\..\qcio.c" />
   </ItemGroup>

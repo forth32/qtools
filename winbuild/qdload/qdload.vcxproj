@@ -86,6 +86,7 @@
     <ClCompile Include="..\..\chipconfig.c" />
     <ClCompile Include="..\..\hdlc.c" />
     <ClCompile Include="..\..\memio.c" />
+    <ClCompile Include="..\..\ptable.c" />
     <ClCompile Include="..\..\qcio.c" />
     <ClCompile Include="..\..\qdload.c" />
     <ClCompile Include="..\..\getopt.c" />

@@ -12,7 +12,7 @@ if (nand_ecc_cfg != 0xffff) cfgecctemp=mempeek(nand_ecc_cfg);
 else cfgecctemp=0;
 sparnum = 6-((((cfgecctemp>>4)&3)?(((cfgecctemp>>4)&3)+1)*4:4)>>1);
 // Для ECC- R-S
-if (! (is_chipset("MDM9x25") || is_chipset("MDM9x3x"))) set_blocksize(516,1,10); // data - 516, spare - 1 байт, ecc - 10
+if (! (is_chipset("MDM9x25") || is_chipset("MDM9x3x") || is_chipset("MDM9x4x"))) set_blocksize(516,1,10); // data - 516, spare - 1 байт, ecc - 10
 // Для ECC - BCH
 else {
 	set_udsize(516); // data - 516, spare - 2 или 4 байта
