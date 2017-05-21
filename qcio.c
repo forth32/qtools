@@ -516,24 +516,13 @@ void disable_bam() {
 
 unsigned int i,nandcstate[256],bcraddr=0xfc401a40;
 
-if (is_chipset("MDM9x4x")) {
-	memread(nandcstate,nand_cmd,0x1c);
-	memread(nandcstate+0x20,nand_cmd+0x20,0x0c);
-	memread(nandcstate+0x40,nand_cmd+0x40,0x0c);
-	memread(nandcstate+0xe8,nand_cmd+0xe8,0x0c);
-	bcraddr=0x0183f000;
-} else for (i=0;i<0xec;i+=4) nandcstate[i]=mempeek(nand_cmd+i); // сохраняем состояние контроллера NAND
+if (is_chipset("MDM9x4x")) bcraddr=0x0183f000;
+for (i=0;i<0xec;i+=4) nandcstate[i]=mempeek(nand_cmd+i); // сохраняем состояние контроллера NAND
 
 mempoke(bcraddr,1); // GCC_QPIC_BCR
 mempoke(bcraddr,0); // полный асинхронный сброс QPIC
 
-if (is_chipset("MDM9x4x")) {
-	for (i=0;i<0x1c;i+=4) mempoke(nand_cmd+i,nandcstate[i]); 
-	for (i=0x20;i<0x2c;i+=4) mempoke(nand_cmd+i,nandcstate[i]); 
-	for (i=0x40;i<0x4c;i+=4) mempoke(nand_cmd+i,nandcstate[i]); 
-	for (i=0xe8;i<0xf4;i+=4) mempoke(nand_cmd+i,nandcstate[i]); 
-} else for (i=0;i<0xec;i+=4) mempoke(nand_cmd+i,nandcstate[i]);  // восстанавливаем состояние
-
+for (i=0;i<0xec;i+=4) mempoke(nand_cmd+i,nandcstate[i]);  // восстанавливаем состояние
 mempoke(nand_exec,1); // фиктивное чтение для снятия защиты адресных регистров контроллера от записи
 }
 
