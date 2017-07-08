@@ -124,12 +124,13 @@ char devname[50]="/dev/ttyUSB0";
 char devname[50]="";
 #endif
 
-while ((opt = getopt(argc, argv, "hp:b:l:dm:u:s:e:")) != -1) {
+while ((opt = getopt(argc, argv, "hp:b:l:dmk:u:s:e:")) != -1) {
   switch (opt) {
    case 'h': 
      printf("\n Утилита для работы с дефектными блоками flash-накопителя\n\
  Допустимы следующие ключи:\n\n\
 -p <tty> - последовательный порт для общения с загрузчиком\n\
+-k # - код чипсета (-kl - получить список кодов)\n\
 -b <blk> - начальный номер читаемого блока (по умолчанию 0)\n\
 -l <num> - число читаемых блоков, 0 - до конца флешки\n\n\
 -d - вывести список имеющихся дефектных блоков\n\
@@ -139,6 +140,10 @@ while ((opt = getopt(argc, argv, "hp:b:l:dm:u:s:e:")) != -1) {
 -s L### - перманентно установить позицию маркера на байт ###, L=U(user) или S(spare)\n\
 ");
     return;
+
+   case 'k':
+    define_chipset(optarg);
+    break;
 
    case 'p':
     strcpy(devname,optarg);
