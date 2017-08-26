@@ -426,9 +426,10 @@ if (chipsize != 0)   maxblock=chipsize*1024/blocksize;
 else                 maxblock=0x800;
 
 if (oobsize == 0) {
-	// Micron MT29F4G08ABBEA3W: на самом деле 224, определяется 128, 
-	// реально используется 160, для raw-режима нагляднее 256 :)
-	if (nandid == 0x2690ac2c) oobsize = 256; 
+	// Micron MT29F4G08ABBEA3W и Toshiba MD5N04G02GSD2ARK:
+	// на самом деле 224, определяется 128, реально 
+	// используется 160, для raw-режима нагляднее 256 :)
+	if ((nandid == 0x2690ac2c) || (nandid == 0x2690ac98)) oobsize = 256; 
 	else oobsize = (8 << ((devcfg >> 2) & 0x1)) * (pagesize >> 9);
 } 
 
