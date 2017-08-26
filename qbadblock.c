@@ -124,7 +124,7 @@ char devname[50]="/dev/ttyUSB0";
 char devname[50]="";
 #endif
 
-while ((opt = getopt(argc, argv, "hp:b:l:dmk:u:s:e:")) != -1) {
+while ((opt = getopt(argc, argv, "hp:b:l:dm:k:u:s:e:")) != -1) {
   switch (opt) {
    case 'h': 
      printf("\n Утилита для работы с дефектными блоками flash-накопителя\n\
