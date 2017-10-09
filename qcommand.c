@@ -367,11 +367,11 @@ void main(int argc,char* argv[]) {
   
 #ifndef WIN32
 char* line;
-char oldcmdline[200]="";
+char oldcmdline[1024]="";
 #else
-char line[200];
+char line[1024];
 #endif
-char scmdline[200]={0};
+char scmdline[1024]={0};
 #ifndef WIN32
 char devname[50]="/dev/ttyUSB0";
 #else
