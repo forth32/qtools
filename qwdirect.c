@@ -350,13 +350,9 @@ for(block=startblock;block<(startblock+flen);block++) {
   for(page=0;page<ppb;page++) {
 
     memset(oobuf,0xff,sizeof(oobuf));
+    memset(srcbuf,0xff,pagesize); // заполняем буфер FF для чтения неполных страниц
     // читаем весь дамп страницы
-    if (wmode == w_linout) { 
-	if (fread(srcbuf,1,pagesize,in) < pagesize) goto endpage;  
-    } 
-    else {
-        if (fread(srcbuf,1,pagesize+(spp*oobsize),in) < (pagesize+(spp*oobsize))) goto endpage; // образ страницы - page+oob
-    }
+    if (fread(srcbuf,1,pagesize,in) == 0) goto endpage;  // 0 - все данные из файла прочитаны
     // srcbufго бло прочитан - проверяем, не бедблок ли там
     if (test_badpattern(srcbuf)) {
       // там действительно бедблок
