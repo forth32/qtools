@@ -51,6 +51,7 @@ unsigned int fileoffset=0;
 int badflag;
 int uxflag=0, ucflag=0, usflag=0, umflag=0, ubflag=0;
 int wmode=0; // режим записи
+int readlen;
 
 #define w_standart 0
 #define w_linux    1
@@ -346,7 +347,6 @@ for(block=startblock;block<(startblock+flen);block++) {
               
   bch_reset();
 
-  int readlen;
   // цикл по страницам
   for(page=0;page<ppb;page++) {
 

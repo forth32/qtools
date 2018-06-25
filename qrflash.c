@@ -154,7 +154,7 @@ for(page=0;page<ppb;page++)  {
   }  
 }
 
-return 0; 
+return !okflag; 
 } 
 
 
