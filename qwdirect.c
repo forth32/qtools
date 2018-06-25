@@ -346,14 +346,18 @@ for(block=startblock;block<(startblock+flen);block++) {
               
   bch_reset();
 
+  int readlen;
   // цикл по страницам
   for(page=0;page<ppb;page++) {
 
     memset(oobuf,0xff,sizeof(oobuf));
     memset(srcbuf,0xff,pagesize); // заполняем буфер FF для чтения неполных страниц
     // читаем весь дамп страницы
-    if (fread(srcbuf,1,pagesize,in) == 0) goto endpage;  // 0 - все данные из файла прочитаны
-    // srcbufго бло прочитан - проверяем, не бедблок ли там
+    if (wmode == w_linout) readlen=fread(srcbuf,1,pagesize,in);
+    else readlen=fread(srcbuf,1,pagesize+(spp*oobsize),in);
+    if (readlen == 0) goto endpage;  // 0 - все данные из файла прочитаны
+ 
+    // srcbuf прочитан - проверяем, не бедблок ли там
     if (test_badpattern(srcbuf)) {
       // там действительно бедблок
       if (!usflag) {
